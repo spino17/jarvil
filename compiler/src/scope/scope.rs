@@ -42,6 +42,12 @@ impl<T> Scope<T> {
 #[derive(Debug, Clone, Copy)]
 pub struct ScopeIndex(usize);
 
+impl ScopeIndex {
+    pub fn global() -> ScopeIndex {
+        ScopeIndex(0)
+    }
+}
+
 #[derive(Debug)]
 pub struct ScopeArena<T: IsInitialized> {
     pub arena: Vec<Box<Scope<T>>>,
@@ -139,7 +145,7 @@ impl<T: IsInitialized> ScopeArena<T> {
         self.set(scope_index, key, meta_data, decl_range, None);
     }
 
-    pub fn insert<U: Fn(&ScopeArena<T>, ScopeIndex, &StrId) -> Option<TextRange>>(
+    pub fn insert<U: Fn(&ScopeArena<T>, ScopeIndex, StrId) -> Option<TextRange>>(
         &mut self,
         scope_index: ScopeIndex,
         key: StrId,
@@ -148,13 +154,13 @@ impl<T: IsInitialized> ScopeArena<T> {
         lookup_fn: U,
         unique_id: IdentDeclId<T>,
     ) -> Result<SymbolIndex<T>, (StrId, TextRange)> {
-        if let Some(previous_decl_range) = lookup_fn(self, scope_index, &key) {
+        if let Some(previous_decl_range) = lookup_fn(self, scope_index, key) {
             return Err((key, previous_decl_range));
         }
         Ok(self.set(scope_index, key, meta_data, decl_range, Some(unique_id)))
     }
 
-    fn lookup(
+    pub fn lookup(
         &self,
         scope_index: ScopeIndex,
         key: StrId,

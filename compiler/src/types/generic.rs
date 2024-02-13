@@ -4,23 +4,24 @@ use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::{ConcreteTypesTuple, ConcretizationContext},
-        core::SymbolData,
-        symbol::interfaces::InterfaceBounds,
-        symbol::types::{
-            core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory,
+        namespace::Namespace,
+        symbol::{
+            core::SymbolIndex,
+            interfaces::InterfaceBounds,
+            types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
         },
     },
 };
 
 #[derive(Debug, Clone)]
 pub struct Generic {
-    pub semantic_data: SymbolData<UserDefinedTypeData>,
+    pub semantic_data: SymbolIndex<UserDefinedTypeData>,
 }
 
 impl Generic {
-    pub fn new(symbol_data: &SymbolData<UserDefinedTypeData>) -> Generic {
+    pub fn new(symbol_data: SymbolIndex<UserDefinedTypeData>) -> Generic {
         Generic {
-            semantic_data: symbol_data.clone(),
+            semantic_data: symbol_data,
         }
     }
 
@@ -30,7 +31,7 @@ impl Generic {
 }
 
 impl AbstractType for Generic {
-    fn is_eq(&self, other_ty: &Type) -> bool {
+    fn is_eq(&self, other_ty: &Type, _namespace: &Namespace) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Generic(generic_data) => self.name() == generic_data.name(),
             CoreType::Any => true,
@@ -38,19 +39,27 @@ impl AbstractType for Generic {
         }
     }
 
-    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+    fn is_structurally_eq(
+        &self,
+        other_ty: &Type,
+        context: &ConcretizationContext,
+        namespace: &Namespace,
+    ) -> bool {
         let is_other_ty_generic = match other_ty.0.as_ref() {
             CoreType::Generic(generic_data) => Some(generic_data),
             _ => None,
         };
-        let self_symbol_data = self.semantic_data.get_core_ref();
+        let self_symbol_data = namespace.types.get_symbol_data_ref(self.semantic_data).data;
         let self_generic_data = self_symbol_data.get_generic_data_ref();
         let self_index = self_generic_data.index;
         let self_category = &self_generic_data.category;
         match self_category {
             GenericTypeDeclarationPlaceCategory::InCallable => match is_other_ty_generic {
                 Some(generic_data) => {
-                    let other_symbol_data = generic_data.semantic_data.get_core_ref();
+                    let other_symbol_data = namespace
+                        .types
+                        .get_symbol_data_ref(generic_data.semantic_data)
+                        .data;
                     let other_generic_data = other_symbol_data.get_generic_data_ref();
                     let other_index = other_generic_data.index;
                     let other_category = &other_generic_data.category;
@@ -71,14 +80,14 @@ impl AbstractType for Generic {
                         None => unreachable!(),
                     };
                     let concrete_self_ty = &concrete_types[self_index];
-                    concrete_self_ty.is_eq(other_ty)
+                    concrete_self_ty.is_eq(other_ty, namespace)
                 }
             },
         }
     }
 
-    fn concretize(&self, context: &ConcretizationContext) -> Type {
-        let symbol_data = self.semantic_data.get_core_ref();
+    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
+        let symbol_data = namespace.types.get_symbol_data_ref(self.semantic_data).data;
         let generic_data = symbol_data.get_generic_data_ref();
         let index = generic_data.index;
         let category = &generic_data.category;
@@ -96,10 +105,14 @@ impl AbstractType for Generic {
         }
     }
 
-    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
-        let symbol_data = self.semantic_data.get_core_ref();
+    fn is_type_bounded_by_interfaces(
+        &self,
+        interface_bounds: &InterfaceBounds,
+        namespace: &Namespace,
+    ) -> bool {
+        let symbol_data = namespace.types.get_symbol_data_ref(self.semantic_data).data;
         let ty_interface_bounds = &symbol_data.get_generic_data_ref().interface_bounds;
-        interface_bounds.is_subset(ty_interface_bounds)
+        interface_bounds.is_subset(ty_interface_bounds, namespace)
     }
 
     fn try_infer_type_or_check_equivalence(
@@ -109,8 +122,9 @@ impl AbstractType for Generic {
         global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
+        namespace: &Namespace,
     ) -> Result<(), ()> {
-        let symbol_data = self.semantic_data.get_core_ref();
+        let symbol_data = namespace.types.get_symbol_data_ref(self.semantic_data).data;
         let generic_data_ref = symbol_data.get_generic_data_ref();
         let index = generic_data_ref.index;
         let decl_place = generic_data_ref.category;
@@ -123,7 +137,7 @@ impl AbstractType for Generic {
                     Ok(())
                 }
                 InferredConcreteTypesEntry::Inferred(present_ty) => {
-                    if !present_ty.is_eq(received_ty) {
+                    if !present_ty.is_eq(received_ty, namespace) {
                         return Err(());
                     }
                     Ok(())
@@ -136,60 +150,60 @@ impl AbstractType for Generic {
                 None => unreachable!(),
             };
             let expected_ty = &global_concrete_types[index];
-            if !expected_ty.is_eq(received_ty) {
+            if !expected_ty.is_eq(received_ty, namespace) {
                 return Err(());
             }
             Ok(())
         }
     }
 
-    fn to_string(&self, interner: &Interner) -> String {
-        let symbol_data = self.semantic_data.get_core_ref();
+    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
+        let symbol_data = namespace.types.get_symbol_data_ref(self.semantic_data).data;
         let generic_data = symbol_data.get_generic_data_ref();
         let interface_bounds = &generic_data.interface_bounds;
         format!(
             "{}{}",
             interner.lookup(self.name()),
-            interface_bounds.to_string(interner)
+            interface_bounds.to_string(interner, namespace)
         )
     }
 }
 
 impl OperatorCompatiblity for Generic {
     // TODO - add implementations of below methods based on the interfaces bounding the generic type
-    fn check_add(&self, _other: &Type) -> Option<Type> {
+    fn check_add(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_subtract(&self, _other: &Type) -> Option<Type> {
+    fn check_subtract(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_multiply(&self, _other: &Type) -> Option<Type> {
+    fn check_multiply(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_divide(&self, _other: &Type) -> Option<Type> {
+    fn check_divide(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_double_equal(&self, _other: &Type) -> Option<Type> {
+    fn check_double_equal(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_greater(&self, _other: &Type) -> Option<Type> {
+    fn check_greater(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_less(&self, _other: &Type) -> Option<Type> {
+    fn check_less(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_and(&self, _other: &Type) -> Option<Type> {
+    fn check_and(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_or(&self, _other: &Type) -> Option<Type> {
+    fn check_or(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 }

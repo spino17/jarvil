@@ -21,11 +21,15 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::concrete::ConcreteTypesTuple;
-use crate::scope::core::{LookupData, LookupResult};
 use crate::scope::errors::GenericTypeArgsCheckError;
+use crate::scope::lookup::{LookupData, LookupResult};
 use crate::scope::mangled::MangledIdentifierName;
+use crate::scope::namespace::Namespace;
+use crate::scope::scope::ScopeIndex;
 use crate::scope::semantic_db::SemanticStateDatabase;
-use crate::scope::symbol::core::{ConcreteSymbolDataEntry, IdentDeclId, SymbolDataEntry};
+use crate::scope::symbol::core::{
+    ConcreteSymbolDataEntry, IdentDeclId, SymbolDataEntry, SymbolIndex,
+};
 use crate::scope::symbol::function::FunctionSymbolData;
 use crate::scope::symbol::function::{CallableKind, CallablePrototypeData};
 use crate::scope::symbol::interfaces::InterfaceSymbolData;
@@ -47,15 +51,12 @@ use crate::{
         walk::Visitor,
     },
     error::diagnostics::{Diagnostics, IdentifierAlreadyDeclaredError, IdentifierNotDeclaredError},
-    scope::{
-        core::{Namespace, SymbolData},
-        symbol::function::CallableData,
-        symbol::variables::VariableData,
-    },
+    scope::{symbol::function::CallableData, symbol::variables::VariableData},
     types::core::Type,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde::Serialize;
+use std::thread::Scope;
 use std::vec;
 use text_size::TextRange;
 
@@ -125,7 +126,7 @@ pub struct ClassContext {
 pub struct BlockContext {
     inner_non_locals: FxHashSet<MangledIdentifierName<VariableData>>,
     block_kind: BlockKind,
-    scope_index: usize,
+    scope_index: ScopeIndex,
 }
 
 pub struct Context {
@@ -134,7 +135,7 @@ pub struct Context {
 }
 
 pub struct Resolver {
-    scope_index: usize,
+    scope_index: ScopeIndex,
     pub code_handler: JarvilCodeHandler,
     errors: Vec<Diagnostics>,
     context: Context,
@@ -145,7 +146,7 @@ pub struct Resolver {
 impl Resolver {
     pub fn new(code_handler: JarvilCodeHandler) -> Self {
         Resolver {
-            scope_index: 0,
+            scope_index: ScopeIndex::global(),
             code_handler,
             errors: vec![],
             context: Context {
@@ -153,7 +154,7 @@ impl Resolver {
                 block_context_stack: vec![BlockContext {
                     inner_non_locals: FxHashSet::default(),
                     block_kind: BlockKind::Function,
-                    scope_index: 0,
+                    scope_index: ScopeIndex::global(),
                 }],
             },
             indent_level: 0,
@@ -171,14 +172,20 @@ impl Resolver {
         }
         match self.semantic_state_db.namespace.functions.get(
             self.scope_index,
-            &self.semantic_state_db.interner.intern("main"),
+            self.semantic_state_db.interner.intern("main"),
         ) {
-            Some(symbol_data) => {
-                let func_meta_data = &*symbol_data.get_core_ref();
+            Some(symbol_index) => {
+                let func_meta_data = self
+                    .semantic_state_db
+                    .namespace
+                    .functions
+                    .get_symbol_data_ref(symbol_index)
+                    .data;
                 let params = &func_meta_data.prototype.params;
                 let return_type = &func_meta_data.prototype.return_type;
                 if !params.is_empty() || !return_type.is_void() {
-                    let span = symbol_data.declaration_line_number();
+                    let span = symbol_index
+                        .declaration_line_number(&self.semantic_state_db.namespace.functions);
                     let err = MainFunctionWrongTypeError::new(span);
                     self.errors.push(Diagnostics::MainFunctionWrongType(err));
                 }
@@ -267,7 +274,9 @@ impl Resolver {
         }
     }
 
-    pub fn get_enclosing_generics_declarative_scope_index(&self) -> (usize, Option<usize>) {
+    pub fn get_enclosing_generics_declarative_scope_index(
+        &self,
+    ) -> (ScopeIndex, Option<ScopeIndex>) {
         // (enclosing_scope, enclosing_class_scope `if enclosing scope is method`)
         let mut index = self.context.block_context_stack.len() - 1;
         loop {
@@ -310,6 +319,7 @@ impl Resolver {
             &ty_ranges,
             is_concrete_types_none_allowed,
             &self.semantic_state_db.interner,
+            &self.semantic_state_db.namespace,
         )?;
         let concrete_symbol_data =
             ConcreteSymbolDataEntry::new(symbol_data.get_entry(), concrete_types.clone());
@@ -322,14 +332,17 @@ impl Resolver {
     pub fn bind_decl_to_self_keyword(
         &mut self,
         node: &OkSelfKeywordNode,
-        symbol_data: SymbolData<VariableData>,
+        symbol_data: SymbolIndex<VariableData>,
     ) {
         self.semantic_state_db
             .self_keyword_binding_table
             .insert(node.clone(), symbol_data);
     }
 
-    pub fn try_resolving<T: AbstractSymbol, U: Fn(&Namespace, usize, &StrId) -> LookupResult<T>>(
+    pub fn try_resolving<
+        T: AbstractSymbol,
+        U: Fn(&Namespace, ScopeIndex, &StrId) -> LookupResult<T>,
+    >(
         &mut self,
         identifier: &OkIdentifierInUseNode,
         lookup_fn: U,
@@ -387,7 +400,7 @@ impl Resolver {
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
     ) -> ResolveResult<VariableSymbolData> {
-        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &StrId| {
+        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: &StrId| {
             namespace.lookup_in_variables_namespace(scope_index, key)
         };
         self.try_resolving(identifier, lookup_fn, IdentKind::Variable, log_error, false)
@@ -442,7 +455,7 @@ impl Resolver {
     pub fn try_resolving_self_keyword(
         &mut self,
         self_keyword: &OkSelfKeywordNode,
-    ) -> Option<(SymbolData<VariableData>, usize)> {
+    ) -> Option<(SymbolIndex<VariableData>, usize)> {
         let name =
             self_keyword.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
         debug_assert!(self.semantic_state_db.interner.lookup(name) == "self");
@@ -464,7 +477,7 @@ impl Resolver {
 
     pub fn try_declare_and_bind<
         T: AbstractSymbol,
-        U: Fn(&mut Namespace, usize, StrId, TextRange, usize) -> Result<T, (StrId, TextRange)>,
+        U: Fn(&mut Namespace, ScopeIndex, StrId, TextRange, usize) -> Result<T, (StrId, TextRange)>,
     >(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
@@ -493,7 +506,7 @@ impl Resolver {
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<VariableSymbolData, (StrId, TextRange)> {
         let declare_fn = |namespace: &mut Namespace,
-                          scope_index: usize,
+                          scope_index: ScopeIndex,
                           name: StrId,
                           decl_range: TextRange,
                           unique_id: IdentDeclId<VariableData>| {

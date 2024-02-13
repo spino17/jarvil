@@ -3,6 +3,7 @@ use super::function::{CallableData, PartialConcreteCallableDataRef};
 use super::interfaces::InterfaceData;
 use super::variables::VariableData;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::namespace::{self, Namespace};
 use crate::scope::symbol::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
 use crate::{core::string_interner::StrId, types::core::AbstractType};
@@ -73,13 +74,17 @@ impl FieldsMap {
         &'a self,
         field_name: &StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        namespace: &Namespace,
     ) -> Option<(Type, TextRange)> {
         let Some((ty, range)) = self.fields.get(field_name) else {
             return None;
         };
         if ty.is_concretization_required() {
             Some((
-                ty.concretize(&ConcretizationContext::new(global_concrete_types, None)),
+                ty.concretize(
+                    &ConcretizationContext::new(global_concrete_types, None),
+                    namespace,
+                ),
                 *range,
             ))
         } else {

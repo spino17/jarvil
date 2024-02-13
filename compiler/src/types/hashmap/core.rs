@@ -5,8 +5,10 @@ use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::{ConcreteTypesTuple, ConcretizationContext},
-        symbol::interfaces::InterfaceBounds,
-        symbol::types::generic_type::GenericTypeDeclarationPlaceCategory,
+        namespace::Namespace,
+        symbol::{
+            interfaces::InterfaceBounds, types::generic_type::GenericTypeDeclarationPlaceCategory,
+        },
     },
     types::{
         core::{AbstractType, CoreType, OperatorCompatiblity, Type},
@@ -30,35 +32,44 @@ impl HashMap {
 }
 
 impl AbstractType for HashMap {
-    fn is_eq(&self, other_ty: &Type) -> bool {
+    fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
         match other_ty.0.as_ref() {
             CoreType::HashMap(hashmap_data) => {
-                self.key_type.is_eq(&hashmap_data.key_type)
-                    && self.value_type.is_eq(&hashmap_data.value_type)
+                self.key_type.is_eq(&hashmap_data.key_type, namespace)
+                    && self.value_type.is_eq(&hashmap_data.value_type, namespace)
             }
             CoreType::Any => true,
             _ => false,
         }
     }
 
-    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+    fn is_structurally_eq(
+        &self,
+        other_ty: &Type,
+        context: &ConcretizationContext,
+        namespace: &Namespace,
+    ) -> bool {
         let CoreType::HashMap(hashmap_data) = other_ty.0.as_ref() else {
             return false;
         };
         self.key_type
-            .is_structurally_eq(&hashmap_data.key_type, context)
+            .is_structurally_eq(&hashmap_data.key_type, context, namespace)
             && self
                 .value_type
-                .is_structurally_eq(&hashmap_data.value_type, context)
+                .is_structurally_eq(&hashmap_data.value_type, context, namespace)
     }
 
-    fn concretize(&self, context: &ConcretizationContext) -> Type {
-        let concrete_key_ty = self.key_type.concretize(context);
-        let concrete_value_ty = self.value_type.concretize(context);
+    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
+        let concrete_key_ty = self.key_type.concretize(context, namespace);
+        let concrete_value_ty = self.value_type.concretize(context, namespace);
         Type::new_with_hashmap(concrete_key_ty, concrete_value_ty)
     }
 
-    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+    fn is_type_bounded_by_interfaces(
+        &self,
+        interface_bounds: &InterfaceBounds,
+        namespace: &Namespace,
+    ) -> bool {
         // TODO - add checks for interfaces which `HashMap` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0
     }
@@ -70,6 +81,7 @@ impl AbstractType for HashMap {
         global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
+        namespace: &Namespace,
     ) -> Result<(), ()> {
         let CoreType::HashMap(hashmap_ty) = received_ty.0.as_ref() else {
             return Err(());
@@ -80,6 +92,7 @@ impl AbstractType for HashMap {
             global_concrete_types,
             num_inferred_types,
             inference_category,
+            namespace,
         )?;
         self.value_type.try_infer_type_or_check_equivalence(
             &hashmap_ty.value_type,
@@ -87,47 +100,56 @@ impl AbstractType for HashMap {
             global_concrete_types,
             num_inferred_types,
             inference_category,
+            namespace,
         )?;
         Ok(())
     }
 
-    fn to_string(&self, interner: &Interner) -> String {
+    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
         format!(
             "{{{} : {}}}",
-            self.key_type.to_string(interner),
-            self.value_type.to_string(interner)
+            self.key_type.to_string(interner, namespace),
+            self.value_type.to_string(interner, namespace)
         )
     }
 }
 
 impl OperatorCompatiblity for HashMap {
-    fn check_add(&self, _other: &Type) -> Option<Type> {
+    fn check_add(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_subtract(&self, _other: &Type) -> Option<Type> {
+    fn check_subtract(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_multiply(&self, _other: &Type) -> Option<Type> {
+    fn check_multiply(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_divide(&self, _other: &Type) -> Option<Type> {
+    fn check_divide(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_double_equal(&self, other: &Type) -> Option<Type> {
+    fn check_double_equal(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
         let CoreType::HashMap(other_hashmap) = other.0.as_ref() else {
             return None;
         };
         if self
             .key_type
-            .check_operator(&other_hashmap.key_type, &BinaryOperatorKind::DoubleEqual)
+            .check_operator(
+                &other_hashmap.key_type,
+                &BinaryOperatorKind::DoubleEqual,
+                namespace,
+            )
             .is_some()
             && self
                 .value_type
-                .check_operator(&other_hashmap.value_type, &BinaryOperatorKind::DoubleEqual)
+                .check_operator(
+                    &other_hashmap.value_type,
+                    &BinaryOperatorKind::DoubleEqual,
+                    namespace,
+                )
                 .is_some()
         {
             return Some(Type::new_with_atomic(BOOL));
@@ -135,19 +157,19 @@ impl OperatorCompatiblity for HashMap {
         None
     }
 
-    fn check_greater(&self, _other: &Type) -> Option<Type> {
+    fn check_greater(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_less(&self, _other: &Type) -> Option<Type> {
+    fn check_less(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_and(&self, _other: &Type) -> Option<Type> {
+    fn check_and(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_or(&self, _other: &Type) -> Option<Type> {
+    fn check_or(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 }

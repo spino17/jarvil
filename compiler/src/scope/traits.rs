@@ -1,5 +1,6 @@
 use super::concrete::ConcreteTypesTuple;
 use super::errors::GenericTypeArgsCheckError;
+use super::namespace::Namespace;
 use super::symbol::core::SymbolDataEntry;
 use crate::core::string_interner::Interner;
 use crate::scope::mangled::MangledIdentifierName;
@@ -18,6 +19,7 @@ pub trait AbstractSymbol {
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         interner: &Interner,
+        namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError>;
-    fn get_mangled_name(&self) -> MangledIdentifierName<Self::SymbolTy>;
+    fn get_mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<Self::SymbolTy>;
 }

@@ -4,31 +4,23 @@ use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::{ConcreteTypesTuple, ConcretizationContext},
-        core::SymbolData,
-        symbol::interfaces::InterfaceBounds,
-        symbol::types::{
-            core::UserDefinedTypeData,
-            generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory},
+        namespace::Namespace,
+        symbol::{
+            interfaces::InterfaceBounds,
+            types::{
+                core::UserDefinedTypeData,
+                generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory},
+            },
         },
     },
     types::core::AbstractType,
 };
-use text_size::TextRange;
 
 pub fn get_unbounded_generic_type_with_declaration_index(
     index: usize,
     interner: &mut Interner,
 ) -> Type {
-    Type::new_with_generic(&SymbolData::new(
-        interner.intern("T"),
-        UserDefinedTypeData::Generic(GenericTypeData {
-            category: GenericTypeDeclarationPlaceCategory::InStruct,
-            index,
-            interface_bounds: InterfaceBounds::new(vec![]),
-        }),
-        TextRange::default(),
-        None,
-    ))
+    todo!()
 }
 
 pub fn try_infer_types_from_tuple(
@@ -38,6 +30,7 @@ pub fn try_infer_types_from_tuple(
     global_concrete_types: Option<&ConcreteTypesTuple>,
     num_inferred_types: &mut usize,
     inference_category: GenericTypeDeclarationPlaceCategory,
+    namespace: &Namespace,
 ) -> Result<(), ()> {
     if base_types_tuple.len() != generics_containing_types_tuple.len() {
         return Err(());
@@ -50,6 +43,7 @@ pub fn try_infer_types_from_tuple(
             global_concrete_types,
             num_inferred_types,
             inference_category,
+            namespace,
         )?;
     }
     Ok(())
@@ -62,12 +56,13 @@ pub trait StructEnumType {
 
 pub fn struct_enum_compare_fn<
     T: StructEnumType,
-    F: Fn(&Type, &Type, &ConcretizationContext) -> bool,
+    F: Fn(&Type, &Type, &ConcretizationContext, &Namespace) -> bool,
 >(
     base: &T,
     other: &T,
     ty_cmp_func: F,
     context: &ConcretizationContext,
+    namespace: &Namespace,
 ) -> bool {
     if base.get_name() != other.get_name() {
         return false;
@@ -82,7 +77,12 @@ pub fn struct_enum_compare_fn<
     let other_len = other_concrete_types.len();
     debug_assert!(self_len == other_len);
     for i in 0..self_len {
-        if !ty_cmp_func(&self_concrete_types[i], &other_concrete_types[i], context) {
+        if !ty_cmp_func(
+            &self_concrete_types[i],
+            &other_concrete_types[i],
+            context,
+            namespace,
+        ) {
             return false;
         }
     }

@@ -1,9 +1,10 @@
 use super::{
-    concrete::ConcreteSymbolData,
-    core::{Namespace, SymbolData},
+    concrete::ConcreteSymbolIndex,
+    namespace::Namespace,
+    scope::ScopeIndex,
     symbol::{
         common::GlobalUniqueKeyGenerator,
-        core::{ConcreteSymbolDataEntry, SymbolDataEntry},
+        core::{ConcreteSymbolDataEntry, SymbolDataEntry, SymbolIndex},
         function::CallableData,
         interfaces::InterfaceData,
         types::core::UserDefinedTypeData,
@@ -31,7 +32,7 @@ pub struct SemanticStateDatabase {
     pub identifier_in_decl_binding_table: FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry>,
     pub identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
     pub type_expr_obj_table: FxHashMap<TypeExpressionNode, (Type, bool)>,
-    pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolData<VariableData>>, // `self` (node) -> scope_index
+    pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolIndex<VariableData>>, // `self` (node) -> scope_index
     pub block_non_locals: FxHashMap<BlockNode, FxHashSet<MangledIdentifierName<VariableData>>>,
     pub bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
 }
@@ -45,7 +46,7 @@ impl SemanticStateDatabase {
         let builtin_functions = get_builtin_functions();
         for (name, callable_data) in builtin_functions {
             namespace.functions.force_insert(
-                0, // index of global namespace
+                ScopeIndex::global(), // index of global namespace
                 interner.intern(name),
                 callable_data,
                 TextRange::default(),
@@ -101,10 +102,10 @@ impl SemanticStateDatabase {
     pub fn get_variable_symbol_data_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
-    ) -> Option<&SymbolData<VariableData>> {
+    ) -> Option<SymbolIndex<VariableData>> {
         match self.identifier_in_decl_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Variable(variable_symbol_data) => Some(variable_symbol_data),
+                SymbolDataEntry::Variable(variable_symbol_data) => Some(*variable_symbol_data),
                 _ => unreachable!(),
             },
             None => None,
@@ -114,7 +115,7 @@ impl SemanticStateDatabase {
     pub fn get_variable_symbol_data_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
-    ) -> Option<&ConcreteSymbolData<VariableData>> {
+    ) -> Option<&ConcreteSymbolIndex<VariableData>> {
         match self.identifier_in_use_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
                 ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
@@ -129,10 +130,10 @@ impl SemanticStateDatabase {
     pub fn get_function_symbol_data_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
-    ) -> Option<&SymbolData<CallableData>> {
+    ) -> Option<SymbolIndex<CallableData>> {
         match self.identifier_in_decl_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Function(func_symbol_data) => Some(func_symbol_data),
+                SymbolDataEntry::Function(func_symbol_data) => Some(*func_symbol_data),
                 _ => unreachable!(),
             },
             None => None,
@@ -142,7 +143,7 @@ impl SemanticStateDatabase {
     pub fn get_function_symbol_data_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
-    ) -> Option<&ConcreteSymbolData<CallableData>> {
+    ) -> Option<&ConcreteSymbolIndex<CallableData>> {
         match self.identifier_in_use_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
                 ConcreteSymbolDataEntry::Function(func_symbol_data) => Some(func_symbol_data),
@@ -155,10 +156,10 @@ impl SemanticStateDatabase {
     pub fn get_type_symbol_data_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
-    ) -> Option<&SymbolData<UserDefinedTypeData>> {
+    ) -> Option<SymbolIndex<UserDefinedTypeData>> {
         match self.identifier_in_decl_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data),
+                SymbolDataEntry::Type(type_symbol_data) => Some(*type_symbol_data),
                 _ => unreachable!(),
             },
             None => None,
@@ -168,10 +169,10 @@ impl SemanticStateDatabase {
     pub fn get_type_symbol_data_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
-    ) -> Option<ConcreteSymbolData<UserDefinedTypeData>> {
+    ) -> Option<ConcreteSymbolIndex<UserDefinedTypeData>> {
         match self.identifier_in_use_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
-                ConcreteSymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data.clone()),
+                ConcreteSymbolDataEntry::Type(type_symbol_data) => Some(*type_symbol_data),
                 _ => unreachable!(),
             },
             None => None,
@@ -181,10 +182,10 @@ impl SemanticStateDatabase {
     pub fn get_interface_symbol_data_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
-    ) -> Option<&SymbolData<InterfaceData>> {
+    ) -> Option<SymbolIndex<InterfaceData>> {
         match self.identifier_in_decl_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Interface(interface_symbol_data) => Some(interface_symbol_data),
+                SymbolDataEntry::Interface(interface_symbol_data) => Some(*interface_symbol_data),
                 _ => unreachable!(),
             },
             None => None,
@@ -194,7 +195,7 @@ impl SemanticStateDatabase {
     pub fn get_interface_symbol_data_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
-    ) -> Option<&ConcreteSymbolData<InterfaceData>> {
+    ) -> Option<&ConcreteSymbolIndex<InterfaceData>> {
         match self.identifier_in_use_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
                 ConcreteSymbolDataEntry::Interface(interface_symbol_data) => {
@@ -209,8 +210,11 @@ impl SemanticStateDatabase {
     pub fn get_self_keyword_symbol_data_ref(
         &self,
         node: &OkSelfKeywordNode,
-    ) -> Option<&SymbolData<VariableData>> {
-        self.self_keyword_binding_table.get(node)
+    ) -> Option<SymbolIndex<VariableData>> {
+        let Some(val) = self.self_keyword_binding_table.get(node) else {
+            return None;
+        };
+        Some(*val)
     }
 
     pub fn set_non_locals(

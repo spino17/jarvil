@@ -1,7 +1,8 @@
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::lexer::token::BinaryOperatorKind;
+use crate::scope::symbol::core::SymbolIndex;
 use crate::scope::{
-    concrete::ConcreteTypesTuple, core::SymbolData, symbol::function::CallablePrototypeData,
+    concrete::ConcreteTypesTuple, symbol::function::CallablePrototypeData,
     symbol::types::core::UserDefinedTypeData,
 };
 use crate::types::atomic::Atomic;
@@ -137,7 +138,7 @@ impl TypesArena {
     // user-defined-types
     pub fn new_with_struct(
         &mut self,
-        symbol_data: &SymbolData<UserDefinedTypeData>,
+        symbol_data: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> TypeId {
         self.add(TypeObject::new(
@@ -148,7 +149,7 @@ impl TypesArena {
 
     pub fn new_with_enum(
         &mut self,
-        symbol_data: &SymbolData<UserDefinedTypeData>,
+        symbol_data: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> TypeId {
         self.add(TypeObject::new(
@@ -159,7 +160,7 @@ impl TypesArena {
 
     pub fn new_with_lambda_named(
         &mut self,
-        symbol_data: &SymbolData<UserDefinedTypeData>,
+        symbol_data: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> TypeId {
         self.add(TypeObject::new(
@@ -175,7 +176,7 @@ impl TypesArena {
         ))
     }
 
-    pub fn new_with_generic(&mut self, symbol_data: &SymbolData<UserDefinedTypeData>) -> TypeId {
+    pub fn new_with_generic(&mut self, symbol_data: SymbolIndex<UserDefinedTypeData>) -> TypeId {
         self.add(TypeObject::new(
             CoreType::Generic(Generic::new(symbol_data)),
             false,

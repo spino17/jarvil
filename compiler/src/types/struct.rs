@@ -3,25 +3,27 @@ use super::helper::{struct_enum_compare_fn, try_infer_types_from_tuple, StructEn
 use crate::core::string_interner::{Interner, StrId};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::ConcreteTypesTuple;
+use crate::scope::namespace::{self, Namespace};
+use crate::scope::symbol::core::SymbolIndex;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::{
-    concrete::ConcretizationContext, core::SymbolData, symbol::interfaces::InterfaceBounds,
+    concrete::ConcretizationContext, symbol::interfaces::InterfaceBounds,
     symbol::types::core::UserDefinedTypeData,
 };
 
 #[derive(Debug, Clone)]
 pub struct Struct {
-    pub symbol_data: SymbolData<UserDefinedTypeData>,
+    pub symbol_data: SymbolIndex<UserDefinedTypeData>,
     pub concrete_types: Option<ConcreteTypesTuple>,
 }
 
 impl Struct {
     pub fn new(
-        symbol_data: &SymbolData<UserDefinedTypeData>,
+        symbol_data: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> Struct {
         Struct {
-            symbol_data: symbol_data.clone(),
+            symbol_data,
             concrete_types,
         }
     }
@@ -38,16 +40,20 @@ impl StructEnumType for Struct {
 }
 
 impl AbstractType for Struct {
-    fn is_eq(&self, other_ty: &Type) -> bool {
+    fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Struct(struct_data) => {
                 let ty_cmp_func =
-                    |ty1: &Type, ty2: &Type, _context: &ConcretizationContext| ty1.is_eq(ty2);
+                    |ty1: &Type,
+                     ty2: &Type,
+                     _context: &ConcretizationContext,
+                     namespace: &Namespace| { ty1.is_eq(ty2, namespace) };
                 struct_enum_compare_fn(
                     self,
                     struct_data,
                     ty_cmp_func,
                     &ConcretizationContext::default(),
+                    namespace,
                 )
             }
             CoreType::Any => true,
@@ -55,34 +61,44 @@ impl AbstractType for Struct {
         }
     }
 
-    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+    fn is_structurally_eq(
+        &self,
+        other_ty: &Type,
+        context: &ConcretizationContext,
+        namespace: &Namespace,
+    ) -> bool {
         let CoreType::Struct(struct_data) = other_ty.0.as_ref() else {
             return false;
         };
-        let ty_cmp_func = |ty1: &Type, ty2: &Type, context: &ConcretizationContext| {
-            ty1.is_structurally_eq(ty2, context)
-        };
-        struct_enum_compare_fn(self, struct_data, ty_cmp_func, context)
+        let ty_cmp_func =
+            |ty1: &Type, ty2: &Type, context: &ConcretizationContext, namespace: &Namespace| {
+                ty1.is_structurally_eq(ty2, context, namespace)
+            };
+        struct_enum_compare_fn(self, struct_data, ty_cmp_func, context, namespace)
     }
 
-    fn concretize(&self, context: &ConcretizationContext) -> Type {
+    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
         let Some(concrete_types) = &self.concrete_types else {
-            return Type::new_with_struct(&self.symbol_data, None);
+            return Type::new_with_struct(self.symbol_data, None);
         };
         let mut concretized_concrete_types = vec![];
         for ty in concrete_types.iter() {
-            concretized_concrete_types.push(ty.concretize(context));
+            concretized_concrete_types.push(ty.concretize(context, namespace));
         }
         Type::new_with_struct(
-            &self.symbol_data,
+            self.symbol_data,
             Some(ConcreteTypesTuple::new(concretized_concrete_types)),
         )
     }
 
-    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
-        let symbol_data = self.symbol_data.get_core_ref();
+    fn is_type_bounded_by_interfaces(
+        &self,
+        interface_bounds: &InterfaceBounds,
+        namespace: &Namespace,
+    ) -> bool {
+        let symbol_data = namespace.types.get_symbol_data_ref(self.symbol_data).data;
         match &symbol_data.get_struct_data_ref().implementing_interfaces {
-            Some(ty_interface_bounds) => interface_bounds.is_subset(ty_interface_bounds),
+            Some(ty_interface_bounds) => interface_bounds.is_subset(ty_interface_bounds, namespace),
             None => false,
         }
     }
@@ -94,6 +110,7 @@ impl AbstractType for Struct {
         global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
+        namespace: &Namespace,
     ) -> Result<(), ()> {
         let CoreType::Struct(struct_ty) = received_ty.0.as_ref() else {
             return Err(());
@@ -114,16 +131,17 @@ impl AbstractType for Struct {
             global_concrete_types,
             num_inferred_types,
             inference_category,
+            namespace,
         )
     }
 
-    fn to_string(&self, interner: &Interner) -> String {
+    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
         let mut s = interner.lookup(self.get_name()).to_string();
         let Some(concrete_types) = &self.concrete_types else {
             return s;
         };
         s.push('<');
-        s.push_str(&concrete_types.to_string(interner));
+        s.push_str(&concrete_types.to_string(interner, namespace));
         s.push('>');
         s
     }
@@ -132,7 +150,7 @@ impl AbstractType for Struct {
 // TODO: operator compatiblity for struct types can be defined using interfaces
 // This is called `operator-overloading`
 impl OperatorCompatiblity for Struct {
-    fn check_add(&self, other: &Type) -> Option<Type> {
+    fn check_add(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
@@ -143,7 +161,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_subtract(&self, other: &Type) -> Option<Type> {
+    fn check_subtract(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
@@ -154,7 +172,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_multiply(&self, other: &Type) -> Option<Type> {
+    fn check_multiply(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
@@ -165,7 +183,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_divide(&self, other: &Type) -> Option<Type> {
+    fn check_divide(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
@@ -176,7 +194,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_double_equal(&self, other: &Type) -> Option<Type> {
+    fn check_double_equal(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
@@ -187,7 +205,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_greater(&self, other: &Type) -> Option<Type> {
+    fn check_greater(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
@@ -198,7 +216,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_less(&self, other: &Type) -> Option<Type> {
+    fn check_less(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
@@ -209,7 +227,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_and(&self, other: &Type) -> Option<Type> {
+    fn check_and(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
@@ -220,7 +238,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_or(&self, other: &Type) -> Option<Type> {
+    fn check_or(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };

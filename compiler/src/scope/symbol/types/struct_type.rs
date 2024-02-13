@@ -1,5 +1,6 @@
 use crate::core::string_interner::StrId;
 use crate::scope::concrete::ConcreteTypesTuple;
+use crate::scope::namespace::{self, Namespace};
 use crate::scope::symbol::common::{FieldsMap, MethodsMap};
 use crate::scope::symbol::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
 use crate::scope::symbol::interfaces::InterfaceBounds;
@@ -50,8 +51,10 @@ impl StructTypeData {
         &'a self,
         field_name: &StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        namespace: &Namespace,
     ) -> Option<(Type, TextRange)> {
-        self.fields.try_field(field_name, global_concrete_types)
+        self.fields
+            .try_field(field_name, global_concrete_types, namespace)
     }
 
     pub fn try_method<'a>(

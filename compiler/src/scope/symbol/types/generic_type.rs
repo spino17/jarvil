@@ -1,3 +1,4 @@
+use crate::scope::namespace::{self, Namespace};
 use crate::types::core::AbstractType;
 use crate::{
     core::string_interner::{Interner, StrId},
@@ -43,16 +44,21 @@ impl GenericTypeData {
         &self,
         field_name: &StrId,
         interner: &mut Interner,
+        namespace: &Namespace,
     ) -> GenericTypePropertyQueryResult<(Type, TextRange)> {
         let mut property_containing_interface_objs: Vec<String> = vec![];
         let mut result: Option<(Type, TextRange)> = None;
         for (interface_obj, _) in &self.interface_bounds.interfaces {
             let concrete_symbol_data = &interface_obj.0.as_ref().1;
-            let interface_data = &*concrete_symbol_data.symbol_data.get_core_ref();
+            let interface_data = namespace
+                .interfaces
+                .get_symbol_data_ref(concrete_symbol_data.symbol_ref)
+                .data;
             let concrete_types = &concrete_symbol_data.concrete_types;
-            match interface_data.try_field(field_name, concrete_types.as_ref()) {
+            match interface_data.try_field(field_name, concrete_types.as_ref(), namespace) {
                 Some((ty, decl_range)) => {
-                    property_containing_interface_objs.push(interface_obj.to_string(interner));
+                    property_containing_interface_objs
+                        .push(interface_obj.to_string(interner, namespace));
                     if result.is_none() {
                         result = Some((ty, decl_range));
                     }
@@ -75,14 +81,19 @@ impl GenericTypeData {
         &self,
         method_name: &StrId,
         interner: &mut Interner,
+        namespace: &Namespace,
     ) -> GenericTypePropertyQueryResult<usize> {
         let mut property_containing_interface_objs: Vec<String> = vec![];
         let mut result: Option<usize> = None;
         for (index, (interface_obj, _)) in self.interface_bounds.interfaces.iter().enumerate() {
             let concrete_symbol_data = &interface_obj.0.as_ref().1;
-            let interface_data = &*concrete_symbol_data.symbol_data.get_core_ref();
+            let interface_data = namespace
+                .interfaces
+                .get_symbol_data_ref(concrete_symbol_data.symbol_ref)
+                .data;
             if interface_data.has_method(method_name) {
-                property_containing_interface_objs.push(interface_obj.to_string(interner));
+                property_containing_interface_objs
+                    .push(interface_obj.to_string(interner, namespace));
                 if result.is_none() {
                     result = Some(index);
                 }
@@ -119,6 +130,7 @@ impl GenericTypeParams {
         concrete_types: &ConcreteTypesTuple,
         type_ranges: &Vec<TextRange>,
         interner: &Interner,
+        namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
         let expected_len = self.len();
         let received_len = concrete_types.len();
@@ -131,9 +143,11 @@ impl GenericTypeParams {
         let mut incorrectly_bounded_types: Vec<(TextRange, String)> = vec![];
         for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
             let ty = &concrete_types[index];
-            if !ty.is_type_bounded_by_interfaces(interface_bounds) {
-                incorrectly_bounded_types
-                    .push((type_ranges[index], interface_bounds.to_string(interner)))
+            if !ty.is_type_bounded_by_interfaces(interface_bounds, namespace) {
+                incorrectly_bounded_types.push((
+                    type_ranges[index],
+                    interface_bounds.to_string(interner, namespace),
+                ))
             }
         }
         if !incorrectly_bounded_types.is_empty() {

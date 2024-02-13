@@ -1,3 +1,4 @@
+use crate::scope::namespace::{self, Namespace};
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
 use crate::scope::traits::IsInitialized;
 use crate::{
@@ -35,13 +36,15 @@ impl LambdaTypeData {
     pub fn get_concrete_prototype(
         &self,
         global_concrete_types: Option<&ConcreteTypesTuple>,
+        namespace: &Namespace,
     ) -> RefOrOwned<CallablePrototypeData> {
         match global_concrete_types {
             Some(concrete_types) => {
-                return self
-                    .meta_data
-                    .prototype
-                    .concretize_prototype(None, Some(concrete_types));
+                return self.meta_data.prototype.concretize_prototype(
+                    None,
+                    Some(concrete_types),
+                    namespace,
+                );
             }
             None => return RefOrOwned::Ref(&self.meta_data.prototype),
         }

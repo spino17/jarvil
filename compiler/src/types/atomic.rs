@@ -3,6 +3,7 @@ use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::core::string_interner::Interner;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::namespace::Namespace;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractType, CoreType, Type};
@@ -47,7 +48,7 @@ impl Atomic {
 }
 
 impl AbstractType for Atomic {
-    fn is_eq(&self, other_ty: &Type) -> bool {
+    fn is_eq(&self, other_ty: &Type, _namespace: &Namespace) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Atomic(atomic_data) => match atomic_data {
                 Atomic::Int => self.is_int(),
@@ -60,7 +61,12 @@ impl AbstractType for Atomic {
         }
     }
 
-    fn is_structurally_eq(&self, other_ty: &Type, _context: &ConcretizationContext) -> bool {
+    fn is_structurally_eq(
+        &self,
+        other_ty: &Type,
+        _context: &ConcretizationContext,
+        _namespace: &Namespace,
+    ) -> bool {
         let CoreType::Atomic(atomic_data) = other_ty.0.as_ref() else {
             return false;
         };
@@ -72,11 +78,15 @@ impl AbstractType for Atomic {
         }
     }
 
-    fn concretize(&self, _context: &ConcretizationContext) -> Type {
+    fn concretize(&self, _context: &ConcretizationContext, _namespace: &Namespace) -> Type {
         unreachable!()
     }
 
-    fn is_type_bounded_by_interfaces(&self, _interface_bounds: &InterfaceBounds) -> bool {
+    fn is_type_bounded_by_interfaces(
+        &self,
+        _interface_bounds: &InterfaceBounds,
+        _namespace: &Namespace,
+    ) -> bool {
         unreachable!()
     }
 
@@ -87,11 +97,12 @@ impl AbstractType for Atomic {
         _global_concrete_types: Option<&ConcreteTypesTuple>,
         _num_inferred_types: &mut usize,
         _inference_category: GenericTypeDeclarationPlaceCategory,
+        _namespace: &Namespace,
     ) -> Result<(), ()> {
         unreachable!()
     }
 
-    fn to_string(&self, _interner: &Interner) -> String {
+    fn to_string(&self, _interner: &Interner, _namespace: &Namespace) -> String {
         match self {
             Atomic::Int => String::from(INT),
             Atomic::Float => String::from(FLOAT),
@@ -102,7 +113,7 @@ impl AbstractType for Atomic {
 }
 
 impl OperatorCompatiblity for Atomic {
-    fn check_add(&self, other: &Type) -> Option<Type> {
+    fn check_add(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
             return None;
         };
@@ -125,7 +136,7 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_subtract(&self, other: &Type) -> Option<Type> {
+    fn check_subtract(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
             return None;
         };
@@ -144,7 +155,7 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_multiply(&self, other: &Type) -> Option<Type> {
+    fn check_multiply(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
             return None;
         };
@@ -163,7 +174,7 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_divide(&self, other: &Type) -> Option<Type> {
+    fn check_divide(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
             return None;
         };
@@ -182,7 +193,7 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_double_equal(&self, other: &Type) -> Option<Type> {
+    fn check_double_equal(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
             return None;
         };
@@ -208,7 +219,7 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_greater(&self, other: &Type) -> Option<Type> {
+    fn check_greater(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
             return None;
         };
@@ -234,7 +245,7 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_less(&self, other: &Type) -> Option<Type> {
+    fn check_less(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
             return None;
         };
@@ -260,7 +271,7 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_and(&self, other: &Type) -> Option<Type> {
+    fn check_and(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
             return None;
         };
@@ -273,7 +284,7 @@ impl OperatorCompatiblity for Atomic {
         }
     }
 
-    fn check_or(&self, other: &Type) -> Option<Type> {
+    fn check_or(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
             return None;
         };

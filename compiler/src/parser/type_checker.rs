@@ -25,7 +25,7 @@ use crate::error::diagnostics::{
     UnexpectedValueProvidedToEnumVariantError,
 };
 use crate::error::helper::IdentifierKind;
-use crate::scope::concrete::{ConcreteSymbolData, ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::concrete::{ConcreteSymbolIndex, ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::symbol::core::{ConcreteSymbolDataEntry, SymbolDataEntry};
 use crate::scope::symbol::function::{CallableData, PartialCallableDataPrototypeCheckError};
@@ -541,7 +541,7 @@ impl TypeChecker {
 
     fn check_func_call_expr(
         &mut self,
-        concrete_symbol: &ConcreteSymbolData<CallableData>,
+        concrete_symbol: &ConcreteSymbolIndex<CallableData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
         let func_data = &*concrete_symbol.get_core_ref();
@@ -600,7 +600,7 @@ impl TypeChecker {
 
     fn check_variable_call_expr(
         &mut self,
-        concrete_symbol_data: &ConcreteSymbolData<VariableData>,
+        concrete_symbol_data: &ConcreteSymbolIndex<VariableData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
         debug_assert!(concrete_symbol_data.concrete_types.is_none());
@@ -619,7 +619,7 @@ impl TypeChecker {
     fn check_user_defined_ty_call_expr(
         &mut self,
         name: StrId,
-        concrete_symbol_data: &ConcreteSymbolData<UserDefinedTypeData>,
+        concrete_symbol_data: &ConcreteSymbolIndex<UserDefinedTypeData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
         let UserDefinedTypeData::Struct(struct_symbol_data) = &*concrete_symbol_data.get_core_ref()
@@ -827,7 +827,7 @@ impl TypeChecker {
     fn check_enum_variant_expr(
         &mut self,
         enum_data: &EnumTypeData,
-        concrete_symbol_data: &ConcreteSymbolData<UserDefinedTypeData>,
+        concrete_symbol_data: &ConcreteSymbolIndex<UserDefinedTypeData>,
         ty_name: StrId,
         property_name: &IdentifierInUseNode,
         params: &Option<(

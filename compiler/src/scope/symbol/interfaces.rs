@@ -1,11 +1,15 @@
+use super::core::SymbolDataEntry;
+use super::core::SymbolIndex;
+use super::function::CallableData;
+use super::function::PartialConcreteCallableDataRef;
 use crate::core::string_interner::Interner;
 use crate::core::string_interner::StrId;
-use crate::scope::concrete::ConcreteSymbolData;
+use crate::scope::concrete::ConcreteSymbolIndex;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
-use crate::scope::core::SymbolData;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
 use crate::scope::mangled::MangledIdentifierName;
+use crate::scope::namespace::Namespace;
 use crate::scope::symbol::common::FieldsMap;
 use crate::scope::symbol::common::MethodsMap;
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
@@ -17,10 +21,6 @@ use rustc_hash::FxHashMap;
 use std::rc::Rc;
 use std::vec;
 use text_size::TextRange;
-
-use super::core::SymbolDataEntry;
-use super::function::CallableData;
-use super::function::PartialConcreteCallableDataRef;
 
 #[derive(Debug, Default)]
 pub struct InterfaceData {
@@ -49,8 +49,10 @@ impl InterfaceData {
         &'a self,
         field_name: &StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        namespace: &Namespace,
     ) -> Option<(Type, TextRange)> {
-        self.fields.try_field(field_name, global_concrete_types)
+        self.fields
+            .try_field(field_name, global_concrete_types, namespace)
     }
 
     pub fn try_method<'a>(
@@ -86,25 +88,25 @@ impl IsInitialized for InterfaceData {
 }
 
 #[derive(Debug, Clone)]
-pub struct InterfaceObject(pub Rc<(StrId, ConcreteSymbolData<InterfaceData>)>); // (name, semantic data)
+pub struct InterfaceObject(pub Rc<(StrId, ConcreteSymbolIndex<InterfaceData>)>); // (name, semantic data)
 
 impl InterfaceObject {
     pub fn new(
         name: StrId,
-        symbol_data: SymbolData<InterfaceData>,
+        symbol_data: SymbolIndex<InterfaceData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> Self {
         InterfaceObject(Rc::new((
             name,
-            ConcreteSymbolData::new(symbol_data, concrete_types),
+            ConcreteSymbolIndex::new(symbol_data, concrete_types),
         )))
     }
 
-    pub fn get_core_ref(&self) -> &(StrId, ConcreteSymbolData<InterfaceData>) {
+    pub fn get_core_ref(&self) -> &(StrId, ConcreteSymbolIndex<InterfaceData>) {
         self.0.as_ref()
     }
 
-    pub fn is_eq(&self, other: &InterfaceObject) -> bool {
+    pub fn is_eq(&self, other: &InterfaceObject, namespace: &Namespace) -> bool {
         if self.0.as_ref().0.eq(&other.0.as_ref().0) {
             // names of interfaces should be same
             let Some(self_concrete_types) = &self.0.as_ref().1.concrete_types else {
@@ -117,7 +119,7 @@ impl InterfaceObject {
             let other_len = other_concrete_types.len();
             debug_assert!(self_len == other_len);
             for i in 0..self_len {
-                if !self_concrete_types[i].is_eq(&other_concrete_types[i]) {
+                if !self_concrete_types[i].is_eq(&other_concrete_types[i], namespace) {
                     return false;
                 }
             }
@@ -126,12 +128,12 @@ impl InterfaceObject {
         false
     }
 
-    pub fn to_string(&self, interner: &Interner) -> String {
+    pub fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
         let mut s = interner.lookup(self.0.as_ref().0).to_string();
         match &self.0.as_ref().1.concrete_types {
             Some(concrete_types) => {
                 s.push('<');
-                s.push_str(&concrete_types.to_string(interner));
+                s.push_str(&concrete_types.to_string(interner, namespace));
                 s.push('>');
                 s
             }
@@ -167,9 +169,9 @@ impl InterfaceBounds {
         self.interfaces.len()
     }
 
-    pub fn contains(&self, obj: &InterfaceObject) -> Option<TextRange> {
+    pub fn contains(&self, obj: &InterfaceObject, namespace: &Namespace) -> Option<TextRange> {
         for (entry, decl_range) in &self.interfaces {
-            if entry.is_eq(obj) {
+            if entry.is_eq(obj, namespace) {
                 return Some(*decl_range);
             }
         }
@@ -180,8 +182,13 @@ impl InterfaceBounds {
         &self.interfaces[index].0
     }
 
-    pub fn insert(&mut self, obj: InterfaceObject, decl_range: TextRange) -> Option<TextRange> {
-        match self.contains(&obj) {
+    pub fn insert(
+        &mut self,
+        obj: InterfaceObject,
+        decl_range: TextRange,
+        namespace: &Namespace,
+    ) -> Option<TextRange> {
+        match self.contains(&obj, namespace) {
             Some(previous_decl_range) => Some(previous_decl_range),
             None => {
                 self.interfaces.push((obj, decl_range));
@@ -190,28 +197,28 @@ impl InterfaceBounds {
         }
     }
 
-    pub fn is_subset(&self, other: &InterfaceBounds) -> bool {
+    pub fn is_subset(&self, other: &InterfaceBounds, namespace: &Namespace) -> bool {
         for (self_entry, _) in &self.interfaces {
-            if other.contains(self_entry).is_none() {
+            if other.contains(self_entry, namespace).is_none() {
                 return false;
             }
         }
         true
     }
 
-    pub fn is_eq(&self, other: &InterfaceBounds) -> bool {
-        self.is_subset(other) && other.is_subset(self)
+    pub fn is_eq(&self, other: &InterfaceBounds, namespace: &Namespace) -> bool {
+        self.is_subset(other, namespace) && other.is_subset(self, namespace)
     }
 
-    pub fn to_string(&self, interner: &Interner) -> String {
+    pub fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
         let mut s = "{".to_string();
         let len = self.interfaces.len();
         if len > 0 {
-            s.push_str(&self.interfaces[0].0.to_string(interner));
+            s.push_str(&self.interfaces[0].0.to_string(interner, namespace));
         }
         for i in 1..len {
             s.push_str(" + ");
-            s.push_str(&self.interfaces[i].0.to_string(interner));
+            s.push_str(&self.interfaces[i].0.to_string(interner, namespace));
         }
         s.push('}');
         s
@@ -245,6 +252,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         interface_method_callable_data: &CallableData,
         struct_method_callable_data: &CallableData,
         range: TextRange,
+        namespace: &Namespace,
     ) -> Result<(), PartialConcreteInterfaceMethodsCheckError> {
         let interface_method_generic_type_decls = &interface_method_callable_data.generics;
         let struct_method_generic_type_decls = &struct_method_callable_data.generics;
@@ -264,7 +272,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                             let interface_generic_bound =
                                 &interface_method_generic_type_decls.0[index].1;
                             let struct_generic_bound = &struct_method_generic_type_decls.0[index].1;
-                            if !interface_generic_bound.is_eq(struct_generic_bound) {
+                            if !interface_generic_bound.is_eq(struct_generic_bound, namespace) {
                                 return Err(PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range));
                             }
                         }
@@ -272,6 +280,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                         if !interface_method_callable_data.prototype.is_structurally_eq(
                             &struct_method_callable_data.prototype,
                             &ConcretizationContext::new(self.concrete_types, None),
+                            namespace,
                         ) {
                             return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
                         }
@@ -294,6 +303,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                     if !interface_method_callable_data.prototype.is_structurally_eq(
                         &struct_method_callable_data.prototype,
                         &ConcretizationContext::new(self.concrete_types, None),
+                        namespace,
                     ) {
                         return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
                     }
@@ -306,6 +316,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
     pub fn is_struct_implements_interface_methods(
         &self,
         struct_methods: &MethodsMap,
+        namespace: &Namespace,
     ) -> Result<
         (),
         (
@@ -325,6 +336,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                         interface_method_callable_data,
                         struct_method_callable_data,
                         *range,
+                        namespace,
                     ) {
                         errors.push((interface_method_name, err));
                     }
@@ -347,12 +359,12 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
 }
 
 #[derive(Debug)]
-pub struct InterfaceSymbolData(pub SymbolData<InterfaceData>);
+pub struct InterfaceSymbolData(pub SymbolIndex<InterfaceData>);
 
 impl AbstractSymbol for InterfaceSymbolData {
     type SymbolTy = InterfaceData;
     fn get_entry(&self) -> SymbolDataEntry {
-        SymbolDataEntry::Interface(self.0.clone())
+        SymbolDataEntry::Interface(self.0)
     }
 
     fn check_generic_type_args(
@@ -361,9 +373,10 @@ impl AbstractSymbol for InterfaceSymbolData {
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         interner: &Interner,
+        namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(!is_concrete_types_none_allowed);
-        let interface_data = self.0.get_core_ref();
+        let interface_data = namespace.interfaces.get_symbol_data_ref(self.0).data;
         let generic_type_decls = &interface_data.generics;
         check_concrete_types_bounded_by_interfaces(
             generic_type_decls,
@@ -371,16 +384,17 @@ impl AbstractSymbol for InterfaceSymbolData {
             type_ranges,
             false,
             interner,
+            namespace,
         )
     }
 
-    fn get_mangled_name(&self) -> MangledIdentifierName<InterfaceData> {
+    fn get_mangled_name(&self, _namespace: &Namespace) -> MangledIdentifierName<InterfaceData> {
         unreachable!()
     }
 }
 
-impl From<SymbolData<InterfaceData>> for InterfaceSymbolData {
-    fn from(value: SymbolData<InterfaceData>) -> Self {
+impl From<SymbolIndex<InterfaceData>> for InterfaceSymbolData {
+    fn from(value: SymbolIndex<InterfaceData>) -> Self {
         InterfaceSymbolData(value)
     }
 }

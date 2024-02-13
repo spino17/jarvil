@@ -1,3 +1,4 @@
+use crate::scope::namespace::{self, Namespace};
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
 use crate::scope::traits::IsInitialized;
 use crate::{
@@ -28,15 +29,16 @@ impl EnumTypeData {
         &'a self,
         variant_name: StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        namespace: &Namespace,
     ) -> Option<Option<Type>> {
         for (curr_variant_name, ty, _) in &self.variants {
             if *curr_variant_name == variant_name {
                 let Some(ty) = ty else { return Some(None) };
                 if ty.is_concretization_required() {
-                    return Some(Some(ty.concretize(&ConcretizationContext::new(
-                        global_concrete_types,
-                        None,
-                    ))));
+                    return Some(Some(ty.concretize(
+                        &ConcretizationContext::new(global_concrete_types, None),
+                        namespace,
+                    )));
                 } else {
                     return Some(Some(ty.clone()));
                 }

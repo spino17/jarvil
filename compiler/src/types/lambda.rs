@@ -5,7 +5,8 @@ use crate::parser::type_checker::{
     InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
 };
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
-use crate::scope::core::SymbolData;
+use crate::scope::namespace::Namespace;
+use crate::scope::symbol::core::SymbolIndex;
 use crate::scope::symbol::function::CallablePrototypeData;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
@@ -14,7 +15,7 @@ use crate::types::core::{AbstractType, CoreType, Type};
 
 #[derive(Debug)]
 pub struct NamedLambdaCore {
-    symbol_data: SymbolData<UserDefinedTypeData>,
+    symbol_data: SymbolIndex<UserDefinedTypeData>,
     concrete_types: Option<ConcreteTypesTuple>,
 }
 
@@ -26,11 +27,11 @@ pub enum Lambda {
 
 impl Lambda {
     pub fn new_with_named(
-        symbol_data: &SymbolData<UserDefinedTypeData>,
+        symbol_data: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> Self {
         Lambda::Named(NamedLambdaCore {
-            symbol_data: symbol_data.clone(),
+            symbol_data,
             concrete_types,
         })
     }
@@ -55,9 +56,17 @@ impl Lambda {
         match self {
             Lambda::Named(semantic_data) => {
                 let concrete_types = &semantic_data.concrete_types;
-                let symbol_data = semantic_data.symbol_data.get_core_ref();
+                let symbol_data = type_checker
+                    .semantic_state_db
+                    .namespace
+                    .types
+                    .get_symbol_data_ref(semantic_data.symbol_data)
+                    .data;
                 let lambda_data = symbol_data.get_lambda_data_ref();
-                let prototype_result = lambda_data.get_concrete_prototype(concrete_types.as_ref());
+                let prototype_result = lambda_data.get_concrete_prototype(
+                    concrete_types.as_ref(),
+                    &type_checker.semantic_state_db.namespace,
+                );
                 let expected_param_types = &prototype_result.params;
                 let return_type = &prototype_result.return_type;
                 type_checker.check_params_type_and_count(expected_param_types, received_params)?;
@@ -74,41 +83,54 @@ impl Lambda {
 }
 
 impl AbstractType for Lambda {
-    fn is_eq(&self, other_ty: &Type) -> bool {
+    fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Lambda(other_data) => {
                 // Lambda type has structural equivalence unlike struct types which are only compared by it's name.
                 match self {
                     Lambda::Named(self_named) => {
-                        let self_symbol_data = self_named.symbol_data.get_core_ref();
+                        let self_symbol_data = namespace
+                            .types
+                            .get_symbol_data_ref(self_named.symbol_data)
+                            .data;
                         let self_data = self_symbol_data.get_lambda_data_ref();
                         let self_concrete_types = &self_named.concrete_types;
-                        let self_prototype_result =
-                            self_data.get_concrete_prototype(self_concrete_types.as_ref());
+                        let self_prototype_result = self_data
+                            .get_concrete_prototype(self_concrete_types.as_ref(), namespace);
                         match other_data {
                             Lambda::Named(other_named) => {
-                                let other_symbol_data = other_named.symbol_data.get_core_ref();
+                                let other_symbol_data = namespace
+                                    .types
+                                    .get_symbol_data_ref(other_named.symbol_data)
+                                    .data;
                                 let other_data = other_symbol_data.get_lambda_data_ref();
                                 let other_concrete_types = &other_named.concrete_types;
-                                let other_prototype_result = other_data
-                                    .get_concrete_prototype(other_concrete_types.as_ref());
-                                other_prototype_result.is_eq(&self_prototype_result)
+                                let other_prototype_result = other_data.get_concrete_prototype(
+                                    other_concrete_types.as_ref(),
+                                    namespace,
+                                );
+                                other_prototype_result.is_eq(&self_prototype_result, namespace)
                             }
                             Lambda::Unnamed(other_prototype) => {
-                                self_prototype_result.is_eq(other_prototype)
+                                self_prototype_result.is_eq(other_prototype, namespace)
                             }
                         }
                     }
                     Lambda::Unnamed(self_prototype) => match other_data {
                         Lambda::Named(other_named) => {
-                            let other_symbol_data = other_named.symbol_data.get_core_ref();
+                            let other_symbol_data = namespace
+                                .types
+                                .get_symbol_data_ref(other_named.symbol_data)
+                                .data;
                             let other_data = other_symbol_data.get_lambda_data_ref();
                             let other_concrete_types = &other_named.concrete_types;
-                            let other_prototype_result =
-                                other_data.get_concrete_prototype(other_concrete_types.as_ref());
-                            other_prototype_result.is_eq(self_prototype)
+                            let other_prototype_result = other_data
+                                .get_concrete_prototype(other_concrete_types.as_ref(), namespace);
+                            other_prototype_result.is_eq(self_prototype, namespace)
                         }
-                        Lambda::Unnamed(other_prototype) => self_prototype.is_eq(other_prototype),
+                        Lambda::Unnamed(other_prototype) => {
+                            self_prototype.is_eq(other_prototype, namespace)
+                        }
                     },
                 }
             }
@@ -117,7 +139,12 @@ impl AbstractType for Lambda {
         }
     }
 
-    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+    fn is_structurally_eq(
+        &self,
+        other_ty: &Type,
+        context: &ConcretizationContext,
+        namespace: &Namespace,
+    ) -> bool {
         match other_ty.0.as_ref() {
             CoreType::Lambda(other_data) => match self {
                 Lambda::Named(self_concrete_symbol_data) => {
@@ -142,9 +169,11 @@ impl AbstractType for Lambda {
 
                     debug_assert!(self_len == other_len);
                     for i in 0..self_len {
-                        if !self_concrete_types[i]
-                            .is_structurally_eq(&other_concrete_types[i], context)
-                        {
+                        if !self_concrete_types[i].is_structurally_eq(
+                            &other_concrete_types[i],
+                            context,
+                            namespace,
+                        ) {
                             return false;
                         }
                     }
@@ -156,18 +185,18 @@ impl AbstractType for Lambda {
         }
     }
 
-    fn concretize(&self, context: &ConcretizationContext) -> Type {
+    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
         match self {
             Lambda::Named(concrete_symbol_data) => {
                 let Some(concrete_types) = &concrete_symbol_data.concrete_types else {
-                    return Type::new_with_lambda_named(&concrete_symbol_data.symbol_data, None);
+                    return Type::new_with_lambda_named(concrete_symbol_data.symbol_data, None);
                 };
                 let mut concretized_concrete_types = vec![];
                 for ty in concrete_types.iter() {
-                    concretized_concrete_types.push(ty.concretize(context));
+                    concretized_concrete_types.push(ty.concretize(context, namespace));
                 }
                 return Type::new_with_lambda_named(
-                    &concrete_symbol_data.symbol_data,
+                    concrete_symbol_data.symbol_data,
                     Some(ConcreteTypesTuple::new(concretized_concrete_types)),
                 );
             }
@@ -175,7 +204,11 @@ impl AbstractType for Lambda {
         }
     }
 
-    fn is_type_bounded_by_interfaces(&self, _interface_bounds: &InterfaceBounds) -> bool {
+    fn is_type_bounded_by_interfaces(
+        &self,
+        _interface_bounds: &InterfaceBounds,
+        namespace: &Namespace,
+    ) -> bool {
         unreachable!()
     }
 
@@ -186,28 +219,36 @@ impl AbstractType for Lambda {
         global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
+        namespace: &Namespace,
     ) -> Result<(), ()> {
         match received_ty.0.as_ref() {
             CoreType::Lambda(lambda_ty) => match self {
                 Lambda::Named(self_named) => {
-                    let self_symbol_data = self_named.symbol_data.get_core_ref();
+                    let self_symbol_data = namespace
+                        .types
+                        .get_symbol_data_ref(self_named.symbol_data)
+                        .data;
                     let self_data = self_symbol_data.get_lambda_data_ref();
                     let self_concrete_types = &self_named.concrete_types;
                     let self_prototype_result =
-                        self_data.get_concrete_prototype(self_concrete_types.as_ref());
+                        self_data.get_concrete_prototype(self_concrete_types.as_ref(), namespace);
                     match lambda_ty {
                         Lambda::Named(other_named) => {
-                            let other_symbol_data = other_named.symbol_data.get_core_ref();
+                            let other_symbol_data = namespace
+                                .types
+                                .get_symbol_data_ref(other_named.symbol_data)
+                                .data;
                             let other_data = other_symbol_data.get_lambda_data_ref();
                             let other_concrete_types = &other_named.concrete_types;
-                            let other_prototype_result =
-                                other_data.get_concrete_prototype(other_concrete_types.as_ref());
+                            let other_prototype_result = other_data
+                                .get_concrete_prototype(other_concrete_types.as_ref(), namespace);
                             self_prototype_result.try_infer_type(
                                 &other_prototype_result,
                                 inferred_concrete_types,
                                 global_concrete_types,
                                 num_inferred_types,
                                 inference_category,
+                                namespace,
                             )
                         }
                         Lambda::Unnamed(other_prototype) => self_prototype_result.try_infer_type(
@@ -216,6 +257,7 @@ impl AbstractType for Lambda {
                             global_concrete_types,
                             num_inferred_types,
                             inference_category,
+                            namespace,
                         ),
                     }
                 }
@@ -225,7 +267,7 @@ impl AbstractType for Lambda {
         }
     }
 
-    fn to_string(&self, interner: &Interner) -> String {
+    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
         match self {
             Lambda::Named(semantic_data) => {
                 let mut s = interner
@@ -234,7 +276,7 @@ impl AbstractType for Lambda {
                 match &semantic_data.concrete_types {
                     Some(concrete_types) => {
                         s.push('<');
-                        s.push_str(&concrete_types.to_string(interner));
+                        s.push_str(&concrete_types.to_string(interner, namespace));
                         s.push('>');
                         s
                     }
@@ -250,13 +292,13 @@ impl AbstractType for Lambda {
                     if flag {
                         params_str.push_str(", ")
                     }
-                    params_str.push_str(&param.to_string(interner));
+                    params_str.push_str(&param.to_string(interner, namespace));
                     flag = true;
                 }
                 format!(
                     "lambda({}) -> {}",
                     params_str,
-                    self_return_type.to_string(interner)
+                    self_return_type.to_string(interner, namespace)
                 )
             }
         }
@@ -264,39 +306,39 @@ impl AbstractType for Lambda {
 }
 
 impl OperatorCompatiblity for Lambda {
-    fn check_add(&self, _other: &Type) -> Option<Type> {
+    fn check_add(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_subtract(&self, _other: &Type) -> Option<Type> {
+    fn check_subtract(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_multiply(&self, _other: &Type) -> Option<Type> {
+    fn check_multiply(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_divide(&self, _other: &Type) -> Option<Type> {
+    fn check_divide(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_double_equal(&self, _other: &Type) -> Option<Type> {
+    fn check_double_equal(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_greater(&self, _other: &Type) -> Option<Type> {
+    fn check_greater(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_less(&self, _other: &Type) -> Option<Type> {
+    fn check_less(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_and(&self, _other: &Type) -> Option<Type> {
+    fn check_and(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 
-    fn check_or(&self, _other: &Type) -> Option<Type> {
+    fn check_or(&self, _other: &Type, _namespace: &Namespace) -> Option<Type> {
         None
     }
 }

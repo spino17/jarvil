@@ -1,11 +1,11 @@
 use super::enum_type::EnumTypeData;
 use crate::core::string_interner::Interner;
 use crate::scope::concrete::ConcreteTypesTuple;
-use crate::scope::core::SymbolData;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
 use crate::scope::mangled::MangledIdentifierName;
-use crate::scope::symbol::core::SymbolDataEntry;
+use crate::scope::namespace::Namespace;
+use crate::scope::symbol::core::{SymbolDataEntry, SymbolIndex};
 use crate::scope::traits::{AbstractSymbol, IsInitialized};
 use crate::scope::{
     symbol::types::generic_type::GenericTypeData, symbol::types::lambda_type::LambdaTypeData,
@@ -125,12 +125,12 @@ impl IsInitialized for UserDefinedTypeData {
 }
 
 #[derive(Debug)]
-pub struct UserDefinedTypeSymbolData(pub SymbolData<UserDefinedTypeData>);
+pub struct UserDefinedTypeSymbolData(pub SymbolIndex<UserDefinedTypeData>);
 
 impl AbstractSymbol for UserDefinedTypeSymbolData {
     type SymbolTy = UserDefinedTypeData;
     fn get_entry(&self) -> SymbolDataEntry {
-        SymbolDataEntry::Type(self.0.clone())
+        SymbolDataEntry::Type(self.0)
     }
 
     fn check_generic_type_args(
@@ -139,8 +139,9 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
         type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         interner: &Interner,
+        namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
-        match &*self.0.get_core_ref() {
+        match namespace.types.get_symbol_data_ref(self.0).data {
             UserDefinedTypeData::Struct(struct_data) => {
                 let generic_type_decls = &struct_data.generics;
                 check_concrete_types_bounded_by_interfaces(
@@ -149,6 +150,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
                     type_ranges,
                     is_concrete_types_none_allowed,
                     interner,
+                    namespace,
                 )
             }
             UserDefinedTypeData::Lambda(lambda_data) => {
@@ -159,6 +161,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
                     type_ranges,
                     false,
                     interner,
+                    namespace,
                 )
             }
             UserDefinedTypeData::Enum(enum_data) => {
@@ -169,6 +172,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
                     type_ranges,
                     false,
                     interner,
+                    namespace,
                 )
             }
             UserDefinedTypeData::Generic(_) => {
@@ -180,13 +184,13 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
         }
     }
 
-    fn get_mangled_name(&self) -> MangledIdentifierName<Self::SymbolTy> {
-        self.0.get_mangled_name()
+    fn get_mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<Self::SymbolTy> {
+        self.0.get_mangled_name(&namespace.types)
     }
 }
 
-impl From<SymbolData<UserDefinedTypeData>> for UserDefinedTypeSymbolData {
-    fn from(value: SymbolData<UserDefinedTypeData>) -> Self {
+impl From<SymbolIndex<UserDefinedTypeData>> for UserDefinedTypeSymbolData {
+    fn from(value: SymbolIndex<UserDefinedTypeData>) -> Self {
         UserDefinedTypeSymbolData(value)
     }
 }

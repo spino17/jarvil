@@ -1,9 +1,9 @@
+use super::namespace::Namespace;
+use super::symbol::core::SymbolIndex;
 use crate::core::string_interner::Interner;
-use crate::scope::core::SymbolData;
 use crate::scope::traits::IsInitialized;
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
-use std::cell::Ref;
 use std::ops::Index;
 use std::slice::Iter;
 
@@ -27,13 +27,16 @@ impl ConcreteTypesTuple {
         self.0.len()
     }
 
-    pub fn to_string(&self, interner: &Interner) -> String {
+    pub fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
         let mut s = "".to_string();
         let concrete_types = &self.0;
         let len = concrete_types.len();
-        s.push_str(&concrete_types[0].to_string(interner));
+        s.push_str(&concrete_types[0].to_string(interner, namespace));
         for i in 1..len {
-            s.push_str(&format!(", {}", concrete_types[i].to_string(interner)));
+            s.push_str(&format!(
+                ", {}",
+                concrete_types[i].to_string(interner, namespace)
+            ));
         }
         s
     }
@@ -47,30 +50,26 @@ impl Index<usize> for ConcreteTypesTuple {
 }
 
 #[derive(Debug)]
-pub struct ConcreteSymbolData<T: IsInitialized> {
-    pub symbol_data: SymbolData<T>,
+pub struct ConcreteSymbolIndex<T: IsInitialized> {
+    pub symbol_ref: SymbolIndex<T>,
     pub concrete_types: Option<ConcreteTypesTuple>, // This will be `None` for symbol data which does not have any generic type params
 }
 
-impl<T: IsInitialized> Clone for ConcreteSymbolData<T> {
+impl<T: IsInitialized> Clone for ConcreteSymbolIndex<T> {
     fn clone(&self) -> Self {
-        ConcreteSymbolData {
-            symbol_data: self.symbol_data.clone(),
-            concrete_types: self.concrete_types.as_ref().cloned(),
+        ConcreteSymbolIndex {
+            symbol_ref: self.symbol_ref,
+            concrete_types: self.concrete_types.clone(),
         }
     }
 }
 
-impl<T: IsInitialized> ConcreteSymbolData<T> {
-    pub fn new(symbol_data: SymbolData<T>, concrete_types: Option<ConcreteTypesTuple>) -> Self {
-        ConcreteSymbolData {
-            symbol_data,
+impl<T: IsInitialized> ConcreteSymbolIndex<T> {
+    pub fn new(symbol_ref: SymbolIndex<T>, concrete_types: Option<ConcreteTypesTuple>) -> Self {
+        ConcreteSymbolIndex {
+            symbol_ref,
             concrete_types,
         }
-    }
-
-    pub fn get_core_ref(&self) -> Ref<'_, T> {
-        self.symbol_data.get_core_ref()
     }
 
     pub fn get_concrete_types(&self) -> &Option<ConcreteTypesTuple> {

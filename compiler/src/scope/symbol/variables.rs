@@ -1,9 +1,9 @@
-use super::core::SymbolDataEntry;
+use super::core::{SymbolDataEntry, SymbolIndex};
 use crate::core::string_interner::Interner;
 use crate::scope::concrete::ConcreteTypesTuple;
-use crate::scope::core::SymbolData;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::mangled::MangledIdentifierName;
+use crate::scope::namespace::Namespace;
 use crate::scope::traits::{AbstractSymbol, IsInitialized};
 use crate::types::core::Type;
 use text_size::TextRange;
@@ -52,12 +52,12 @@ impl Default for VariableData {
 }
 
 #[derive(Debug)]
-pub struct VariableSymbolData(pub SymbolData<VariableData>);
+pub struct VariableSymbolData(pub SymbolIndex<VariableData>);
 
 impl AbstractSymbol for VariableSymbolData {
     type SymbolTy = VariableData;
     fn get_entry(&self) -> SymbolDataEntry {
-        SymbolDataEntry::Variable(self.0.clone())
+        SymbolDataEntry::Variable(self.0)
     }
 
     fn check_generic_type_args(
@@ -66,6 +66,7 @@ impl AbstractSymbol for VariableSymbolData {
         _type_ranges: &Option<Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         _interner: &Interner,
+        _namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(!is_concrete_types_none_allowed);
         if concrete_types.is_some() {
@@ -74,13 +75,13 @@ impl AbstractSymbol for VariableSymbolData {
         Ok(())
     }
 
-    fn get_mangled_name(&self) -> MangledIdentifierName<VariableData> {
-        self.0.get_mangled_name()
+    fn get_mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<VariableData> {
+        self.0.get_mangled_name(&namespace.variables)
     }
 }
 
-impl From<SymbolData<VariableData>> for VariableSymbolData {
-    fn from(value: SymbolData<VariableData>) -> Self {
+impl From<SymbolIndex<VariableData>> for VariableSymbolData {
+    fn from(value: SymbolIndex<VariableData>) -> Self {
         VariableSymbolData(value)
     }
 }
