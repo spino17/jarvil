@@ -1,25 +1,13 @@
 use super::{
     lookup::IntermediateLookupResult,
     symbol::core::{IdentDeclId, Symbol, SymbolIndex},
-    symbol::function::CallableData,
-    symbol::interfaces::InterfaceData,
-    symbol::types::core::UserDefinedTypeData,
-    symbol::variables::VariableData,
     traits::IsInitialized,
 };
 use crate::{core::string_interner::StrId, parser::resolver::BlockKind};
 use rustc_hash::FxHashMap;
-use std::marker::PhantomData;
+use std::ops::Index;
+use std::{marker::PhantomData, ops::IndexMut};
 use text_size::TextRange;
-
-#[derive(Debug, Clone, Copy)]
-pub struct ScopeIndex(usize);
-
-impl ScopeIndex {
-    fn index(&self) -> usize {
-        self.0
-    }
-}
 
 #[derive(Debug)]
 pub struct Scope<T> {
@@ -51,13 +39,29 @@ impl<T> Scope<T> {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct ScopeIndex(usize);
+
 #[derive(Debug)]
 pub struct ScopeArena<T: IsInitialized> {
-    arena: Vec<Box<Scope<T>>>,
+    pub arena: Vec<Box<Scope<T>>>,
+}
+
+impl<T: IsInitialized> Index<ScopeIndex> for ScopeArena<T> {
+    type Output = Scope<T>;
+    fn index(&self, scope_index: ScopeIndex) -> &Self::Output {
+        &self.arena[scope_index.0]
+    }
+}
+
+impl<T: IsInitialized> IndexMut<ScopeIndex> for ScopeArena<T> {
+    fn index_mut(&mut self, scope_index: ScopeIndex) -> &mut Self::Output {
+        &mut self.arena[scope_index.0]
+    }
 }
 
 impl<T: IsInitialized> ScopeArena<T> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         ScopeArena {
             arena: vec![Box::new(Scope {
                 table: FxHashMap::default(),
@@ -67,7 +71,50 @@ impl<T: IsInitialized> ScopeArena<T> {
         }
     }
 
-    fn add_new_scope(
+    pub fn set(
+        &mut self,
+        scope_index: ScopeIndex,
+        ident_name: StrId,
+        data: T,
+        decl_line_number: TextRange,
+        unique_id: Option<IdentDeclId>,
+    ) -> SymbolIndex<T> {
+        self[scope_index].set(ident_name, data, decl_line_number, unique_id);
+        SymbolIndex {
+            scope_index,
+            ident_name,
+            phanton: PhantomData,
+        }
+    }
+
+    pub fn get(&self, scope_index: ScopeIndex, key: StrId) -> Option<SymbolIndex<T>> {
+        if self[scope_index].get(&key).is_none() {
+            return None;
+        }
+        Some(SymbolIndex {
+            scope_index,
+            ident_name: key,
+            phanton: PhantomData,
+        })
+    }
+
+    pub fn get_symbol_data_ref(&self, index: SymbolIndex<T>) -> &Symbol<T> {
+        let scope = &self[index.scope_index];
+        let Some(symbol_ref) = scope.get(&index.ident_name) else {
+            unreachable!()
+        };
+        symbol_ref
+    }
+
+    pub fn get_symbol_data_mut_ref(&mut self, index: SymbolIndex<T>) -> &mut Symbol<T> {
+        let scope = &mut self[index.scope_index];
+        let Some(symbol_ref) = scope.get_mut(&index.ident_name) else {
+            unreachable!()
+        };
+        symbol_ref
+    }
+
+    pub fn add_new_scope(
         &mut self,
         parent_scope_index: ScopeIndex,
         scope_kind: BlockKind,
@@ -81,56 +128,13 @@ impl<T: IsInitialized> ScopeArena<T> {
         ScopeIndex(new_scope_index)
     }
 
-    fn set(
-        &mut self,
-        scope_index: ScopeIndex,
-        ident_name: StrId,
-        data: T,
-        decl_line_number: TextRange,
-        unique_id: Option<IdentDeclId>,
-    ) -> SymbolIndex<T> {
-        self.arena[scope_index.index()].set(ident_name, data, decl_line_number, unique_id);
-        SymbolIndex {
-            scope_index,
-            ident_name,
-            phanton: PhantomData,
-        }
-    }
-
-    fn get(&self, scope_index: ScopeIndex, key: StrId) -> Option<SymbolIndex<T>> {
-        if self.arena[scope_index.index()].get(&key).is_none() {
-            return None;
-        }
-        Some(SymbolIndex {
-            scope_index,
-            ident_name: key,
-            phanton: PhantomData,
-        })
-    }
-
-    fn get_symbol_data_ref(&self, index: SymbolIndex<T>) -> &Symbol<T> {
-        let scope = &self.arena[index.scope_index.index()];
-        let Some(symbol_ref) = scope.get(&index.ident_name) else {
-            unreachable!()
-        };
-        symbol_ref
-    }
-
-    fn get_symbol_data_mut_ref(&mut self, index: SymbolIndex<T>) -> &mut Symbol<T> {
-        let scope = &mut self.arena[index.scope_index.index()];
-        let Some(symbol_ref) = scope.get_mut(&index.ident_name) else {
-            unreachable!()
-        };
-        symbol_ref
-    }
-
     fn lookup(
         &self,
         scope_index: ScopeIndex,
         key: StrId,
     ) -> Option<(SymbolIndex<T>, usize, Option<usize>)> {
         let mut enclosing_func_scope_depth: Option<usize> = None;
-        let scope = &self.arena[scope_index.index()];
+        let scope = &self[scope_index];
         let mut previous_scope_kind = scope.scope_kind;
         if scope.get(&key).is_some() {
             return Some((
@@ -149,7 +153,7 @@ impl<T: IsInitialized> ScopeArena<T> {
             if enclosing_func_scope_depth.is_none() && previous_scope_kind.has_callable_body() {
                 enclosing_func_scope_depth = Some(depth);
             }
-            let scope = &self.arena[scope_index.index()];
+            let scope = &self[scope_index];
             if scope.get(&key).is_some() {
                 return Some((
                     SymbolIndex {
@@ -168,7 +172,7 @@ impl<T: IsInitialized> ScopeArena<T> {
         None
     }
 
-    fn lookup_with_is_init(
+    pub fn lookup_with_is_init(
         &self,
         scope_index: ScopeIndex,
         key: StrId,
@@ -184,38 +188,8 @@ impl<T: IsInitialized> ScopeArena<T> {
             IntermediateLookupResult::NotInitialized(symbol_data.decl_line_number())
         }
     }
-}
 
-#[derive(Debug)]
-pub struct Namespace {
-    pub variables: ScopeArena<VariableData>,
-    pub types: ScopeArena<UserDefinedTypeData>,
-    pub functions: ScopeArena<CallableData>,
-    pub interfaces: ScopeArena<InterfaceData>,
-}
-
-impl Namespace {
-    pub fn new() -> Self {
-        Namespace {
-            variables: ScopeArena::new(),
-            types: ScopeArena::new(),
-            functions: ScopeArena::new(),
-            interfaces: ScopeArena::new(),
-        }
-    }
-
-    pub fn parent_scope_index(&self, scope_index: ScopeIndex) -> Option<ScopeIndex> {
-        self.variables.arena[scope_index.index()].parent_scope
-    }
-
-    pub fn open_scope(
-        &mut self,
-        curr_scope_index: ScopeIndex,
-        scope_kind: BlockKind,
-    ) -> ScopeIndex {
-        self.variables.add_new_scope(curr_scope_index, scope_kind);
-        self.types.add_new_scope(curr_scope_index, scope_kind);
-        self.functions.add_new_scope(curr_scope_index, scope_kind);
-        self.interfaces.add_new_scope(curr_scope_index, scope_kind)
+    pub fn parent_scope(&self, scope_index: ScopeIndex) -> Option<ScopeIndex> {
+        self[scope_index].parent_scope
     }
 }

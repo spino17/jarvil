@@ -1,18 +1,17 @@
+use super::{
+    function::CallableData, interfaces::InterfaceData, types::core::UserDefinedTypeData,
+    variables::VariableData,
+};
 use crate::{
     core::string_interner::StrId,
     scope::{
         concrete::{ConcreteSymbolData, ConcreteTypesTuple},
         core::SymbolData,
-        new_core::ScopeIndex,
+        scope::ScopeIndex,
     },
 };
 use std::marker::PhantomData;
 use text_size::TextRange;
-
-use super::{
-    function::CallableData, interfaces::InterfaceData, types::core::UserDefinedTypeData,
-    variables::VariableData,
-};
 
 #[derive(Debug)]
 pub struct Symbol<T> {

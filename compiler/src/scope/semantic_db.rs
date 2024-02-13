@@ -23,11 +23,6 @@ use crate::{
 use rustc_hash::{FxHashMap, FxHashSet};
 use text_size::TextRange;
 
-pub enum IdentifierNodeWrapper<'a> {
-    InDecl(&'a OkIdentifierInDeclNode),
-    InUse(&'a OkIdentifierInUseNode),
-}
-
 // This contains all the relevant semantic information collected over various AST passes
 pub struct SemanticStateDatabase {
     pub namespace: Namespace,
