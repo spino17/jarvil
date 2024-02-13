@@ -21,16 +21,20 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::concrete::ConcreteTypesTuple;
-use crate::scope::core::{
-    AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData, LookupData,
-    LookupResult, MangledIdentifierName, UserDefinedTypeSymbolData, VariableSymbolData,
-};
+use crate::scope::core::{LookupData, LookupResult};
 use crate::scope::errors::GenericTypeArgsCheckError;
-use crate::scope::function::{CallableKind, CallablePrototypeData};
-use crate::scope::handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry};
-use crate::scope::interfaces::{InterfaceBounds, InterfaceObject};
-use crate::scope::types::core::UserDefineTypeKind;
-use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::mangled::MangledIdentifierName;
+use crate::scope::semantic_db::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry};
+use crate::scope::symbol::function::FunctionSymbolData;
+use crate::scope::symbol::function::{CallableKind, CallablePrototypeData};
+use crate::scope::symbol::interfaces::InterfaceSymbolData;
+use crate::scope::symbol::interfaces::{InterfaceBounds, InterfaceObject};
+use crate::scope::symbol::types::core::UserDefineTypeKind;
+use crate::scope::symbol::types::core::UserDefinedTypeSymbolData;
+use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::symbol::variables::VariableSymbolData;
+use crate::scope::traits::AbstractSymbol;
 use crate::types::core::AbstractType;
 use crate::{
     ast::{
@@ -44,8 +48,8 @@ use crate::{
     error::diagnostics::{Diagnostics, IdentifierAlreadyDeclaredError, IdentifierNotDeclaredError},
     scope::{
         core::{Namespace, SymbolData},
-        function::CallableData,
-        variables::VariableData,
+        symbol::function::CallableData,
+        symbol::variables::VariableData,
     },
     types::core::Type,
 };
@@ -55,7 +59,7 @@ use std::vec;
 use text_size::TextRange;
 
 #[derive(Debug)]
-pub enum ResolveResult<T: AbstractSymbolData> {
+pub enum ResolveResult<T: AbstractSymbol> {
     Ok(LookupData<T>, Option<ConcreteTypesTuple>, StrId),
     InvalidGenericTypeArgsProvided(GenericTypeArgsCheckError),
     NotInitialized(TextRange, StrId),
@@ -291,7 +295,7 @@ impl Resolver {
             .insert(node.clone(), symbol_data);
     }
 
-    pub fn bind_decl_to_identifier_in_use<T: AbstractSymbolData>(
+    pub fn bind_decl_to_identifier_in_use<T: AbstractSymbol>(
         &mut self,
         node: &OkIdentifierInUseNode,
         symbol_data: &T,
@@ -324,10 +328,7 @@ impl Resolver {
             .insert(node.clone(), symbol_data);
     }
 
-    pub fn try_resolving<
-        T: AbstractSymbolData,
-        U: Fn(&Namespace, usize, &StrId) -> LookupResult<T>,
-    >(
+    pub fn try_resolving<T: AbstractSymbol, U: Fn(&Namespace, usize, &StrId) -> LookupResult<T>>(
         &mut self,
         identifier: &OkIdentifierInUseNode,
         lookup_fn: U,
@@ -461,7 +462,7 @@ impl Resolver {
     }
 
     pub fn try_declare_and_bind<
-        T: AbstractSymbolData,
+        T: AbstractSymbol,
         U: Fn(&mut Namespace, usize, StrId, TextRange, usize) -> Result<T, (StrId, TextRange)>,
     >(
         &mut self,

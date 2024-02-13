@@ -26,16 +26,16 @@ use crate::error::diagnostics::{
 };
 use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::{ConcreteSymbolData, ConcreteTypesTuple, ConcretizationContext};
-use crate::scope::core::GenericTypeParams;
 use crate::scope::errors::GenericTypeArgsCheckError;
-use crate::scope::function::{CallableData, PartialCallableDataPrototypeCheckError};
-use crate::scope::handler::{ConcreteSymbolDataEntry, SymbolDataEntry};
-use crate::scope::types::enum_type::EnumTypeData;
-use crate::scope::types::generic_type::{
+use crate::scope::semantic_db::{ConcreteSymbolDataEntry, SymbolDataEntry};
+use crate::scope::symbol::function::{CallableData, PartialCallableDataPrototypeCheckError};
+use crate::scope::symbol::types::enum_type::EnumTypeData;
+use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::symbol::types::generic_type::{
     GenericTypeDeclarationPlaceCategory, GenericTypePropertyQueryResult,
 };
-use crate::scope::types::struct_type::StructTypeData;
-use crate::scope::variables::VariableData;
+use crate::scope::symbol::types::struct_type::StructTypeData;
+use crate::scope::symbol::variables::VariableData;
 use crate::types::array::core::Array;
 use crate::types::generic::Generic;
 use crate::types::hashmap::core::HashMap;
@@ -76,8 +76,8 @@ use crate::{
     },
     lexer::token::{BinaryOperatorKind, UnaryOperatorKind},
     scope::{
-        function::CallablePrototypeData, handler::SemanticStateDatabase,
-        types::core::UserDefinedTypeData,
+        semantic_db::SemanticStateDatabase, symbol::function::CallablePrototypeData,
+        symbol::types::core::UserDefinedTypeData,
     },
     types::{
         atomic::Atomic,

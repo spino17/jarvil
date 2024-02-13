@@ -4,8 +4,8 @@ use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::{ConcreteTypesTuple, ConcretizationContext},
-        interfaces::InterfaceBounds,
-        types::generic_type::GenericTypeDeclarationPlaceCategory,
+        symbol::interfaces::InterfaceBounds,
+        symbol::types::generic_type::GenericTypeDeclarationPlaceCategory,
     },
 };
 

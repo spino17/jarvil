@@ -5,7 +5,7 @@ use crate::{
     core::common::RefOrOwned,
     scope::{
         concrete::ConcreteTypesTuple,
-        function::{CallableData, CallablePrototypeData},
+        symbol::function::{CallableData, CallablePrototypeData},
     },
 };
 use rustc_hash::FxHashMap;

@@ -1,12 +1,11 @@
 use crate::core::string_interner::StrId;
-use crate::scope::common::{FieldsMap, MethodsMap};
 use crate::scope::concrete::ConcreteTypesTuple;
-use crate::scope::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
-use crate::scope::interfaces::InterfaceBounds;
-use crate::{
-    scope::core::{AbstractConcreteTypesHandler, GenericTypeParams},
-    types::core::Type,
-};
+use crate::scope::symbol::common::{FieldsMap, MethodsMap};
+use crate::scope::symbol::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
+use crate::scope::symbol::interfaces::InterfaceBounds;
+use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::traits::IsInitialized;
+use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
 
@@ -77,7 +76,7 @@ impl StructTypeData {
     }
 }
 
-impl AbstractConcreteTypesHandler for StructTypeData {
+impl IsInitialized for StructTypeData {
     fn is_initialized(&self) -> bool {
         self.is_init
     }

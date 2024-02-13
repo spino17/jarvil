@@ -1,16 +1,19 @@
-use super::concrete::ConcreteTypesTuple;
-use super::errors::GenericTypeArgsCheckError;
-use super::function::{CallableData, CallableKind};
-use super::handler::SymbolDataEntry;
-use super::helper::check_concrete_types_bounded_by_interfaces;
-use super::interfaces::{InterfaceBounds, InterfaceData};
-use super::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
-use super::types::lambda_type::LambdaTypeData;
-use crate::core::string_interner::{Interner, StrId};
+use super::symbol::function::{CallableData, CallableKind};
+use super::symbol::interfaces::{InterfaceBounds, InterfaceData};
+use super::symbol::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
+use super::symbol::types::lambda_type::LambdaTypeData;
+use crate::core::string_interner::StrId;
 use crate::parser::resolver::BlockKind;
-use crate::scope::types::core::UserDefinedTypeData;
-use crate::scope::variables::VariableData;
-use crate::types::core::AbstractType;
+use crate::scope::mangled::MangledIdentifierName;
+use crate::scope::symbol::function::FunctionSymbolData;
+use crate::scope::symbol::interfaces::InterfaceSymbolData;
+use crate::scope::symbol::types::core::UserDefinedTypeData;
+use crate::scope::symbol::types::core::UserDefinedTypeSymbolData;
+use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::symbol::variables::VariableData;
+use crate::scope::symbol::variables::VariableSymbolData;
+use crate::scope::traits::AbstractSymbol;
+use crate::scope::traits::IsInitialized;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::cell::{Ref, RefCell, RefMut};
@@ -19,14 +22,14 @@ use std::rc::Rc;
 use text_size::TextRange;
 
 #[derive(Debug)]
-pub struct LookupData<T: AbstractSymbolData> {
+pub struct LookupData<T: AbstractSymbol> {
     pub symbol_data: T,
     pub resolved_scope_index: usize,
     pub depth: usize,
     pub enclosing_func_scope_depth: Option<usize>,
 }
 
-impl<T: AbstractSymbolData> LookupData<T> {
+impl<T: AbstractSymbol> LookupData<T> {
     fn new(
         symbol_data: T,
         resolved_scope_index: usize,
@@ -42,14 +45,14 @@ impl<T: AbstractSymbolData> LookupData<T> {
     }
 }
 
-pub enum LookupResult<T: AbstractSymbolData> {
+pub enum LookupResult<T: AbstractSymbol> {
     Ok(LookupData<T>),
     NotInitialized(TextRange),
     Unresolved,
 }
 
 #[derive(Debug)]
-pub enum IntermediateLookupResult<T: AbstractConcreteTypesHandler> {
+pub enum IntermediateLookupResult<T: IsInitialized> {
     Ok((SymbolData<T>, usize, usize, Option<usize>)),
     NotInitialized(TextRange),
     Unresolved,
@@ -86,97 +89,15 @@ impl_from_intermediate_lookup_result!(CallableData, FunctionSymbolData);
 impl_from_intermediate_lookup_result!(UserDefinedTypeData, UserDefinedTypeSymbolData);
 impl_from_intermediate_lookup_result!(InterfaceData, InterfaceSymbolData);
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct MangledIdentifierName {
-    pub jarvil_identifer_name: StrId,
-    unique_id: Option<usize>,
-}
-
-impl MangledIdentifierName {
-    pub fn to_string(&self, suffix: &str, interner: &Interner) -> String {
-        let Some(id) = self.unique_id else {
-            return interner.lookup(self.jarvil_identifer_name).to_string();
-        };
-        format!(
-            "{}_{}_{}",
-            interner.lookup(self.jarvil_identifer_name),
-            id,
-            suffix
-        )
-    }
-}
-
-pub trait AbstractConcreteTypesHandler {
-    fn is_initialized(&self) -> bool;
-}
-
-pub trait AbstractSymbolData {
-    fn get_entry(&self) -> SymbolDataEntry;
-    fn check_generic_type_args(
-        &self,
-        concrete_types: &Option<ConcreteTypesTuple>,
-        type_ranges: &Option<Vec<TextRange>>,
-        is_concrete_types_none_allowed: bool,
-        interner: &Interner,
-    ) -> Result<(), GenericTypeArgsCheckError>;
-    fn get_mangled_name(&self) -> MangledIdentifierName;
-}
-
-pub enum ConcreteTypesRegistrationKind {
-    Primary,
-    Method,
-}
-
 #[derive(Debug)]
-pub struct GenericTypeParams(pub Vec<(StrId, InterfaceBounds, TextRange)>);
-
-impl GenericTypeParams {
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn check_concrete_types_bounded_by(
-        &self,
-        concrete_types: &ConcreteTypesTuple,
-        type_ranges: &Vec<TextRange>,
-        interner: &Interner,
-    ) -> Result<(), GenericTypeArgsCheckError> {
-        let expected_len = self.len();
-        let received_len = concrete_types.len();
-        if expected_len != received_len {
-            return Err(GenericTypeArgsCheckError::GenericTypeArgsCountMismatched(
-                received_len,
-                expected_len,
-            ));
-        }
-        let mut incorrectly_bounded_types: Vec<(TextRange, String)> = vec![];
-        for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
-            let ty = &concrete_types[index];
-            if !ty.is_type_bounded_by_interfaces(interface_bounds) {
-                incorrectly_bounded_types
-                    .push((type_ranges[index], interface_bounds.to_string(interner)))
-            }
-        }
-        if !incorrectly_bounded_types.is_empty() {
-            return Err(
-                GenericTypeArgsCheckError::GenericTypeArgsIncorrectlyBounded(
-                    incorrectly_bounded_types,
-                ),
-            );
-        }
-        Ok(())
-    }
-}
-
-#[derive(Debug)]
-pub struct SymbolDataCore<T: AbstractConcreteTypesHandler> {
+pub struct SymbolDataCore<T: IsInitialized> {
     pub identifier_name: StrId,
     pub identifier_data: RefCell<T>,
     pub declaration_line_number: TextRange,
     pub unique_id: Option<usize>,
 }
 
-impl<T: AbstractConcreteTypesHandler> SymbolDataCore<T> {
+impl<T: IsInitialized> SymbolDataCore<T> {
     fn new(
         identifier_name: StrId,
         identifier_data: T,
@@ -193,9 +114,9 @@ impl<T: AbstractConcreteTypesHandler> SymbolDataCore<T> {
 }
 
 #[derive(Debug)]
-pub struct SymbolData<T: AbstractConcreteTypesHandler>(Rc<SymbolDataCore<T>>); // (identifier_meta_data, decl_line_number, should_add_prefix)
+pub struct SymbolData<T: IsInitialized>(Rc<SymbolDataCore<T>>); // (identifier_meta_data, decl_line_number, should_add_prefix)
 
-impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
+impl<T: IsInitialized> SymbolData<T> {
     pub fn new(name: StrId, core_data: T, decl_range: TextRange, unique_id: Option<usize>) -> Self {
         SymbolData(Rc::new(SymbolDataCore::new(
             name, core_data, decl_range, unique_id,
@@ -234,21 +155,21 @@ impl<T: AbstractConcreteTypesHandler> SymbolData<T> {
     }
 }
 
-impl<T: AbstractConcreteTypesHandler> Clone for SymbolData<T> {
+impl<T: IsInitialized> Clone for SymbolData<T> {
     fn clone(&self) -> Self {
         SymbolData(self.0.clone())
     }
 }
 
-impl<T: AbstractConcreteTypesHandler> PartialEq for SymbolData<T> {
+impl<T: IsInitialized> PartialEq for SymbolData<T> {
     fn eq(&self, other: &Self) -> bool {
         Rc::ptr_eq(&self.0, &other.0)
     }
 }
 
-impl<T: AbstractConcreteTypesHandler> Eq for SymbolData<T> {}
+impl<T: IsInitialized> Eq for SymbolData<T> {}
 
-impl<T: AbstractConcreteTypesHandler> Hash for SymbolData<T> {
+impl<T: IsInitialized> Hash for SymbolData<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let ptr = Rc::as_ptr(&self.0);
         ptr.hash(state);
@@ -256,188 +177,13 @@ impl<T: AbstractConcreteTypesHandler> Hash for SymbolData<T> {
 }
 
 #[derive(Debug)]
-pub struct VariableSymbolData(pub SymbolData<VariableData>);
-
-impl AbstractSymbolData for VariableSymbolData {
-    fn get_entry(&self) -> SymbolDataEntry {
-        SymbolDataEntry::Variable(self.0.clone())
-    }
-
-    fn check_generic_type_args(
-        &self,
-        concrete_types: &Option<ConcreteTypesTuple>,
-        _type_ranges: &Option<Vec<TextRange>>,
-        is_concrete_types_none_allowed: bool,
-        _interner: &Interner,
-    ) -> Result<(), GenericTypeArgsCheckError> {
-        debug_assert!(!is_concrete_types_none_allowed);
-        if concrete_types.is_some() {
-            return Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected);
-        }
-        Ok(())
-    }
-
-    fn get_mangled_name(&self) -> MangledIdentifierName {
-        self.0.get_mangled_name()
-    }
-}
-
-impl From<SymbolData<VariableData>> for VariableSymbolData {
-    fn from(value: SymbolData<VariableData>) -> Self {
-        VariableSymbolData(value)
-    }
-}
-
-#[derive(Debug)]
-pub struct FunctionSymbolData(pub SymbolData<CallableData>);
-
-impl AbstractSymbolData for FunctionSymbolData {
-    fn get_entry(&self) -> SymbolDataEntry {
-        SymbolDataEntry::Function(self.0.clone())
-    }
-
-    fn check_generic_type_args(
-        &self,
-        concrete_types: &Option<ConcreteTypesTuple>,
-        type_ranges: &Option<Vec<TextRange>>,
-        is_concrete_types_none_allowed: bool,
-        interner: &Interner,
-    ) -> Result<(), GenericTypeArgsCheckError> {
-        debug_assert!(is_concrete_types_none_allowed);
-        let function_data = self.0.get_core_ref();
-        let generic_type_decls = &function_data.generics;
-        check_concrete_types_bounded_by_interfaces(
-            generic_type_decls,
-            concrete_types,
-            type_ranges,
-            true,
-            interner,
-        )
-    }
-
-    fn get_mangled_name(&self) -> MangledIdentifierName {
-        self.0.get_mangled_name()
-    }
-}
-
-impl From<SymbolData<CallableData>> for FunctionSymbolData {
-    fn from(value: SymbolData<CallableData>) -> Self {
-        FunctionSymbolData(value)
-    }
-}
-
-#[derive(Debug)]
-pub struct UserDefinedTypeSymbolData(pub SymbolData<UserDefinedTypeData>);
-
-impl AbstractSymbolData for UserDefinedTypeSymbolData {
-    fn get_entry(&self) -> SymbolDataEntry {
-        SymbolDataEntry::Type(self.0.clone())
-    }
-
-    fn check_generic_type_args(
-        &self,
-        concrete_types: &Option<ConcreteTypesTuple>,
-        type_ranges: &Option<Vec<TextRange>>,
-        is_concrete_types_none_allowed: bool,
-        interner: &Interner,
-    ) -> Result<(), GenericTypeArgsCheckError> {
-        match &*self.0.get_core_ref() {
-            UserDefinedTypeData::Struct(struct_data) => {
-                let generic_type_decls = &struct_data.generics;
-                check_concrete_types_bounded_by_interfaces(
-                    generic_type_decls,
-                    concrete_types,
-                    type_ranges,
-                    is_concrete_types_none_allowed,
-                    interner,
-                )
-            }
-            UserDefinedTypeData::Lambda(lambda_data) => {
-                let generic_type_decls = &lambda_data.get_generic_type_decls();
-                check_concrete_types_bounded_by_interfaces(
-                    generic_type_decls,
-                    concrete_types,
-                    type_ranges,
-                    false,
-                    interner,
-                )
-            }
-            UserDefinedTypeData::Enum(enum_data) => {
-                let generic_type_decls = &enum_data.generics;
-                check_concrete_types_bounded_by_interfaces(
-                    generic_type_decls,
-                    concrete_types,
-                    type_ranges,
-                    false,
-                    interner,
-                )
-            }
-            UserDefinedTypeData::Generic(_) => {
-                if concrete_types.is_some() {
-                    return Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected);
-                }
-                Ok(())
-            }
-        }
-    }
-
-    fn get_mangled_name(&self) -> MangledIdentifierName {
-        self.0.get_mangled_name()
-    }
-}
-
-impl From<SymbolData<UserDefinedTypeData>> for UserDefinedTypeSymbolData {
-    fn from(value: SymbolData<UserDefinedTypeData>) -> Self {
-        UserDefinedTypeSymbolData(value)
-    }
-}
-
-#[derive(Debug)]
-pub struct InterfaceSymbolData(pub SymbolData<InterfaceData>);
-
-impl AbstractSymbolData for InterfaceSymbolData {
-    fn get_entry(&self) -> SymbolDataEntry {
-        SymbolDataEntry::Interface(self.0.clone())
-    }
-
-    fn check_generic_type_args(
-        &self,
-        concrete_types: &Option<ConcreteTypesTuple>,
-        type_ranges: &Option<Vec<TextRange>>,
-        is_concrete_types_none_allowed: bool,
-        interner: &Interner,
-    ) -> Result<(), GenericTypeArgsCheckError> {
-        debug_assert!(!is_concrete_types_none_allowed);
-        let interface_data = self.0.get_core_ref();
-        let generic_type_decls = &interface_data.generics;
-        check_concrete_types_bounded_by_interfaces(
-            generic_type_decls,
-            concrete_types,
-            type_ranges,
-            false,
-            interner,
-        )
-    }
-
-    fn get_mangled_name(&self) -> MangledIdentifierName {
-        unreachable!()
-    }
-}
-
-impl From<SymbolData<InterfaceData>> for InterfaceSymbolData {
-    fn from(value: SymbolData<InterfaceData>) -> Self {
-        InterfaceSymbolData(value)
-    }
-}
-
-#[derive(Debug)]
-pub struct CoreScope<T: AbstractConcreteTypesHandler> {
+pub struct CoreScope<T: IsInitialized> {
     symbol_table: FxHashMap<StrId, SymbolData<T>>,
     pub parent_scope: Option<usize>, // points to the index in the global flattened scope vec
     scope_kind: BlockKind,
 }
 
-impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
+impl<T: IsInitialized> CoreScope<T> {
     fn set(
         &mut self,
         name: StrId,
@@ -497,11 +243,11 @@ impl<T: AbstractConcreteTypesHandler> CoreScope<T> {
 }
 
 #[derive(Debug)]
-pub struct Scope<T: AbstractConcreteTypesHandler> {
+pub struct Scope<T: IsInitialized> {
     pub flattened_vec: Vec<CoreScope<T>>,
 }
 
-impl<T: AbstractConcreteTypesHandler> Scope<T> {
+impl<T: IsInitialized> Scope<T> {
     fn new() -> Self {
         Scope {
             flattened_vec: vec![CoreScope {

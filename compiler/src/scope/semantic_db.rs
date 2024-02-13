@@ -1,13 +1,14 @@
 use super::{
-    builtin::get_builtin_functions,
-    common::GlobalUniqueKeyGenerator,
     concrete::{ConcreteSymbolData, ConcreteTypesTuple},
-    core::{MangledIdentifierName, Namespace, SymbolData},
-    function::CallableData,
-    interfaces::InterfaceData,
-    types::core::UserDefinedTypeData,
-    variables::VariableData,
+    core::{Namespace, SymbolData},
+    symbol::common::GlobalUniqueKeyGenerator,
+    symbol::function::CallableData,
+    symbol::interfaces::InterfaceData,
+    symbol::types::core::UserDefinedTypeData,
+    symbol::variables::VariableData,
 };
+use crate::builtin::get_builtin_functions;
+use crate::scope::mangled::MangledIdentifierName;
 use crate::{
     ast::ast::{
         BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierInDeclNode,

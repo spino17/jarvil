@@ -1,8 +1,17 @@
 use super::enum_type::EnumTypeData;
+use crate::core::string_interner::Interner;
+use crate::scope::concrete::ConcreteTypesTuple;
+use crate::scope::core::SymbolData;
+use crate::scope::errors::GenericTypeArgsCheckError;
+use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
+use crate::scope::mangled::MangledIdentifierName;
+use crate::scope::semantic_db::SymbolDataEntry;
+use crate::scope::traits::{AbstractSymbol, IsInitialized};
 use crate::scope::{
-    core::AbstractConcreteTypesHandler, types::generic_type::GenericTypeData,
-    types::lambda_type::LambdaTypeData, types::struct_type::StructTypeData,
+    symbol::types::generic_type::GenericTypeData, symbol::types::lambda_type::LambdaTypeData,
+    symbol::types::struct_type::StructTypeData,
 };
+use text_size::TextRange;
 
 #[derive(Debug)]
 pub enum UserDefinedTypeData {
@@ -105,12 +114,78 @@ impl UserDefinedTypeData {
     }
 }
 
-impl AbstractConcreteTypesHandler for UserDefinedTypeData {
+impl IsInitialized for UserDefinedTypeData {
     fn is_initialized(&self) -> bool {
         match self {
             UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.is_initialized(),
             UserDefinedTypeData::Enum(enum_type_data) => enum_type_data.is_initialized(),
             UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => true,
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct UserDefinedTypeSymbolData(pub SymbolData<UserDefinedTypeData>);
+
+impl AbstractSymbol for UserDefinedTypeSymbolData {
+    fn get_entry(&self) -> SymbolDataEntry {
+        SymbolDataEntry::Type(self.0.clone())
+    }
+
+    fn check_generic_type_args(
+        &self,
+        concrete_types: &Option<ConcreteTypesTuple>,
+        type_ranges: &Option<Vec<TextRange>>,
+        is_concrete_types_none_allowed: bool,
+        interner: &Interner,
+    ) -> Result<(), GenericTypeArgsCheckError> {
+        match &*self.0.get_core_ref() {
+            UserDefinedTypeData::Struct(struct_data) => {
+                let generic_type_decls = &struct_data.generics;
+                check_concrete_types_bounded_by_interfaces(
+                    generic_type_decls,
+                    concrete_types,
+                    type_ranges,
+                    is_concrete_types_none_allowed,
+                    interner,
+                )
+            }
+            UserDefinedTypeData::Lambda(lambda_data) => {
+                let generic_type_decls = &lambda_data.get_generic_type_decls();
+                check_concrete_types_bounded_by_interfaces(
+                    generic_type_decls,
+                    concrete_types,
+                    type_ranges,
+                    false,
+                    interner,
+                )
+            }
+            UserDefinedTypeData::Enum(enum_data) => {
+                let generic_type_decls = &enum_data.generics;
+                check_concrete_types_bounded_by_interfaces(
+                    generic_type_decls,
+                    concrete_types,
+                    type_ranges,
+                    false,
+                    interner,
+                )
+            }
+            UserDefinedTypeData::Generic(_) => {
+                if concrete_types.is_some() {
+                    return Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected);
+                }
+                Ok(())
+            }
+        }
+    }
+
+    fn get_mangled_name(&self) -> MangledIdentifierName {
+        self.0.get_mangled_name()
+    }
+}
+
+impl From<SymbolData<UserDefinedTypeData>> for UserDefinedTypeSymbolData {
+    fn from(value: SymbolData<UserDefinedTypeData>) -> Self {
+        UserDefinedTypeSymbolData(value)
     }
 }

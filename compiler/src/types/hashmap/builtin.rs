@@ -1,6 +1,6 @@
 use super::core::HashMap;
 use crate::core::string_interner::Interner;
-use crate::scope::function::CallableData;
+use crate::scope::symbol::function::CallableData;
 use rustc_hash::FxHashMap;
 
 impl HashMap {

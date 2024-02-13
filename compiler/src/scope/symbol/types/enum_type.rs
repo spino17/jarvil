@@ -1,9 +1,8 @@
+use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::traits::IsInitialized;
 use crate::{
     core::string_interner::StrId,
-    scope::{
-        concrete::{ConcreteTypesTuple, ConcretizationContext},
-        core::{AbstractConcreteTypesHandler, GenericTypeParams},
-    },
+    scope::concrete::{ConcreteTypesTuple, ConcretizationContext},
     types::core::{AbstractType, Type},
 };
 use text_size::TextRange;
@@ -56,7 +55,7 @@ impl EnumTypeData {
     }
 }
 
-impl AbstractConcreteTypesHandler for EnumTypeData {
+impl IsInitialized for EnumTypeData {
     fn is_initialized(&self) -> bool {
         self.is_init
     }

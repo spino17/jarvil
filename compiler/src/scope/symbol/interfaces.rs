@@ -1,17 +1,26 @@
-use super::{
-    common::{FieldsMap, MethodsMap},
-    concrete::{ConcreteSymbolData, ConcreteTypesTuple},
-    core::{AbstractConcreteTypesHandler, GenericTypeParams, SymbolData},
-    function::{CallableData, PartialConcreteCallableDataRef},
-};
-use crate::{
-    core::string_interner::{Interner, StrId},
-    types::core::Type,
-};
-use crate::{scope::concrete::ConcretizationContext, types::core::AbstractType};
+use crate::core::string_interner::Interner;
+use crate::core::string_interner::StrId;
+use crate::scope::concrete::ConcreteSymbolData;
+use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::core::SymbolData;
+use crate::scope::errors::GenericTypeArgsCheckError;
+use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
+use crate::scope::mangled::MangledIdentifierName;
+use crate::scope::semantic_db::SymbolDataEntry;
+use crate::scope::symbol::common::FieldsMap;
+use crate::scope::symbol::common::MethodsMap;
+use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::traits::AbstractSymbol;
+use crate::scope::traits::IsInitialized;
+use crate::types::core::AbstractType;
+use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
+use std::vec;
 use text_size::TextRange;
+
+use super::function::CallableData;
+use super::function::PartialConcreteCallableDataRef;
 
 #[derive(Debug, Default)]
 pub struct InterfaceData {
@@ -70,7 +79,7 @@ impl InterfaceData {
     }
 }
 
-impl AbstractConcreteTypesHandler for InterfaceData {
+impl IsInitialized for InterfaceData {
     fn is_initialized(&self) -> bool {
         self.is_init
     }
@@ -334,5 +343,43 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
             return Err(final_err);
         }
         Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct InterfaceSymbolData(pub SymbolData<InterfaceData>);
+
+impl AbstractSymbol for InterfaceSymbolData {
+    fn get_entry(&self) -> SymbolDataEntry {
+        SymbolDataEntry::Interface(self.0.clone())
+    }
+
+    fn check_generic_type_args(
+        &self,
+        concrete_types: &Option<ConcreteTypesTuple>,
+        type_ranges: &Option<Vec<TextRange>>,
+        is_concrete_types_none_allowed: bool,
+        interner: &Interner,
+    ) -> Result<(), GenericTypeArgsCheckError> {
+        debug_assert!(!is_concrete_types_none_allowed);
+        let interface_data = self.0.get_core_ref();
+        let generic_type_decls = &interface_data.generics;
+        check_concrete_types_bounded_by_interfaces(
+            generic_type_decls,
+            concrete_types,
+            type_ranges,
+            false,
+            interner,
+        )
+    }
+
+    fn get_mangled_name(&self) -> MangledIdentifierName {
+        unreachable!()
+    }
+}
+
+impl From<SymbolData<InterfaceData>> for InterfaceSymbolData {
+    fn from(value: SymbolData<InterfaceData>) -> Self {
+        InterfaceSymbolData(value)
     }
 }

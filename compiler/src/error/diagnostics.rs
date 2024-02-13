@@ -4,7 +4,7 @@ use crate::{
     core::string_interner::{Interner, StrId},
     lexer::token::Token,
     parser::helper::format_symbol,
-    scope::interfaces::PartialConcreteInterfaceMethodsCheckError,
+    scope::symbol::interfaces::PartialConcreteInterfaceMethodsCheckError,
     types::core::Type,
 };
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};

@@ -3,8 +3,8 @@ use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::core::string_interner::Interner;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
-use crate::scope::interfaces::InterfaceBounds;
-use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::interfaces::InterfaceBounds;
+use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractType, CoreType, Type};
 
 #[derive(Debug, Clone)]

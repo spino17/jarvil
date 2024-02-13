@@ -1,5 +1,8 @@
-use super::function::{CallableData, CallableKind, CallablePrototypeData};
-use crate::{constants::common::INT, types::core::Type};
+use crate::{
+    constants::common::INT,
+    scope::symbol::function::{CallableData, CallableKind, CallablePrototypeData},
+    types::core::Type,
+};
 use rustc_hash::FxHashMap;
 
 // print<T>(obj: T)

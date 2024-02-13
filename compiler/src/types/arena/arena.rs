@@ -1,8 +1,8 @@
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::lexer::token::BinaryOperatorKind;
 use crate::scope::{
-    concrete::ConcreteTypesTuple, core::SymbolData, function::CallablePrototypeData,
-    types::core::UserDefinedTypeData,
+    concrete::ConcreteTypesTuple, core::SymbolData, symbol::function::CallablePrototypeData,
+    symbol::types::core::UserDefinedTypeData,
 };
 use crate::types::atomic::Atomic;
 use crate::types::core::CoreType;

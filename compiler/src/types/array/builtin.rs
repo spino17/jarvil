@@ -1,7 +1,7 @@
 use crate::core::string_interner::Interner;
 use crate::types::array::core::Array;
 use crate::{
-    scope::function::{CallableData, CallableKind},
+    scope::symbol::function::{CallableData, CallableKind},
     types::{core::Type, helper::get_unbounded_generic_type_with_declaration_index},
 };
 use rustc_hash::FxHashMap;

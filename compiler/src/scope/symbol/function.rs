@@ -1,8 +1,13 @@
-use super::{
-    concrete::{ConcreteTypesTuple, ConcretizationContext},
-    core::{AbstractConcreteTypesHandler, GenericTypeParams},
-    errors::GenericTypeArgsCheckError,
-};
+use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::core::SymbolData;
+use crate::scope::errors::GenericTypeArgsCheckError;
+use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
+use crate::scope::mangled::MangledIdentifierName;
+use crate::scope::semantic_db::SymbolDataEntry;
+use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::traits::AbstractSymbol;
+use crate::types::core::Type;
 use crate::{
     ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode},
     core::common::RefOrOwned,
@@ -11,7 +16,7 @@ use crate::{
     },
     types::core::AbstractType,
 };
-use crate::{scope::types::generic_type::GenericTypeDeclarationPlaceCategory, types::core::Type};
+use crate::{core::string_interner::Interner, scope::traits::IsInitialized};
 use std::vec;
 use text_size::TextRange;
 
@@ -226,7 +231,7 @@ impl CallableData {
     }
 }
 
-impl AbstractConcreteTypesHandler for CallableData {
+impl IsInitialized for CallableData {
     fn is_initialized(&self) -> bool {
         true
     }
@@ -332,5 +337,43 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                 }
             },
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct FunctionSymbolData(pub SymbolData<CallableData>);
+
+impl AbstractSymbol for FunctionSymbolData {
+    fn get_entry(&self) -> SymbolDataEntry {
+        SymbolDataEntry::Function(self.0.clone())
+    }
+
+    fn check_generic_type_args(
+        &self,
+        concrete_types: &Option<ConcreteTypesTuple>,
+        type_ranges: &Option<Vec<TextRange>>,
+        is_concrete_types_none_allowed: bool,
+        interner: &Interner,
+    ) -> Result<(), GenericTypeArgsCheckError> {
+        debug_assert!(is_concrete_types_none_allowed);
+        let function_data = self.0.get_core_ref();
+        let generic_type_decls = &function_data.generics;
+        check_concrete_types_bounded_by_interfaces(
+            generic_type_decls,
+            concrete_types,
+            type_ranges,
+            true,
+            interner,
+        )
+    }
+
+    fn get_mangled_name(&self) -> MangledIdentifierName {
+        self.0.get_mangled_name()
+    }
+}
+
+impl From<SymbolData<CallableData>> for FunctionSymbolData {
+    fn from(value: SymbolData<CallableData>) -> Self {
+        FunctionSymbolData(value)
     }
 }

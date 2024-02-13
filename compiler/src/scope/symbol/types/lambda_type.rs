@@ -1,9 +1,10 @@
+use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::traits::IsInitialized;
 use crate::{
     core::common::RefOrOwned,
     scope::{
         concrete::ConcreteTypesTuple,
-        core::{AbstractConcreteTypesHandler, GenericTypeParams},
-        function::{CallableData, CallableKind, CallablePrototypeData},
+        symbol::function::{CallableData, CallableKind, CallablePrototypeData},
     },
     types::core::Type,
 };
@@ -51,7 +52,7 @@ impl LambdaTypeData {
     }
 }
 
-impl AbstractConcreteTypesHandler for LambdaTypeData {
+impl IsInitialized for LambdaTypeData {
     fn is_initialized(&self) -> bool {
         unreachable!()
     }

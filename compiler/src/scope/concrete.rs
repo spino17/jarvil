@@ -1,6 +1,6 @@
 use crate::core::string_interner::Interner;
-use crate::scope::core::AbstractConcreteTypesHandler;
 use crate::scope::core::SymbolData;
+use crate::scope::traits::IsInitialized;
 use crate::types::core::AbstractType;
 use crate::types::core::Type;
 use std::cell::Ref;
@@ -47,12 +47,12 @@ impl Index<usize> for ConcreteTypesTuple {
 }
 
 #[derive(Debug)]
-pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler> {
+pub struct ConcreteSymbolData<T: IsInitialized> {
     pub symbol_data: SymbolData<T>,
     pub concrete_types: Option<ConcreteTypesTuple>, // This will be `None` for symbol data which does not have any generic type params
 }
 
-impl<T: AbstractConcreteTypesHandler> Clone for ConcreteSymbolData<T> {
+impl<T: IsInitialized> Clone for ConcreteSymbolData<T> {
     fn clone(&self) -> Self {
         ConcreteSymbolData {
             symbol_data: self.symbol_data.clone(),
@@ -61,7 +61,7 @@ impl<T: AbstractConcreteTypesHandler> Clone for ConcreteSymbolData<T> {
     }
 }
 
-impl<T: AbstractConcreteTypesHandler> ConcreteSymbolData<T> {
+impl<T: IsInitialized> ConcreteSymbolData<T> {
     pub fn new(symbol_data: SymbolData<T>, concrete_types: Option<ConcreteTypesTuple>) -> Self {
         ConcreteSymbolData {
             symbol_data,

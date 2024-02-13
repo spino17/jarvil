@@ -1,6 +1,10 @@
+use crate::types::core::AbstractType;
 use crate::{
     core::string_interner::{Interner, StrId},
-    scope::interfaces::InterfaceBounds,
+    scope::{
+        concrete::ConcreteTypesTuple, errors::GenericTypeArgsCheckError,
+        symbol::interfaces::InterfaceBounds,
+    },
     types::core::Type,
 };
 use text_size::TextRange;
@@ -100,4 +104,45 @@ impl GenericTypeData {
 pub enum GenericTypeDeclarationPlaceCategory {
     InStruct,
     InCallable,
+}
+
+#[derive(Debug)]
+pub struct GenericTypeParams(pub Vec<(StrId, InterfaceBounds, TextRange)>);
+
+impl GenericTypeParams {
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn check_concrete_types_bounded_by(
+        &self,
+        concrete_types: &ConcreteTypesTuple,
+        type_ranges: &Vec<TextRange>,
+        interner: &Interner,
+    ) -> Result<(), GenericTypeArgsCheckError> {
+        let expected_len = self.len();
+        let received_len = concrete_types.len();
+        if expected_len != received_len {
+            return Err(GenericTypeArgsCheckError::GenericTypeArgsCountMismatched(
+                received_len,
+                expected_len,
+            ));
+        }
+        let mut incorrectly_bounded_types: Vec<(TextRange, String)> = vec![];
+        for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
+            let ty = &concrete_types[index];
+            if !ty.is_type_bounded_by_interfaces(interface_bounds) {
+                incorrectly_bounded_types
+                    .push((type_ranges[index], interface_bounds.to_string(interner)))
+            }
+        }
+        if !incorrectly_bounded_types.is_empty() {
+            return Err(
+                GenericTypeArgsCheckError::GenericTypeArgsIncorrectlyBounded(
+                    incorrectly_bounded_types,
+                ),
+            );
+        }
+        Ok(())
+    }
 }

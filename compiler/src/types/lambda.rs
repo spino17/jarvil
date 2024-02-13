@@ -6,10 +6,10 @@ use crate::parser::type_checker::{
 };
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::core::SymbolData;
-use crate::scope::function::CallablePrototypeData;
-use crate::scope::interfaces::InterfaceBounds;
-use crate::scope::types::core::UserDefinedTypeData;
-use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::function::CallablePrototypeData;
+use crate::scope::symbol::interfaces::InterfaceBounds;
+use crate::scope::symbol::types::core::UserDefinedTypeData;
+use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractType, CoreType, Type};
 
 #[derive(Debug)]

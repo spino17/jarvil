@@ -8,8 +8,10 @@ use crate::{
     scope::{
         concrete::{ConcreteTypesTuple, ConcretizationContext},
         core::SymbolData,
-        interfaces::InterfaceBounds,
-        types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
+        symbol::interfaces::InterfaceBounds,
+        symbol::types::{
+            core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory,
+        },
     },
 };
 

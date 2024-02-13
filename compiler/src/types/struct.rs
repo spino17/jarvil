@@ -1,13 +1,12 @@
-use super::arena::arena::TypeId;
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
 use super::helper::{struct_enum_compare_fn, try_infer_types_from_tuple, StructEnumType};
 use crate::core::string_interner::{Interner, StrId};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::ConcreteTypesTuple;
-use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::{
-    concrete::ConcretizationContext, core::SymbolData, interfaces::InterfaceBounds,
-    types::core::UserDefinedTypeData,
+    concrete::ConcretizationContext, core::SymbolData, symbol::interfaces::InterfaceBounds,
+    symbol::types::core::UserDefinedTypeData,
 };
 
 #[derive(Debug, Clone)]

@@ -1,3 +1,4 @@
+use crate::scope::mangled::MangledIdentifierName;
 use crate::{
     ast::{
         ast::{
@@ -16,9 +17,9 @@ use crate::{
     context,
     lexer::token::{CoreToken, Token},
     scope::{
-        core::{LookupResult, MangledIdentifierName, SymbolData},
-        handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
-        types::core::UserDefinedTypeData,
+        core::{LookupResult, SymbolData},
+        semantic_db::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
+        symbol::types::core::UserDefinedTypeData,
     },
 };
 use rustc_hash::FxHashSet;

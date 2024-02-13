@@ -27,6 +27,7 @@ pub mod tests;
 pub mod types;
 use std::env;
 use std::rc::Rc;
+pub mod builtin;
 
 pub fn curr_dir_path() -> Rc<String> {
     let curr_dir = env::current_dir().expect("failed to get current directory");
@@ -61,8 +62,8 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
     errors.append(&mut semantic_errors);
 
     // TODO - remove this after testing
-    let ast_str = json_serialize_ast(&ast, &code_handler, &mut semantic_state_db.interner).unwrap();
-    fs::write("ast.json", ast_str).unwrap();
+    //let ast_str = json_serialize_ast(&ast, &code_handler, &mut semantic_state_db.interner).unwrap();
+    //fs::write("ast.json", ast_str).unwrap();
 
     // type-checker
     let type_checker = TypeChecker::new(code_handler, semantic_state_db);
