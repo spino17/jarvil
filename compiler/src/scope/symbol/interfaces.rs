@@ -6,7 +6,6 @@ use crate::scope::core::SymbolData;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
 use crate::scope::mangled::MangledIdentifierName;
-use crate::scope::semantic_db::SymbolDataEntry;
 use crate::scope::symbol::common::FieldsMap;
 use crate::scope::symbol::common::MethodsMap;
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
@@ -19,6 +18,7 @@ use std::rc::Rc;
 use std::vec;
 use text_size::TextRange;
 
+use super::core::SymbolDataEntry;
 use super::function::CallableData;
 use super::function::PartialConcreteCallableDataRef;
 

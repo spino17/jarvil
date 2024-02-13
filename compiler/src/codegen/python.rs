@@ -1,4 +1,6 @@
 use crate::scope::mangled::MangledIdentifierName;
+use crate::scope::semantic_db::SemanticStateDatabase;
+use crate::scope::symbol::core::{ConcreteSymbolDataEntry, SymbolDataEntry};
 use crate::{
     ast::{
         ast::{
@@ -18,7 +20,6 @@ use crate::{
     lexer::token::{CoreToken, Token},
     scope::{
         core::{LookupResult, SymbolData},
-        semantic_db::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry},
         symbol::types::core::UserDefinedTypeData,
     },
 };

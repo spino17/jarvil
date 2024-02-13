@@ -3,7 +3,6 @@ use crate::scope::core::SymbolData;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
 use crate::scope::mangled::MangledIdentifierName;
-use crate::scope::semantic_db::SymbolDataEntry;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
 use crate::scope::traits::AbstractSymbol;
@@ -19,6 +18,8 @@ use crate::{
 use crate::{core::string_interner::Interner, scope::traits::IsInitialized};
 use std::vec;
 use text_size::TextRange;
+
+use super::core::SymbolDataEntry;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CallableKind {

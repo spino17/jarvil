@@ -5,7 +5,7 @@ use crate::scope::core::SymbolData;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
 use crate::scope::mangled::MangledIdentifierName;
-use crate::scope::semantic_db::SymbolDataEntry;
+use crate::scope::symbol::core::SymbolDataEntry;
 use crate::scope::traits::{AbstractSymbol, IsInitialized};
 use crate::scope::{
     symbol::types::generic_type::GenericTypeData, symbol::types::lambda_type::LambdaTypeData,

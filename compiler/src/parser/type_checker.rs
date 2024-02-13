@@ -27,7 +27,7 @@ use crate::error::diagnostics::{
 use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::{ConcreteSymbolData, ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::errors::GenericTypeArgsCheckError;
-use crate::scope::semantic_db::{ConcreteSymbolDataEntry, SymbolDataEntry};
+use crate::scope::symbol::core::{ConcreteSymbolDataEntry, SymbolDataEntry};
 use crate::scope::symbol::function::{CallableData, PartialCallableDataPrototypeCheckError};
 use crate::scope::symbol::types::enum_type::EnumTypeData;
 use crate::scope::symbol::types::generic_type::GenericTypeParams;

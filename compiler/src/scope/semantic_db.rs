@@ -1,11 +1,14 @@
 use super::{
-    concrete::{ConcreteSymbolData, ConcreteTypesTuple},
+    concrete::ConcreteSymbolData,
     core::{Namespace, SymbolData},
-    symbol::common::GlobalUniqueKeyGenerator,
-    symbol::function::CallableData,
-    symbol::interfaces::InterfaceData,
-    symbol::types::core::UserDefinedTypeData,
-    symbol::variables::VariableData,
+    symbol::{
+        common::GlobalUniqueKeyGenerator,
+        core::{ConcreteSymbolDataEntry, SymbolDataEntry},
+        function::CallableData,
+        interfaces::InterfaceData,
+        types::core::UserDefinedTypeData,
+        variables::VariableData,
+    },
 };
 use crate::builtin::get_builtin_functions;
 use crate::scope::mangled::MangledIdentifierName;
@@ -19,43 +22,6 @@ use crate::{
 };
 use rustc_hash::{FxHashMap, FxHashSet};
 use text_size::TextRange;
-
-pub enum SymbolDataEntry {
-    Variable(SymbolData<VariableData>),
-    Function(SymbolData<CallableData>),
-    Type(SymbolData<UserDefinedTypeData>),
-    Interface(SymbolData<InterfaceData>),
-}
-
-#[derive(Debug, Clone)]
-pub enum ConcreteSymbolDataEntry {
-    Variable(ConcreteSymbolData<VariableData>),
-    Function(ConcreteSymbolData<CallableData>),
-    Type(ConcreteSymbolData<UserDefinedTypeData>),
-    Interface(ConcreteSymbolData<InterfaceData>),
-}
-
-impl ConcreteSymbolDataEntry {
-    pub fn new(symbol_data: SymbolDataEntry, concrete_types: Option<ConcreteTypesTuple>) -> Self {
-        match symbol_data {
-            SymbolDataEntry::Variable(variable_symbol_data) => ConcreteSymbolDataEntry::Variable(
-                ConcreteSymbolData::new(variable_symbol_data, concrete_types),
-            ),
-            SymbolDataEntry::Function(func_symbol_data) => ConcreteSymbolDataEntry::Function(
-                ConcreteSymbolData::new(func_symbol_data, concrete_types),
-            ),
-            SymbolDataEntry::Type(type_symbol_data) => ConcreteSymbolDataEntry::Type(
-                ConcreteSymbolData::new(type_symbol_data, concrete_types),
-            ),
-            SymbolDataEntry::Interface(interface_symbol_data) => {
-                ConcreteSymbolDataEntry::Interface(ConcreteSymbolData::new(
-                    interface_symbol_data,
-                    concrete_types,
-                ))
-            }
-        }
-    }
-}
 
 pub enum IdentifierNodeWrapper<'a> {
     InDecl(&'a OkIdentifierInDeclNode),

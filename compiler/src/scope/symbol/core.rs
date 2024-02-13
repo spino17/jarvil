@@ -1,6 +1,18 @@
-use crate::{core::string_interner::StrId, scope::new_core::ScopeIndex};
+use crate::{
+    core::string_interner::StrId,
+    scope::{
+        concrete::{ConcreteSymbolData, ConcreteTypesTuple},
+        core::SymbolData,
+        new_core::ScopeIndex,
+    },
+};
 use std::marker::PhantomData;
 use text_size::TextRange;
+
+use super::{
+    function::CallableData, interfaces::InterfaceData, types::core::UserDefinedTypeData,
+    variables::VariableData,
+};
 
 #[derive(Debug)]
 pub struct Symbol<T> {
@@ -38,4 +50,41 @@ pub struct SymbolIndex<T> {
     pub scope_index: ScopeIndex,
     pub ident_name: StrId,
     pub phanton: PhantomData<T>,
+}
+
+pub enum SymbolDataEntry {
+    Variable(SymbolData<VariableData>),
+    Function(SymbolData<CallableData>),
+    Type(SymbolData<UserDefinedTypeData>),
+    Interface(SymbolData<InterfaceData>),
+}
+
+#[derive(Debug, Clone)]
+pub enum ConcreteSymbolDataEntry {
+    Variable(ConcreteSymbolData<VariableData>),
+    Function(ConcreteSymbolData<CallableData>),
+    Type(ConcreteSymbolData<UserDefinedTypeData>),
+    Interface(ConcreteSymbolData<InterfaceData>),
+}
+
+impl ConcreteSymbolDataEntry {
+    pub fn new(symbol_data: SymbolDataEntry, concrete_types: Option<ConcreteTypesTuple>) -> Self {
+        match symbol_data {
+            SymbolDataEntry::Variable(variable_symbol_data) => ConcreteSymbolDataEntry::Variable(
+                ConcreteSymbolData::new(variable_symbol_data, concrete_types),
+            ),
+            SymbolDataEntry::Function(func_symbol_data) => ConcreteSymbolDataEntry::Function(
+                ConcreteSymbolData::new(func_symbol_data, concrete_types),
+            ),
+            SymbolDataEntry::Type(type_symbol_data) => ConcreteSymbolDataEntry::Type(
+                ConcreteSymbolData::new(type_symbol_data, concrete_types),
+            ),
+            SymbolDataEntry::Interface(interface_symbol_data) => {
+                ConcreteSymbolDataEntry::Interface(ConcreteSymbolData::new(
+                    interface_symbol_data,
+                    concrete_types,
+                ))
+            }
+        }
+    }
 }

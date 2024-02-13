@@ -1,6 +1,6 @@
 use super::concrete::ConcreteTypesTuple;
 use super::errors::GenericTypeArgsCheckError;
-use super::semantic_db::SymbolDataEntry;
+use super::symbol::core::SymbolDataEntry;
 use crate::core::string_interner::Interner;
 use crate::scope::mangled::MangledIdentifierName;
 use text_size::TextRange;

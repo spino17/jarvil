@@ -3,10 +3,11 @@ use crate::scope::concrete::ConcreteTypesTuple;
 use crate::scope::core::SymbolData;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::mangled::MangledIdentifierName;
-use crate::scope::semantic_db::SymbolDataEntry;
 use crate::scope::traits::{AbstractSymbol, IsInitialized};
 use crate::types::core::Type;
 use text_size::TextRange;
+
+use super::core::SymbolDataEntry;
 
 #[derive(Debug)]
 pub struct VariableData {
