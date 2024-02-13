@@ -770,8 +770,8 @@ impl TypeChecker {
             }
             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
             ConcreteSymbolDataEntry::Type(user_defined_type_symbol_data) => {
-                let name = ok_identifier
-                    .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
+                let name =
+                    ok_identifier.token_value(&self.code_handler, &self.semantic_state_db.interner);
                 self.check_user_defined_ty_call_expr(name, &user_defined_type_symbol_data, params)
             }
         };
@@ -830,7 +830,7 @@ impl TypeChecker {
             }
         };
         let class_method_name =
-            property_name.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
+            property_name.token_value(&self.code_handler, &self.semantic_state_db.interner);
         match struct_data.try_class_method(&class_method_name, concrete_types.as_ref()) {
             Some((partial_concrete_callable_data, _)) => {
                 let (concrete_types, ty_ranges, _) =
@@ -895,7 +895,7 @@ impl TypeChecker {
             return Type::new_with_unknown();
         };
         let variant_name =
-            property_name.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
+            property_name.token_value(&self.code_handler, &self.semantic_state_db.interner);
         if property_name.core_ref().generic_type_args.is_some() {
             let err = GenericTypeArgsNotExpectedError::new(
                 IdentifierKind::Variant,
@@ -1011,7 +1011,7 @@ impl TypeChecker {
             return Type::new_with_unknown();
         };
         let ty_name =
-            ok_identifier.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
+            ok_identifier.token_value(&self.code_handler, &self.semantic_state_db.interner);
         match self
             .semantic_state_db
             .get_type_symbol_data_for_identifier_in_use(ok_identifier)
@@ -1149,7 +1149,7 @@ impl TypeChecker {
             return (Type::new_with_unknown(), Some(atom_type_obj));
         }
         let property_name_str =
-            ok_identifier.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
+            ok_identifier.token_value(&self.code_handler, &self.semantic_state_db.interner);
         let result = match atom_type_obj.0.as_ref() {
             CoreType::Struct(struct_ty) => {
                 let concrete_types = &struct_ty.concrete_types;
@@ -1189,7 +1189,7 @@ impl TypeChecker {
                 let generic_data = symbol_data.get_generic_data_ref();
                 match generic_data.try_field(
                     &property_name_str,
-                    &mut self.semantic_state_db.interner,
+                    &self.semantic_state_db.interner,
                     &self.semantic_state_db.namespace,
                 ) {
                     GenericTypePropertyQueryResult::Ok((type_obj, _)) => Ok(type_obj),
@@ -1246,7 +1246,7 @@ impl TypeChecker {
         // (for example: a field with lambda type) and then it goes on to find it in methods.
         // This is in sync with what Python does.
         let method_name = method_name_ok_identifier
-            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
+            .token_value(&self.code_handler, &self.semantic_state_db.interner);
         let concrete_types = &struct_ty.concrete_types;
         let symbol_data = &self
             .semantic_state_db
@@ -1311,7 +1311,7 @@ impl TypeChecker {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
         let method_name = method_name_ok_identifier
-            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
+            .token_value(&self.code_handler, &self.semantic_state_db.interner);
         let symbol_data = &self
             .semantic_state_db
             .namespace
@@ -1322,7 +1322,7 @@ impl TypeChecker {
         let interface_bounds = &generic_data.interface_bounds;
         match generic_data.try_field(
             &method_name,
-            &mut self.semantic_state_db.interner,
+            &self.semantic_state_db.interner,
             &self.semantic_state_db.namespace,
         ) {
             GenericTypePropertyQueryResult::Ok((propetry_ty, _)) => {
@@ -1355,7 +1355,7 @@ impl TypeChecker {
                 // if field is not there then check in methods
                 match generic_data.has_method(
                     &method_name,
-                    &mut self.semantic_state_db.interner,
+                    &self.semantic_state_db.interner,
                     &self.semantic_state_db.namespace,
                 ) {
                     GenericTypePropertyQueryResult::Ok(interface_index) => {

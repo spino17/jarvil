@@ -1260,13 +1260,13 @@ impl AtomicTypeNode {
     pub fn type_obj_after_resolved(
         &self,
         code: &JarvilCodeHandler,
-        interner: &mut Interner,
+        interner: &Interner,
     ) -> TypeResolveKind {
         let CoreTokenNode::Ok(ok_token) = self.core_ref().kind.core_ref() else {
             return TypeResolveKind::Invalid;
         };
         let idx = ok_token.token_value(code, interner);
-        TypeResolveKind::Resolved(Type::new_with_atomic(interner.lookup(idx)))
+        TypeResolveKind::Resolved(Type::new_with_atomic(&interner.lookup(idx)))
     }
 
     impl_core_ref!(CoreAtomicTypeNode);
@@ -2301,7 +2301,7 @@ impl OkTokenNode {
         self.core_ref().token.try_as_binary_operator()
     }
 
-    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &mut Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
         self.0.as_ref().token.token_value(code, interner)
     }
 
@@ -2435,11 +2435,8 @@ impl OkIdentifierInUseNode {
         OkIdentifierInUseNode(node)
     }
 
-    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &mut Interner) -> StrId {
-        self.0
-            .as_ref()
-            .name
-            .token_value(code, interner.borrow_mut())
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
+        self.0.as_ref().name.token_value(code, interner)
     }
 
     pub fn token_value_str(&self, code: &JarvilCodeHandler) -> String {

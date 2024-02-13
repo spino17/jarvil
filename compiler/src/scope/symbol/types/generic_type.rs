@@ -43,7 +43,7 @@ impl GenericTypeData {
     pub fn try_field(
         &self,
         field_name: &StrId,
-        interner: &mut Interner,
+        interner: &Interner,
         namespace: &Namespace,
     ) -> GenericTypePropertyQueryResult<(Type, TextRange)> {
         let mut property_containing_interface_objs: Vec<String> = vec![];
@@ -80,7 +80,7 @@ impl GenericTypeData {
     pub fn has_method(
         &self,
         method_name: &StrId,
-        interner: &mut Interner,
+        interner: &Interner,
         namespace: &Namespace,
     ) -> GenericTypePropertyQueryResult<usize> {
         let mut property_containing_interface_objs: Vec<String> = vec![];

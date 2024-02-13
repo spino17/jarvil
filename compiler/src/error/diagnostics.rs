@@ -509,7 +509,7 @@ pub struct IdentifierAlreadyDeclaredError {
 impl IdentifierAlreadyDeclaredError {
     pub fn new(
         identifier_kind: IdentifierKind,
-        name: &str,
+        name: String,
         previous_decl_range: TextRange,
         redecl_range: TextRange,
     ) -> Self {
@@ -546,7 +546,7 @@ impl IdentifierAlreadyDeclaredError {
         };
         IdentifierAlreadyDeclaredError {
             identifier_kind,
-            name: name.to_string(),
+            name,
             previous_decl_span: range_to_span(previous_decl_range).into(),
             redecl_span: range_to_span(redecl_range).into(),
             help: Some(help_str.style(Style::new().yellow()).to_string()),
@@ -776,7 +776,7 @@ pub struct IdentifierUsedBeforeInitializedError {
 
 impl IdentifierUsedBeforeInitializedError {
     pub fn new(
-        identifier_name: &str,
+        identifier_name: String,
         identifier_kind: IdentifierKind,
         decl_range: TextRange,
         usage_range: TextRange,
@@ -788,7 +788,7 @@ impl IdentifierUsedBeforeInitializedError {
             _ => unreachable!()
         };
         IdentifierUsedBeforeInitializedError {
-            identifier_name: identifier_name.to_string(),
+            identifier_name,
             identifier_kind,
             decl_span: range_to_span(decl_range).into(),
             usage_span: range_to_span(usage_range).into(),
@@ -816,9 +816,9 @@ pub struct InterfaceAlreadyExistInBoundsDeclarationError {
 }
 
 impl InterfaceAlreadyExistInBoundsDeclarationError {
-    pub fn new(name: &str, previous_decl_span: TextRange, decl_span: TextRange) -> Self {
+    pub fn new(name: String, previous_decl_span: TextRange, decl_span: TextRange) -> Self {
         InterfaceAlreadyExistInBoundsDeclarationError {
-            name: name.to_string(),
+            name,
             previous_decl_span: range_to_span(previous_decl_span).into(),
             decl_span: range_to_span(decl_span).into(),
             help: Some(
@@ -1178,7 +1178,7 @@ impl InterfaceMethodsInStructCheckError {
             if let Some(missing_interface_method_names) = missing_interface_method_names {
                 let mut s = "".to_string();
                 if !missing_interface_method_names.is_empty() {
-                    s.push_str(interner.lookup(*missing_interface_method_names[0]));
+                    s.push_str(&interner.lookup(*missing_interface_method_names[0]));
                 }
                 for i in 1..missing_interface_method_names.len() {
                     s.push_str(&format!(
@@ -1454,9 +1454,9 @@ pub struct ConstructorNotFoundForTypeError {
 }
 
 impl ConstructorNotFoundForTypeError {
-    pub fn new(ty_str: &str, range: TextRange) -> Self {
+    pub fn new(ty_str: String, range: TextRange) -> Self {
         ConstructorNotFoundForTypeError {
-            ty: ty_str.to_string(),
+            ty: ty_str,
             span: range_to_span(range).into(),
             help: Some(
                 "only struct type is allowed to call constructor via self name"
@@ -1478,9 +1478,9 @@ pub struct ClassmethodDoesNotExistError {
 }
 
 impl ClassmethodDoesNotExistError {
-    pub fn new(struct_name: &str, range: TextRange) -> Self {
+    pub fn new(struct_name: String, range: TextRange) -> Self {
         ClassmethodDoesNotExistError {
-            struct_name: struct_name.to_string(),
+            struct_name,
             span: range_to_span(range).into(),
         }
     }

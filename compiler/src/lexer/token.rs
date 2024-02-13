@@ -56,7 +56,7 @@ impl Token {
         self.core_token.to_string().to_string()
     }
 
-    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &mut Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
         interner.intern(&code.code.token_from_range(self.range))
     }
 
