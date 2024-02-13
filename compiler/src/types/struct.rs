@@ -11,7 +11,7 @@ use crate::scope::{
     symbol::types::core::UserDefinedTypeData,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Struct {
     pub symbol_data: SymbolIndex<UserDefinedTypeData>,
     pub concrete_types: Option<ConcreteTypesTuple>,
@@ -96,7 +96,7 @@ impl AbstractType for Struct {
         interface_bounds: &InterfaceBounds,
         namespace: &Namespace,
     ) -> bool {
-        let symbol_data = namespace.types.get_symbol_data_ref(self.symbol_data).data;
+        let symbol_data = &namespace.types.get_symbol_data_ref(self.symbol_data).data;
         match &symbol_data.get_struct_data_ref().implementing_interfaces {
             Some(ty_interface_bounds) => interface_bounds.is_subset(ty_interface_bounds, namespace),
             None => false,

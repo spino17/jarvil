@@ -1,7 +1,7 @@
 use super::symbol::core::IdentDeclId;
 use crate::core::string_interner::{Interner, StrId};
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone)]
 pub struct MangledIdentifierName<T> {
     pub jarvil_identifer_name: StrId,
     pub unique_id: Option<IdentDeclId<T>>,

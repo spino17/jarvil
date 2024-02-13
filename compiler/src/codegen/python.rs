@@ -1,6 +1,8 @@
+use crate::scope::lookup::LookupResult;
 use crate::scope::mangled::MangledIdentifierName;
+use crate::scope::scope::ScopeIndex;
 use crate::scope::semantic_db::SemanticStateDatabase;
-use crate::scope::symbol::core::{ConcreteSymbolDataEntry, SymbolDataEntry};
+use crate::scope::symbol::core::{ConcreteSymbolDataEntry, Symbol, SymbolDataEntry, SymbolIndex};
 use crate::scope::symbol::variables::VariableData;
 use crate::{
     ast::{
@@ -19,10 +21,7 @@ use crate::{
     constants::common::{FUNC_SUFFIX, TY_SUFFIX, VAR_SUFFIX},
     context,
     lexer::token::{CoreToken, Token},
-    scope::{
-        core::{LookupResult, SymbolData},
-        symbol::types::core::UserDefinedTypeData,
-    },
+    scope::symbol::types::core::UserDefinedTypeData,
 };
 use rustc_hash::FxHashSet;
 use std::convert::TryInto;
@@ -80,15 +79,21 @@ impl PythonCodeGenerator {
         let index = match self
             .semantic_state_db
             .namespace
-            .lookup_in_functions_namespace(0, &self.semantic_state_db.interner.intern("main"))
-        {
-            LookupResult::Ok(lookup_data) => match lookup_data.symbol_data.0.get_index() {
+            .lookup_in_functions_namespace(
+                ScopeIndex::global(),
+                self.semantic_state_db.interner.intern("main"),
+            ) {
+            LookupResult::Ok(lookup_data) => match lookup_data
+                .symbol_data
+                .0
+                .get_index(&self.semantic_state_db.namespace.functions)
+            {
                 Some(index) => index,
                 None => unreachable!(),
             },
             LookupResult::Unresolved | LookupResult::NotInitialized(_) => unreachable!(),
         };
-        let main_call_str = format!("\n\nmain_{}_func()", index);
+        let main_call_str = format!("\n\nmain_{}_func()", index.index());
         self.add_str_to_python_code(&main_call_str);
         self.generated_code
     }
@@ -118,13 +123,13 @@ impl PythonCodeGenerator {
         {
             Some(symbol_data) => match symbol_data {
                 SymbolDataEntry::Variable(variable_symbol_data) => variable_symbol_data
-                    .get_mangled_name()
+                    .get_mangled_name(&self.semantic_state_db.namespace.variables)
                     .to_string(VAR_SUFFIX, &self.semantic_state_db.interner),
                 SymbolDataEntry::Function(func_symbol_data) => func_symbol_data
-                    .get_mangled_name()
+                    .get_mangled_name(&self.semantic_state_db.namespace.functions)
                     .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner),
                 SymbolDataEntry::Type(type_symbol_data) => type_symbol_data
-                    .get_mangled_name()
+                    .get_mangled_name(&self.semantic_state_db.namespace.types)
                     .to_string(TY_SUFFIX, &self.semantic_state_db.interner),
                 SymbolDataEntry::Interface(_) => unreachable!(),
             },
@@ -141,16 +146,16 @@ impl PythonCodeGenerator {
         };
         match symbol_data {
             ConcreteSymbolDataEntry::Variable(variable_symbol_data) => variable_symbol_data
-                .symbol_data
-                .get_mangled_name()
+                .symbol_ref
+                .get_mangled_name(&self.semantic_state_db.namespace.variables)
                 .to_string(VAR_SUFFIX, &self.semantic_state_db.interner),
             ConcreteSymbolDataEntry::Function(func_symbol_data) => func_symbol_data
-                .symbol_data
-                .get_mangled_name()
+                .symbol_ref
+                .get_mangled_name(&self.semantic_state_db.namespace.functions)
                 .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner),
             ConcreteSymbolDataEntry::Type(type_symbol_data) => type_symbol_data
-                .symbol_data
-                .get_mangled_name()
+                .symbol_ref
+                .get_mangled_name(&self.semantic_state_db.namespace.types)
                 .to_string(TY_SUFFIX, &self.semantic_state_db.interner),
             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
         }
@@ -350,8 +355,13 @@ impl PythonCodeGenerator {
         else {
             return;
         };
-        let symbol_data = &concrete_symbol_data.symbol_data;
-        match &*symbol_data.get_core_ref() {
+        match &self
+            .semantic_state_db
+            .namespace
+            .types
+            .get_symbol_data_ref(concrete_symbol_data.symbol_ref)
+            .data
+        {
             UserDefinedTypeData::Struct(_) => {
                 self.print_identifier_in_use(ty_name, is_trivia);
                 self.add_str_to_python_code(".");
@@ -392,7 +402,7 @@ impl PythonCodeGenerator {
         let core_match_case = match_case.core_ref();
         let expr = &core_match_case.expr;
         let match_block = &core_match_case.block;
-        let mut symbol_data: Option<SymbolData<UserDefinedTypeData>> = None;
+        let mut symbol_index: Option<SymbolIndex<UserDefinedTypeData>> = None;
         let mut conditional_keyword_str: &'static str = "if";
         for stmt in &match_block.core_ref().stmts {
             let stmt = match stmt.core_ref() {
@@ -405,14 +415,14 @@ impl PythonCodeGenerator {
             };
             let core_case_branch = case_branch.core_ref();
             let enum_name = &core_case_branch.enum_name;
-            if symbol_data.is_none() {
+            if symbol_index.is_none() {
                 // cache the symbol_data to be used for all case branches
                 if let CoreIdentifierInDeclNode::Ok(ok_enum_name) = enum_name.core_ref() {
-                    if let Some(sym_data) = self
+                    if let Some(sym_index) = self
                         .semantic_state_db
                         .get_type_symbol_data_for_identifier_in_decl(ok_enum_name)
                     {
-                        symbol_data = Some(sym_data.clone());
+                        symbol_index = Some(sym_index);
                     }
                 }
             }
@@ -420,10 +430,14 @@ impl PythonCodeGenerator {
             if let CoreIdentifierInDeclNode::Ok(ok_variant_name) = variant_name.core_ref() {
                 let variant_name_str = ok_variant_name
                     .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
-                let index = match &symbol_data {
-                    Some(symbol_data) => symbol_data
-                        .get_core_ref()
-                        .get_enum_data_ref()
+                let index = match symbol_index {
+                    Some(symbol_data) => self
+                        .semantic_state_db
+                        .namespace
+                        .types
+                        .get_symbol_data_mut_ref(symbol_data)
+                        .data
+                        .get_enum_data_mut_ref()
                         .try_index_for_variant(variant_name_str)
                         .unwrap(),
                     None => unreachable!(),

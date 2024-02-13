@@ -16,7 +16,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Enum {
     pub symbol_data: SymbolIndex<UserDefinedTypeData>,
     pub concrete_types: Option<ConcreteTypesTuple>,

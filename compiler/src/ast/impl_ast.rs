@@ -50,8 +50,11 @@ use crate::code::JarvilCodeHandler;
 use crate::core::string_interner::{Interner, StrId};
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
+use crate::scope::scope::ScopeIndex;
 use crate::types::core::Type;
 use serde::Serialize;
+use std::borrow::BorrowMut;
+use std::cell::RefMut;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use text_size::TextRange;
@@ -1197,7 +1200,7 @@ impl TypeExpressionNode {
     pub fn type_obj_before_resolved(
         &self,
         resolver: &mut Resolver,
-        scope_index: usize,
+        scope_index: ScopeIndex,
         has_generics: &mut bool,
     ) -> TypeResolveKind {
         match self.core_ref() {
@@ -1291,7 +1294,7 @@ impl ArrayTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         resolver: &mut Resolver,
-        scope_index: usize,
+        scope_index: ScopeIndex,
         has_generics: &mut bool,
     ) -> TypeResolveKind {
         match self
@@ -1338,7 +1341,7 @@ impl TupleTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         resolver: &mut Resolver,
-        scope_index: usize,
+        scope_index: ScopeIndex,
         has_generics: &mut bool,
     ) -> TypeResolveKind {
         let mut unresolved_identifiers: Vec<UnresolvedIdentifier> = vec![];
@@ -1439,7 +1442,7 @@ impl HashMapTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         resolver: &mut Resolver,
-        scope_index: usize,
+        scope_index: ScopeIndex,
         has_generics: &mut bool,
     ) -> TypeResolveKind {
         let key_result =
@@ -1475,7 +1478,7 @@ impl UserDefinedTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         resolver: &mut Resolver,
-        scope_index: usize,
+        scope_index: ScopeIndex,
         has_generics: &mut bool,
     ) -> TypeResolveKind {
         resolver.type_obj_from_user_defined_type_expr(self, scope_index, has_generics)
@@ -2433,7 +2436,10 @@ impl OkIdentifierInUseNode {
     }
 
     pub fn token_value(&self, code: &JarvilCodeHandler, interner: &mut Interner) -> StrId {
-        self.0.as_ref().name.token_value(code, interner)
+        self.0
+            .as_ref()
+            .name
+            .token_value(code, interner.borrow_mut())
     }
 
     pub fn token_value_str(&self, code: &JarvilCodeHandler) -> String {

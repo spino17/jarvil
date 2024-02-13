@@ -376,7 +376,7 @@ impl AbstractSymbol for InterfaceSymbolData {
         namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(!is_concrete_types_none_allowed);
-        let interface_data = namespace.interfaces.get_symbol_data_ref(self.0).data;
+        let interface_data = &namespace.interfaces.get_symbol_data_ref(self.0).data;
         let generic_type_decls = &interface_data.generics;
         check_concrete_types_bounded_by_interfaces(
             generic_type_decls,

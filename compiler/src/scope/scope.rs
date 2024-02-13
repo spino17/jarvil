@@ -39,7 +39,7 @@ impl<T> Scope<T> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ScopeIndex(usize);
 
 impl ScopeIndex {

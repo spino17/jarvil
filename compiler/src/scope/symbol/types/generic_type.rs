@@ -50,7 +50,7 @@ impl GenericTypeData {
         let mut result: Option<(Type, TextRange)> = None;
         for (interface_obj, _) in &self.interface_bounds.interfaces {
             let concrete_symbol_data = &interface_obj.0.as_ref().1;
-            let interface_data = namespace
+            let interface_data = &namespace
                 .interfaces
                 .get_symbol_data_ref(concrete_symbol_data.symbol_ref)
                 .data;
@@ -87,7 +87,7 @@ impl GenericTypeData {
         let mut result: Option<usize> = None;
         for (index, (interface_obj, _)) in self.interface_bounds.interfaces.iter().enumerate() {
             let concrete_symbol_data = &interface_obj.0.as_ref().1;
-            let interface_data = namespace
+            let interface_data = &namespace
                 .interfaces
                 .get_symbol_data_ref(concrete_symbol_data.symbol_ref)
                 .data;

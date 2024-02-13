@@ -42,10 +42,18 @@ impl<T> Symbol<T> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct IdentDeclId<T> {
     index: usize,
     phantom: PhantomData<T>,
+}
+
+impl<T> Copy for IdentDeclId<T> {}
+
+impl<T> Clone for IdentDeclId<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
 }
 
 impl<T> IdentDeclId<T> {
@@ -61,20 +69,18 @@ impl<T> IdentDeclId<T> {
     }
 }
 
-#[derive(Debug, Copy)]
+#[derive(Debug)]
 pub struct SymbolIndex<T: IsInitialized> {
     pub scope_index: ScopeIndex,
     pub ident_name: StrId,
     pub phanton: PhantomData<T>,
 }
 
+impl<T: IsInitialized> Copy for SymbolIndex<T> {}
+
 impl<T: IsInitialized> Clone for SymbolIndex<T> {
     fn clone(&self) -> Self {
-        SymbolIndex {
-            scope_index: self.scope_index,
-            ident_name: self.ident_name,
-            phanton: PhantomData,
-        }
+        *self
     }
 }
 

@@ -172,7 +172,7 @@ impl SemanticStateDatabase {
     ) -> Option<ConcreteSymbolIndex<UserDefinedTypeData>> {
         match self.identifier_in_use_binding_table.get(node) {
             Some(symbol_data) => match symbol_data {
-                ConcreteSymbolDataEntry::Type(type_symbol_data) => Some(*type_symbol_data),
+                ConcreteSymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data.clone()),
                 _ => unreachable!(),
             },
             None => None,

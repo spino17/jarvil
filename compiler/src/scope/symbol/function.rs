@@ -182,7 +182,7 @@ impl CallablePrototypeData {
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
-        type_checker: &mut TypeChecker,
+        type_checker: &TypeChecker,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PrototypeEquivalenceCheckError> {
         let expected_params = &self.params;
@@ -298,7 +298,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
-        type_checker: &mut TypeChecker,
+        type_checker: &TypeChecker,
         local_concrete_types: Option<ConcreteTypesTuple>,
         local_concrete_ty_ranges: Option<Vec<TextRange>>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
@@ -387,7 +387,7 @@ impl AbstractSymbol for FunctionSymbolData {
         namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(is_concrete_types_none_allowed);
-        let function_data = namespace.functions.get_symbol_data_ref(self.0).data;
+        let function_data = &namespace.functions.get_symbol_data_ref(self.0).data;
         let generic_type_decls = &function_data.generics;
         check_concrete_types_bounded_by_interfaces(
             generic_type_decls,

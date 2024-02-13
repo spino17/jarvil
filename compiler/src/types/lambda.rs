@@ -50,13 +50,13 @@ impl Lambda {
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
-        type_checker: &mut TypeChecker,
+        type_checker: &TypeChecker,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PrototypeEquivalenceCheckError> {
         match self {
             Lambda::Named(semantic_data) => {
                 let concrete_types = &semantic_data.concrete_types;
-                let symbol_data = type_checker
+                let symbol_data = &type_checker
                     .semantic_state_db
                     .namespace
                     .types
@@ -89,7 +89,7 @@ impl AbstractType for Lambda {
                 // Lambda type has structural equivalence unlike struct types which are only compared by it's name.
                 match self {
                     Lambda::Named(self_named) => {
-                        let self_symbol_data = namespace
+                        let self_symbol_data = &namespace
                             .types
                             .get_symbol_data_ref(self_named.symbol_data)
                             .data;
@@ -99,7 +99,7 @@ impl AbstractType for Lambda {
                             .get_concrete_prototype(self_concrete_types.as_ref(), namespace);
                         match other_data {
                             Lambda::Named(other_named) => {
-                                let other_symbol_data = namespace
+                                let other_symbol_data = &namespace
                                     .types
                                     .get_symbol_data_ref(other_named.symbol_data)
                                     .data;
@@ -118,7 +118,7 @@ impl AbstractType for Lambda {
                     }
                     Lambda::Unnamed(self_prototype) => match other_data {
                         Lambda::Named(other_named) => {
-                            let other_symbol_data = namespace
+                            let other_symbol_data = &namespace
                                 .types
                                 .get_symbol_data_ref(other_named.symbol_data)
                                 .data;
@@ -224,7 +224,7 @@ impl AbstractType for Lambda {
         match received_ty.0.as_ref() {
             CoreType::Lambda(lambda_ty) => match self {
                 Lambda::Named(self_named) => {
-                    let self_symbol_data = namespace
+                    let self_symbol_data = &namespace
                         .types
                         .get_symbol_data_ref(self_named.symbol_data)
                         .data;
@@ -234,7 +234,7 @@ impl AbstractType for Lambda {
                         self_data.get_concrete_prototype(self_concrete_types.as_ref(), namespace);
                     match lambda_ty {
                         Lambda::Named(other_named) => {
-                            let other_symbol_data = namespace
+                            let other_symbol_data = &namespace
                                 .types
                                 .get_symbol_data_ref(other_named.symbol_data)
                                 .data;

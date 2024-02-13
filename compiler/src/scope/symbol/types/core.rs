@@ -141,7 +141,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
         interner: &Interner,
         namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
-        match namespace.types.get_symbol_data_ref(self.0).data {
+        match &namespace.types.get_symbol_data_ref(self.0).data {
             UserDefinedTypeData::Struct(struct_data) => {
                 let generic_type_decls = &struct_data.generics;
                 check_concrete_types_bounded_by_interfaces(
