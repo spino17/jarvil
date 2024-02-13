@@ -22,7 +22,7 @@ impl<T> Scope<T> {
         ident_name: StrId,
         data: T,
         decl_line_number: TextRange,
-        unique_id: Option<IdentDeclId>,
+        unique_id: Option<IdentDeclId<T>>,
     ) {
         self.table.insert(
             ident_name,
@@ -77,7 +77,7 @@ impl<T: IsInitialized> ScopeArena<T> {
         ident_name: StrId,
         data: T,
         decl_line_number: TextRange,
-        unique_id: Option<IdentDeclId>,
+        unique_id: Option<IdentDeclId<T>>,
     ) -> SymbolIndex<T> {
         self[scope_index].set(ident_name, data, decl_line_number, unique_id);
         SymbolIndex {
@@ -146,7 +146,7 @@ impl<T: IsInitialized> ScopeArena<T> {
         meta_data: T,
         decl_range: TextRange,
         lookup_fn: U,
-        unique_id: IdentDeclId,
+        unique_id: IdentDeclId<T>,
     ) -> Result<SymbolIndex<T>, (StrId, TextRange)> {
         if let Some(previous_decl_range) = lookup_fn(self, scope_index, &key) {
             return Err((key, previous_decl_range));

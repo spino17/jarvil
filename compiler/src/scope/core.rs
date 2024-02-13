@@ -1,3 +1,4 @@
+/*use super::symbol::core::IdentDeclId;
 use super::symbol::function::{CallableData, CallableKind};
 use super::symbol::interfaces::{InterfaceBounds, InterfaceData};
 use super::symbol::types::generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory};
@@ -143,10 +144,10 @@ impl<T: IsInitialized> SymbolData<T> {
         self.0.unique_id.is_some()
     }
 
-    pub fn get_mangled_name(&self) -> MangledIdentifierName {
+    pub fn get_mangled_name(&self) -> MangledIdentifierName<T> {
         MangledIdentifierName {
             jarvil_identifer_name: self.identifier_name(),
-            unique_id: self.0.unique_id,
+            unique_id: todo!(),
         }
     }
 
@@ -432,7 +433,7 @@ impl Namespace {
         scope_index: usize,
         name: StrId,
         decl_range: TextRange,
-        unique_id: usize,
+        unique_id: IdentDeclId<VariableData>,
     ) -> Result<VariableSymbolData, (StrId, TextRange)> {
         let lookup_func = |scope: &Scope<VariableData>, scope_index: usize, key: &StrId| {
             scope.flattened_vec[scope_index]
@@ -620,4 +621,4 @@ impl Default for Namespace {
     fn default() -> Self {
         Namespace::new()
     }
-}
+}*/

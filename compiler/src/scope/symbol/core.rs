@@ -20,7 +20,7 @@ pub struct Symbol<T> {
     pub ident_name: StrId,
     pub data: T,
     pub decl_line_number: TextRange,
-    pub unique_id: Option<IdentDeclId>,
+    pub unique_id: Option<IdentDeclId<T>>,
 }
 
 impl<T> Symbol<T> {
@@ -28,7 +28,7 @@ impl<T> Symbol<T> {
         ident_name: StrId,
         data: T,
         decl_line_number: TextRange,
-        unique_id: Option<IdentDeclId>,
+        unique_id: Option<IdentDeclId<T>>,
     ) -> Self {
         Symbol {
             ident_name,
@@ -44,11 +44,21 @@ impl<T> Symbol<T> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct IdentDeclId(usize);
+pub struct IdentDeclId<T> {
+    index: usize,
+    phantom: PhantomData<T>,
+}
 
-impl IdentDeclId {
+impl<T> IdentDeclId<T> {
+    pub fn new(index: usize) -> IdentDeclId<T> {
+        IdentDeclId {
+            index,
+            phantom: PhantomData,
+        }
+    }
+
     pub fn index(&self) -> usize {
-        self.0
+        self.index
     }
 }
 
@@ -68,7 +78,7 @@ impl<T: IsInitialized> SymbolIndex<T> {
         arena.get_symbol_data_ref(*self).decl_line_number()
     }
 
-    pub fn get_index(&self, arena: &ScopeArena<T>) -> Option<IdentDeclId> {
+    pub fn get_index(&self, arena: &ScopeArena<T>) -> Option<IdentDeclId<T>> {
         arena.get_symbol_data_ref(*self).unique_id
     }
 
@@ -76,7 +86,7 @@ impl<T: IsInitialized> SymbolIndex<T> {
         self.get_index(arena).is_some()
     }
 
-    pub fn get_mangled_name(&self, arena: &ScopeArena<T>) -> MangledIdentifierName {
+    pub fn get_mangled_name(&self, arena: &ScopeArena<T>) -> MangledIdentifierName<T> {
         MangledIdentifierName {
             jarvil_identifer_name: self.identifier_name(),
             unique_id: self.get_index(arena),

@@ -32,7 +32,7 @@ pub struct SemanticStateDatabase {
     pub identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
     pub type_expr_obj_table: FxHashMap<TypeExpressionNode, (Type, bool)>,
     pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolData<VariableData>>, // `self` (node) -> scope_index
-    pub block_non_locals: FxHashMap<BlockNode, FxHashSet<MangledIdentifierName>>,
+    pub block_non_locals: FxHashMap<BlockNode, FxHashSet<MangledIdentifierName<VariableData>>>,
     pub bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
 }
 
@@ -216,13 +216,16 @@ impl SemanticStateDatabase {
     pub fn set_non_locals(
         &mut self,
         block: &BlockNode,
-        variable_non_locals: FxHashSet<MangledIdentifierName>,
+        variable_non_locals: FxHashSet<MangledIdentifierName<VariableData>>,
     ) {
         self.block_non_locals
             .insert(block.clone(), variable_non_locals);
     }
 
-    pub fn get_non_locals_ref(&self, block: &BlockNode) -> &FxHashSet<MangledIdentifierName> {
+    pub fn get_non_locals_ref(
+        &self,
+        block: &BlockNode,
+    ) -> &FxHashSet<MangledIdentifierName<VariableData>> {
         match self.block_non_locals.get(block) {
             Some(variable_non_locals) => variable_non_locals,
             None => unreachable!(),

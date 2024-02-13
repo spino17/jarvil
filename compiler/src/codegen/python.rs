@@ -1,6 +1,7 @@
 use crate::scope::mangled::MangledIdentifierName;
 use crate::scope::semantic_db::SemanticStateDatabase;
 use crate::scope::symbol::core::{ConcreteSymbolDataEntry, SymbolDataEntry};
+use crate::scope::symbol::variables::VariableData;
 use crate::{
     ast::{
         ast::{
@@ -100,7 +101,10 @@ impl PythonCodeGenerator {
         self.add_str_to_python_code(&get_whitespaces_from_indent_level(self.indent_level));
     }
 
-    pub fn get_non_locals(&self, block: &BlockNode) -> &FxHashSet<MangledIdentifierName> {
+    pub fn get_non_locals(
+        &self,
+        block: &BlockNode,
+    ) -> &FxHashSet<MangledIdentifierName<VariableData>> {
         self.semantic_state_db.get_non_locals_ref(block)
     }
 

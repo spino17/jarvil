@@ -10,6 +10,7 @@ pub trait IsInitialized {
 }
 
 pub trait AbstractSymbol {
+    type SymbolTy;
     fn get_entry(&self) -> SymbolDataEntry;
     fn check_generic_type_args(
         &self,
@@ -18,5 +19,5 @@ pub trait AbstractSymbol {
         is_concrete_types_none_allowed: bool,
         interner: &Interner,
     ) -> Result<(), GenericTypeArgsCheckError>;
-    fn get_mangled_name(&self) -> MangledIdentifierName;
+    fn get_mangled_name(&self) -> MangledIdentifierName<Self::SymbolTy>;
 }

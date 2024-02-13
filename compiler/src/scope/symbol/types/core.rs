@@ -128,6 +128,7 @@ impl IsInitialized for UserDefinedTypeData {
 pub struct UserDefinedTypeSymbolData(pub SymbolData<UserDefinedTypeData>);
 
 impl AbstractSymbol for UserDefinedTypeSymbolData {
+    type SymbolTy = UserDefinedTypeData;
     fn get_entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Type(self.0.clone())
     }
@@ -179,7 +180,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
         }
     }
 
-    fn get_mangled_name(&self) -> MangledIdentifierName {
+    fn get_mangled_name(&self) -> MangledIdentifierName<Self::SymbolTy> {
         self.0.get_mangled_name()
     }
 }

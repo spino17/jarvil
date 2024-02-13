@@ -350,6 +350,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
 pub struct InterfaceSymbolData(pub SymbolData<InterfaceData>);
 
 impl AbstractSymbol for InterfaceSymbolData {
+    type SymbolTy = InterfaceData;
     fn get_entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Interface(self.0.clone())
     }
@@ -373,7 +374,7 @@ impl AbstractSymbol for InterfaceSymbolData {
         )
     }
 
-    fn get_mangled_name(&self) -> MangledIdentifierName {
+    fn get_mangled_name(&self) -> MangledIdentifierName<InterfaceData> {
         unreachable!()
     }
 }

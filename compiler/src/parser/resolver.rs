@@ -25,7 +25,7 @@ use crate::scope::core::{LookupData, LookupResult};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::mangled::MangledIdentifierName;
 use crate::scope::semantic_db::SemanticStateDatabase;
-use crate::scope::symbol::core::{ConcreteSymbolDataEntry, SymbolDataEntry};
+use crate::scope::symbol::core::{ConcreteSymbolDataEntry, IdentDeclId, SymbolDataEntry};
 use crate::scope::symbol::function::FunctionSymbolData;
 use crate::scope::symbol::function::{CallableKind, CallablePrototypeData};
 use crate::scope::symbol::interfaces::InterfaceSymbolData;
@@ -123,7 +123,7 @@ pub struct ClassContext {
 }
 
 pub struct BlockContext {
-    inner_non_locals: FxHashSet<MangledIdentifierName>,
+    inner_non_locals: FxHashSet<MangledIdentifierName<VariableData>>,
     block_kind: BlockKind,
     scope_index: usize,
 }
@@ -238,14 +238,14 @@ impl Resolver {
 
     pub fn set_to_variable_non_locals(
         &mut self,
-        name: MangledIdentifierName,
+        name: MangledIdentifierName<VariableData>,
         enclosing_func_scope_depth: Option<usize>,
     ) {
         let len = self.context.block_context_stack.len();
         if let Some(enclosing_func_scope_depth) = enclosing_func_scope_depth {
             self.context.block_context_stack[len - 1 - (enclosing_func_scope_depth - 1)]
                 .inner_non_locals
-                .insert(name.clone());
+                .insert(name);
         }
     }
 
@@ -496,7 +496,7 @@ impl Resolver {
                           scope_index: usize,
                           name: StrId,
                           decl_range: TextRange,
-                          unique_id: usize| {
+                          unique_id: IdentDeclId<VariableData>| {
             namespace.declare_variable(scope_index, name, decl_range, unique_id)
         };
         let unique_id = self

@@ -1,3 +1,4 @@
+use super::core::SymbolDataEntry;
 use crate::core::string_interner::Interner;
 use crate::scope::concrete::ConcreteTypesTuple;
 use crate::scope::core::SymbolData;
@@ -6,8 +7,6 @@ use crate::scope::mangled::MangledIdentifierName;
 use crate::scope::traits::{AbstractSymbol, IsInitialized};
 use crate::types::core::Type;
 use text_size::TextRange;
-
-use super::core::SymbolDataEntry;
 
 #[derive(Debug)]
 pub struct VariableData {
@@ -56,6 +55,7 @@ impl Default for VariableData {
 pub struct VariableSymbolData(pub SymbolData<VariableData>);
 
 impl AbstractSymbol for VariableSymbolData {
+    type SymbolTy = VariableData;
     fn get_entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Variable(self.0.clone())
     }
@@ -74,7 +74,7 @@ impl AbstractSymbol for VariableSymbolData {
         Ok(())
     }
 
-    fn get_mangled_name(&self) -> MangledIdentifierName {
+    fn get_mangled_name(&self) -> MangledIdentifierName<VariableData> {
         self.0.get_mangled_name()
     }
 }

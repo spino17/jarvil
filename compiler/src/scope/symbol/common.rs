@@ -1,3 +1,4 @@
+use super::core::IdentDeclId;
 use super::function::{CallableData, PartialConcreteCallableDataRef};
 use super::interfaces::InterfaceData;
 use super::variables::VariableData;
@@ -16,10 +17,10 @@ pub struct UniqueKeyGenerator<T> {
 }
 
 impl<T> UniqueKeyGenerator<T> {
-    pub fn generate_unique_id(&mut self) -> usize {
+    pub fn generate_unique_id(&mut self) -> IdentDeclId<T> {
         let id = self.state;
         self.state += 1;
-        id
+        IdentDeclId::new(id)
     }
 }
 
@@ -41,19 +42,19 @@ pub struct GlobalUniqueKeyGenerator {
 }
 
 impl GlobalUniqueKeyGenerator {
-    pub fn generate_unique_id_for_variable(&mut self) -> usize {
+    pub fn generate_unique_id_for_variable(&mut self) -> IdentDeclId<VariableData> {
         self.variables.generate_unique_id()
     }
 
-    pub fn generate_unique_id_for_function(&mut self) -> usize {
+    pub fn generate_unique_id_for_function(&mut self) -> IdentDeclId<CallableData> {
         self.functions.generate_unique_id()
     }
 
-    pub fn generate_unique_id_for_type(&mut self) -> usize {
+    pub fn generate_unique_id_for_type(&mut self) -> IdentDeclId<UserDefinedTypeData> {
         self.types.generate_unique_id()
     }
 
-    pub fn generate_unique_id_for_interface(&mut self) -> usize {
+    pub fn generate_unique_id_for_interface(&mut self) -> IdentDeclId<InterfaceData> {
         self.interfaces.generate_unique_id()
     }
 }

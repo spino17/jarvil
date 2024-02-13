@@ -345,6 +345,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
 pub struct FunctionSymbolData(pub SymbolData<CallableData>);
 
 impl AbstractSymbol for FunctionSymbolData {
+    type SymbolTy = CallableData;
     fn get_entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Function(self.0.clone())
     }
@@ -368,7 +369,7 @@ impl AbstractSymbol for FunctionSymbolData {
         )
     }
 
-    fn get_mangled_name(&self) -> MangledIdentifierName {
+    fn get_mangled_name(&self) -> MangledIdentifierName<CallableData> {
         self.0.get_mangled_name()
     }
 }
