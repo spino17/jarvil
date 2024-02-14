@@ -170,26 +170,9 @@ impl PythonCodeGenerator {
         let token_value = token.token_value_str(&self.code_handler);
         match token.core_token {
             CoreToken::SINGLE_LINE_COMMENT => {
-                /*
-                if token_value.starts_with('/') {
-                    let mut modified_str = "#".to_string();
-                    modified_str.push_str(&token_value[2..]);
-                    self.add_str_to_python_code(&modified_str);
-                } else {
-                    self.add_str_to_python_code(&token_value);
-                }
-                 */
                 self.add_str_to_python_code("\n");
             }
             CoreToken::BLOCK_COMMENT => {
-                /*
-                let len = token_value.len();
-                let mut critical_section = token_value[2..(len - 2)].to_string();
-                critical_section.push_str("\"\"\"");
-                let mut final_str = "\"\"\"".to_string();
-                final_str.push_str(&critical_section);
-                self.add_str_to_python_code(&final_str);
-                 */
                 self.add_str_to_python_code("\n");
             }
             CoreToken::ENDMARKER => (),
@@ -351,16 +334,13 @@ impl PythonCodeGenerator {
         };
         let Some(concrete_symbol_index) = self
             .semantic_state_db
-            .get_type_symbol_data_for_identifier_in_use(ok_ty_name)
+            .get_ty_symbol_data_for_identifier_in_use(ok_ty_name)
         else {
             return;
         };
         match &self
             .semantic_state_db
-            .namespace
-            .types
-            .get_symbol_data_ref(concrete_symbol_index.symbol_ref)
-            .data
+            .get_ty_symbol_data_ref(concrete_symbol_index.symbol_ref)
         {
             UserDefinedTypeData::Struct(_) => {
                 self.print_identifier_in_use(ty_name, is_trivia);
@@ -377,7 +357,7 @@ impl PythonCodeGenerator {
             UserDefinedTypeData::Enum(enum_data) => {
                 if let CoreIdentifierInUseNode::Ok(ok_variant_name) = property_name.core_ref() {
                     let variant_name_str = ok_variant_name
-                        .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
+                        .token_value(&self.code_handler, &self.semantic_state_db.interner);
                     if let Some(index) = enum_data.try_index_for_variant(variant_name_str) {
                         self.print_identifier_in_use(ty_name, is_trivia);
                         self.add_str_to_python_code(&format!("(index={}", index));
@@ -420,7 +400,7 @@ impl PythonCodeGenerator {
                 if let CoreIdentifierInDeclNode::Ok(ok_enum_name) = enum_name.core_ref() {
                     if let Some(sym_index) = self
                         .semantic_state_db
-                        .get_type_symbol_data_for_identifier_in_decl(ok_enum_name)
+                        .get_ty_symbol_data_for_identifier_in_decl(ok_enum_name)
                     {
                         symbol_index = Some(sym_index);
                     }
@@ -433,10 +413,7 @@ impl PythonCodeGenerator {
                 let index = match symbol_index {
                     Some(symbol_index) => self
                         .semantic_state_db
-                        .namespace
-                        .types
-                        .get_symbol_data_mut_ref(symbol_index)
-                        .data
+                        .get_ty_symbol_data_mut_ref(symbol_index)
                         .get_enum_data_mut_ref()
                         .try_index_for_variant(variant_name_str)
                         .unwrap(),

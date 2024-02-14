@@ -331,10 +331,7 @@ impl TypeChecker {
                 Some(symbol_index) => {
                     return self
                         .semantic_state_db
-                        .namespace
-                        .variables
-                        .get_symbol_data_ref(symbol_index)
-                        .data
+                        .get_variable_symbol_data_ref(symbol_index)
                         .data_type
                         .clone()
                 }
@@ -585,12 +582,9 @@ impl TypeChecker {
         concrete_symbol_index: &ConcreteSymbolIndex<CallableData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
-        let func_data = &self
+        let func_data = self
             .semantic_state_db
-            .namespace
-            .functions
-            .get_symbol_data_ref(concrete_symbol_index.symbol_ref)
-            .data;
+            .get_function_symbol_data_ref(concrete_symbol_index.symbol_ref);
         let concrete_types = &concrete_symbol_index.concrete_types;
         let prototype_result = match concrete_types {
             Some(concrete_types) => {
@@ -656,10 +650,7 @@ impl TypeChecker {
         debug_assert!(concrete_symbol_index.concrete_types.is_none());
         let lambda_type = &self
             .semantic_state_db
-            .namespace
-            .variables
-            .get_symbol_data_ref(concrete_symbol_index.symbol_ref)
-            .data
+            .get_variable_symbol_data_ref(concrete_symbol_index.symbol_ref)
             .data_type;
         match lambda_type.0.as_ref() {
             CoreType::Lambda(lambda_data) => {
@@ -681,12 +672,9 @@ impl TypeChecker {
         concrete_symbol_index: &ConcreteSymbolIndex<UserDefinedTypeData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
-        let UserDefinedTypeData::Struct(struct_data) = &self
+        let UserDefinedTypeData::Struct(struct_data) = self
             .semantic_state_db
-            .namespace
-            .types
-            .get_symbol_data_ref(concrete_symbol_index.symbol_ref)
-            .data
+            .get_ty_symbol_data_ref(concrete_symbol_index.symbol_ref)
         else {
             return Err(AtomStartTypeCheckError::ConstructorNotFoundForTypeError(
                 name,
@@ -1027,15 +1015,12 @@ impl TypeChecker {
             ok_identifier.token_value(&self.code_handler, &self.semantic_state_db.interner);
         match self
             .semantic_state_db
-            .get_type_symbol_data_for_identifier_in_use(ok_identifier)
+            .get_ty_symbol_data_for_identifier_in_use(ok_identifier)
         {
             Some(concrete_symbol_index) => {
                 match &self
                     .semantic_state_db
-                    .namespace
-                    .types
-                    .get_symbol_data_ref(concrete_symbol_index.symbol_ref)
-                    .data
+                    .get_ty_symbol_data_ref(concrete_symbol_index.symbol_ref)
                 {
                     UserDefinedTypeData::Struct(struct_data) => self.check_class_method_call(
                         struct_data,
@@ -1075,10 +1060,7 @@ impl TypeChecker {
                     {
                         Some(concrete_symbol_index) => self
                             .semantic_state_db
-                            .namespace
-                            .variables
-                            .get_symbol_data_ref(concrete_symbol_index.symbol_ref)
-                            .data
+                            .get_variable_symbol_data_ref(concrete_symbol_index.symbol_ref)
                             .data_type
                             .clone(),
                         None => Type::new_with_unknown(),
@@ -1096,10 +1078,7 @@ impl TypeChecker {
                         {
                             Some(symbol_index) => self
                                 .semantic_state_db
-                                .namespace
-                                .variables
-                                .get_symbol_data_ref(symbol_index)
-                                .data
+                                .get_variable_symbol_data_ref(symbol_index)
                                 .data_type
                                 .clone(),
                             None => Type::new_with_unknown(),
@@ -1162,12 +1141,9 @@ impl TypeChecker {
         let result = match atom_type_obj.0.as_ref() {
             CoreType::Struct(struct_ty) => {
                 let concrete_types = &struct_ty.concrete_types;
-                let ty_data = &self
+                let ty_data = self
                     .semantic_state_db
-                    .namespace
-                    .types
-                    .get_symbol_data_ref(struct_ty.symbol_index)
-                    .data;
+                    .get_ty_symbol_data_ref(struct_ty.symbol_index);
                 let struct_data = ty_data.get_struct_data_ref();
                 match struct_data.try_field(
                     &property_name_str,
@@ -1189,12 +1165,9 @@ impl TypeChecker {
                 }
             }
             CoreType::Generic(generic_ty) => {
-                let ty_data = &self
+                let ty_data = self
                     .semantic_state_db
-                    .namespace
-                    .types
-                    .get_symbol_data_ref(generic_ty.symbol_index)
-                    .data;
+                    .get_ty_symbol_data_ref(generic_ty.symbol_index);
                 let generic_data = ty_data.get_generic_data_ref();
                 match generic_data.try_field(
                     &property_name_str,
@@ -1258,12 +1231,9 @@ impl TypeChecker {
         let method_name = method_name_ok_identifier
             .token_value(&self.code_handler, &self.semantic_state_db.interner);
         let concrete_types = &struct_ty.concrete_types;
-        let ty_data = &self
+        let ty_data = self
             .semantic_state_db
-            .namespace
-            .types
-            .get_symbol_data_ref(struct_ty.symbol_index)
-            .data;
+            .get_ty_symbol_data_ref(struct_ty.symbol_index);
         let struct_data = ty_data.get_struct_data_ref();
         // first check if it's a property
         match struct_data.try_field(
@@ -1322,12 +1292,9 @@ impl TypeChecker {
     ) -> Result<Type, MethodAccessTypeCheckError> {
         let method_name = method_name_ok_identifier
             .token_value(&self.code_handler, &self.semantic_state_db.interner);
-        let ty_data = &self
+        let ty_data = self
             .semantic_state_db
-            .namespace
-            .types
-            .get_symbol_data_ref(generic_ty.symbol_index)
-            .data;
+            .get_ty_symbol_data_ref(generic_ty.symbol_index);
         let generic_data = ty_data.get_generic_data_ref();
         let interface_bounds = &generic_data.interface_bounds;
         match generic_data.try_field(
@@ -1372,12 +1339,9 @@ impl TypeChecker {
                         let interface_obj =
                             interface_bounds.interface_obj_at_index(interface_index);
                         let concrete_symbol_index = &interface_obj.0.as_ref().1;
-                        let interface_data = &self
+                        let interface_data = self
                             .semantic_state_db
-                            .namespace
-                            .interfaces
-                            .get_symbol_data_ref(concrete_symbol_index.symbol_ref)
-                            .data;
+                            .get_interface_symbol_data_ref(concrete_symbol_index.symbol_ref);
                         let concrete_types = &concrete_symbol_index.concrete_types;
                         match interface_data.try_method(&method_name, concrete_types.as_ref()) {
                             Some((partial_concrete_callable_data, _)) => {
@@ -2053,20 +2017,14 @@ impl TypeChecker {
         };
         let variable_ty = self
             .semantic_state_db
-            .namespace
-            .variables
-            .get_symbol_data_ref(symbol_index)
-            .data
+            .get_variable_symbol_data_ref(symbol_index)
             .data_type
             .clone();
         if variable_ty.is_unset() {
             // TODO - check if the `r_type` is ambigious type
             // enforce availablity of type annotation here!
             self.semantic_state_db
-                .namespace
-                .variables
-                .get_symbol_data_mut_ref(symbol_index)
-                .data
+                .get_variable_symbol_data_mut_ref(symbol_index)
                 .set_data_type(&r_type);
         } else if !variable_ty.is_eq(&r_type, &self.semantic_state_db.namespace) {
             let err = RightSideExpressionTypeMismatchedWithTypeFromAnnotationError::new(
@@ -2204,17 +2162,12 @@ impl TypeChecker {
         };
         let Some(symbol_index) = self
             .semantic_state_db
-            .get_type_symbol_data_for_identifier_in_decl(ok_identifier)
+            .get_ty_symbol_data_for_identifier_in_decl(ok_identifier)
         else {
             return;
         };
 
-        let ty_data = &self
-            .semantic_state_db
-            .namespace
-            .types
-            .get_symbol_data_ref(symbol_index)
-            .data;
+        let ty_data = self.semantic_state_db.get_ty_symbol_data_ref(symbol_index);
         let struct_data = ty_data.get_struct_data_ref();
         let implementing_interfaces = &struct_data.implementing_interfaces;
         let Some(implementing_interfaces) = implementing_interfaces else {
@@ -2225,12 +2178,9 @@ impl TypeChecker {
         for (interface_obj, range) in &implementing_interfaces.interfaces {
             let (_, interface_concrete_symbol_index) = interface_obj.get_core_ref();
             let concrete_types = &interface_concrete_symbol_index.concrete_types;
-            let interface_data = &self
+            let interface_data = self
                 .semantic_state_db
-                .namespace
-                .interfaces
-                .get_symbol_data_ref(interface_concrete_symbol_index.symbol_ref)
-                .data;
+                .get_interface_symbol_data_ref(interface_concrete_symbol_index.symbol_ref);
             let partial_concrete_interface_methods =
                 interface_data.get_partially_concrete_interface_methods(concrete_types.as_ref());
             if let Err((missing_interface_method_names, errors)) =
@@ -2305,15 +2255,13 @@ impl TypeChecker {
         let mut checked_variants: FxHashSet<StrId> = FxHashSet::default();
         let expr_enum_name = enum_ty.symbol_index.identifier_name();
         let concrete_types = &enum_ty.concrete_types;
-        let ty_data = &self
+        let ty_data = self
             .semantic_state_db
-            .namespace
-            .types
-            .get_symbol_data_ref(enum_ty.symbol_index)
-            .data;
+            .get_ty_symbol_data_ref(enum_ty.symbol_index);
         let enum_data = ty_data.get_enum_data_ref();
         let mut symbol_index_ty_vec = vec![];
         let mut case_blocks = vec![];
+        let mut enum_name_decls = vec![];
 
         for stmt in &match_block.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
@@ -2331,7 +2279,7 @@ impl TypeChecker {
             let enum_name = &core_case_branch.enum_name;
             if let CoreIdentifierInDeclNode::Ok(enum_name) = enum_name.core_ref() {
                 let enum_name_str =
-                    enum_name.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
+                    enum_name.token_value(&self.code_handler, &self.semantic_state_db.interner);
                 if expr_enum_name != enum_name_str {
                     let err = IncorrectEnumNameError::new(
                         self.semantic_state_db.interner.lookup(expr_enum_name),
@@ -2340,16 +2288,17 @@ impl TypeChecker {
                     );
                     self.log_error(Diagnostics::IncorrectEnumName(err));
                 } else {
-                    self.semantic_state_db
-                        .identifier_in_decl_binding_table
-                        .insert(
-                            enum_name.clone(),
-                            SymbolDataEntry::Type(enum_ty.symbol_index),
-                        );
+                    //self.semantic_state_db
+                    //    .identifier_in_decl_binding_table
+                    //    .insert(
+                    //        enum_name.clone(),
+                    //        SymbolDataEntry::Type(enum_ty.symbol_index),
+                    //    );
+                    enum_name_decls.push(enum_name.clone());
                     let variant_name = &core_case_branch.variant_name;
                     if let CoreIdentifierInDeclNode::Ok(variant_name) = variant_name.core_ref() {
                         let variant_name_str = variant_name
-                            .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, &self.semantic_state_db.interner);
                         match enum_data.try_type_for_variant(
                             variant_name_str,
                             concrete_types.as_ref(),
@@ -2421,6 +2370,7 @@ impl TypeChecker {
             case_blocks.push(case_block.clone());
         }
 
+        // report any missing enum variant case
         let mut missing_variants: Vec<StrId> = vec![];
         for (variant, _, _) in &enum_data.variants {
             if !checked_variants.contains(variant) {
@@ -2440,13 +2390,17 @@ impl TypeChecker {
             self.log_error(Diagnostics::EnumVariantsMissingFromMatchCaseStatement(err));
         }
 
+        // set the symbol_index to enum_name nodes
+        for enum_name in enum_name_decls {
+            self.semantic_state_db
+                .identifier_in_decl_binding_table
+                .insert(enum_name, SymbolDataEntry::Type(enum_ty.symbol_index));
+        }
+
         // set types to the enum variant associated variables
         for (symbol_index, ty) in symbol_index_ty_vec {
             self.semantic_state_db
-                .namespace
-                .variables
-                .get_symbol_data_mut_ref(symbol_index)
-                .data
+                .get_variable_symbol_data_mut_ref(symbol_index)
                 .set_data_type(&ty);
         }
 
@@ -2509,10 +2463,7 @@ impl TypeChecker {
                     .get_variable_symbol_data_for_identifier_in_decl(ok_loop_variable)
                 {
                     self.semantic_state_db
-                        .namespace
-                        .variables
-                        .get_symbol_data_mut_ref(symbol_index)
-                        .data
+                        .get_variable_symbol_data_mut_ref(symbol_index)
                         .set_data_type(&element_ty);
                 }
             };
