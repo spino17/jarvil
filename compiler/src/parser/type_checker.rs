@@ -2268,6 +2268,7 @@ impl TypeChecker {
         let expr = &core_match_case.expr;
         let match_block = &core_match_case.block;
         let expr_ty = self.check_expr(expr);
+
         let CoreType::Enum(enum_ty) = expr_ty.0.as_ref() else {
             let err = IncorrectExpressionTypeError::new(
                 "<enum>".to_string(),
@@ -2280,6 +2281,7 @@ impl TypeChecker {
             self.log_error(Diagnostics::IncorrectExpressionType(err));
             return;
         };
+
         let mut checked_variants: FxHashSet<StrId> = FxHashSet::default();
         let expr_enum_name = enum_ty.symbol_data.identifier_name();
         let concrete_types = &enum_ty.concrete_types;
@@ -2290,6 +2292,9 @@ impl TypeChecker {
             .get_symbol_data_ref(enum_ty.symbol_data)
             .data;
         let enum_data = symbol_data.get_enum_data_ref();
+        let mut symbol_index_ty_vec = vec![];
+        let mut case_blocks = vec![];
+
         for stmt in &match_block.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
@@ -2343,7 +2348,8 @@ impl TypeChecker {
                                                     if let Some(symbol_data)
                                                     = self.semantic_state_db.get_variable_symbol_data_for_identifier_in_decl(variable_name)
                                                     {
-                                                        self.semantic_state_db.namespace.variables.get_symbol_data_mut_ref(symbol_data).data.set_data_type(&expected_ty);
+                                                        // self.semantic_state_db.namespace.variables.get_symbol_data_mut_ref(symbol_data).data.set_data_type(&expected_ty);
+                                                        symbol_index_ty_vec.push((symbol_data, expected_ty));
                                                     }
                                                 };
                                             }
@@ -2391,8 +2397,10 @@ impl TypeChecker {
                 }
             }
             let case_block = &core_case_branch.block;
-            self.walk_block(case_block);
+            // self.walk_block(case_block);
+            case_blocks.push(case_block.clone());
         }
+
         let mut missing_variants: Vec<StrId> = vec![];
         for (variant, _, _) in &enum_data.variants {
             if !checked_variants.contains(variant) {
@@ -2410,6 +2418,21 @@ impl TypeChecker {
                 &self.semantic_state_db.interner,
             );
             self.log_error(Diagnostics::EnumVariantsMissingFromMatchCaseStatement(err));
+        }
+
+        // set types to the enum variant associated variables
+        for (symbol_index, ty) in symbol_index_ty_vec {
+            self.semantic_state_db
+                .namespace
+                .variables
+                .get_symbol_data_mut_ref(symbol_index)
+                .data
+                .set_data_type(&ty);
+        }
+
+        // traverse the enum variant case blocks
+        for block in case_blocks {
+            self.walk_block(&block);
         }
     }
 

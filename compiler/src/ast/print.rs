@@ -33,6 +33,7 @@ pub fn modify_map(
             unreachable!()
         };
         let mut modified_token_value_map = modify_map(token_value, code, interner);
+        println!("{:?}", token_value);
         let Some(range) = token_value.get("range") else {
             unreachable!()
         };
