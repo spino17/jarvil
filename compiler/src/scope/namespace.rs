@@ -12,7 +12,10 @@ use super::{
         variables::{VariableData, VariableSymbolData},
     },
 };
-use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::{
+    core::string_interner::Interner,
+    scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory,
+};
 use crate::{core::string_interner::StrId, parser::resolver::BlockKind};
 use crate::{scope::lookup::LookupResult, types::core::Type};
 use text_size::TextRange;
@@ -26,13 +29,37 @@ pub struct Namespace {
 }
 
 impl Namespace {
-    pub fn new() -> Self {
-        Namespace {
+    pub fn new(interner: &Interner) -> Self {
+        let mut namespace = Namespace {
             variables: ScopeArena::new(),
             types: ScopeArena::new(),
             functions: ScopeArena::new(),
             interfaces: ScopeArena::new(),
-        }
+        };
+
+        // filling side scope for types with generic types with indexes 0 and 1
+        namespace.types[ScopeIndex::side()].set(
+            interner.intern("T"),
+            UserDefinedTypeData::Generic(GenericTypeData {
+                index: 0,
+                category: GenericTypeDeclarationPlaceCategory::InStruct,
+                interface_bounds: InterfaceBounds::default(),
+            }),
+            TextRange::default(),
+            None,
+        );
+        namespace.types[ScopeIndex::side()].set(
+            interner.intern("U"),
+            UserDefinedTypeData::Generic(GenericTypeData {
+                index: 1,
+                category: GenericTypeDeclarationPlaceCategory::InStruct,
+                interface_bounds: InterfaceBounds::default(),
+            }),
+            TextRange::default(),
+            None,
+        );
+
+        namespace
     }
 
     pub fn parent_scope_index(&self, scope_index: ScopeIndex) -> Option<ScopeIndex> {

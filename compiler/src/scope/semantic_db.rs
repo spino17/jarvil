@@ -39,8 +39,8 @@ pub struct SemanticStateDatabase {
 
 impl SemanticStateDatabase {
     pub fn new() -> Self {
-        let mut namespace = Namespace::new();
-        let mut interner = Interner::default();
+        let interner = Interner::default();
+        let mut namespace = Namespace::new(&interner);
 
         // fill the built-in functions inside the global namespace
         let builtin_functions = get_builtin_functions();

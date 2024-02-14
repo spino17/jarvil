@@ -17,7 +17,7 @@ pub struct Scope<T> {
 }
 
 impl<T> Scope<T> {
-    fn set(
+    pub fn set(
         &mut self,
         ident_name: StrId,
         data: T,
@@ -46,6 +46,10 @@ impl ScopeIndex {
     pub fn global() -> ScopeIndex {
         ScopeIndex(0)
     }
+
+    pub fn side() -> ScopeIndex {
+        ScopeIndex(1)
+    }
 }
 
 #[derive(Debug)]
@@ -69,11 +73,20 @@ impl<T: IsInitialized> IndexMut<ScopeIndex> for ScopeArena<T> {
 impl<T: IsInitialized> ScopeArena<T> {
     pub fn new() -> Self {
         ScopeArena {
-            arena: vec![Box::new(Scope {
-                table: FxHashMap::default(),
-                parent_scope: None,
-                scope_kind: BlockKind::Function,
-            })],
+            arena: vec![
+                Box::new(Scope {
+                    table: FxHashMap::default(),
+                    parent_scope: None,
+                    scope_kind: BlockKind::Function,
+                }),
+                Box::new(Scope {
+                    // This scope is a side scope for storing things like `T` unbounded generic type used for builtin functions
+                    // This scope will never be explored during name-resolution phase.
+                    table: FxHashMap::default(),
+                    parent_scope: None,
+                    scope_kind: BlockKind::Function,
+                }),
+            ],
         }
     }
 

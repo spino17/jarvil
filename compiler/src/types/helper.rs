@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use super::core::Type;
 use crate::{
     core::string_interner::{Interner, StrId},
@@ -5,7 +7,9 @@ use crate::{
     scope::{
         concrete::{ConcreteTypesTuple, ConcretizationContext},
         namespace::Namespace,
+        scope::ScopeIndex,
         symbol::{
+            core::SymbolIndex,
             interfaces::InterfaceBounds,
             types::{
                 core::UserDefinedTypeData,
@@ -20,7 +24,19 @@ pub fn get_unbounded_generic_type_with_declaration_index(
     index: usize,
     interner: &Interner,
 ) -> Type {
-    todo!()
+    match index {
+        0 => Type::new_with_generic(SymbolIndex {
+            scope_index: ScopeIndex::side(),
+            ident_name: interner.intern("T"),
+            phanton: PhantomData,
+        }),
+        1 => Type::new_with_generic(SymbolIndex {
+            scope_index: ScopeIndex::side(),
+            ident_name: interner.intern("U"),
+            phanton: PhantomData,
+        }),
+        _ => unreachable!(),
+    }
 }
 
 pub fn try_infer_types_from_tuple(
