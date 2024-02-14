@@ -63,7 +63,8 @@ pub fn json_serialize_ast(
     interner: &Interner,
 ) -> Result<String> {
     let serialized_ast = serde_json::to_string(ast)?;
-    let deserialized: Value = serde_json::from_str(&serialized_ast)?;
-    let modified_serialized_ast: Value = modify_value(&deserialized, code, interner);
-    serde_json::to_string(&modified_serialized_ast)
+    Ok(serialized_ast)
+    // let deserialized: Value = serde_json::from_str(&serialized_ast)?;
+    // let modified_serialized_ast: Value = modify_value(&deserialized, code, interner);
+    // serde_json::to_string(&modified_serialized_ast)
 }

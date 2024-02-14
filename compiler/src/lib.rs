@@ -26,13 +26,12 @@ pub mod scope;
 pub mod tests;
 pub mod types;
 use std::env;
-use std::rc::Rc;
 pub mod builtin;
 
-pub fn curr_dir_path() -> Rc<String> {
+pub fn curr_dir_path() -> String {
     let curr_dir = env::current_dir().expect("failed to get current directory");
     let curr_dir_str = curr_dir.to_string_lossy();
-    Rc::new(curr_dir_str.to_string())
+    curr_dir_str.to_string()
 }
 
 fn attach_source_code(err: Report, source: String) -> Report {
@@ -62,8 +61,8 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
     errors.append(&mut semantic_errors);
 
     // TODO - remove this after testing
-    //let ast_str = json_serialize_ast(&ast, &code_handler, &mut semantic_state_db.interner).unwrap();
-    //fs::write("ast.json", ast_str).unwrap();
+    let ast_str = json_serialize_ast(&ast, &code_handler, &semantic_db.interner).unwrap();
+    fs::write("ast.json", ast_str).unwrap();
 
     // type-checker
     let type_checker = TypeChecker::new(code_handler, semantic_db);
