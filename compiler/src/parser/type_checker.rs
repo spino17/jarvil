@@ -183,22 +183,18 @@ pub struct TypeChecker {
     errors: UnsafeCell<Vec<Diagnostics>>,
     context: Context,
     non_struct_methods_handler: NonStructMethodsHandler,
-    pub semantic_state_db: SemanticStateDatabase,
+    pub semantic_db: SemanticStateDatabase,
 }
 
 impl TypeChecker {
-    pub fn new(
-        code_handler: JarvilCodeHandler,
-        mut semantic_state_db: SemanticStateDatabase,
-    ) -> Self {
-        let non_struct_methods_handler =
-            NonStructMethodsHandler::new(&mut semantic_state_db.interner);
+    pub fn new(code_handler: JarvilCodeHandler, mut semantic_db: SemanticStateDatabase) -> Self {
+        let non_struct_methods_handler = NonStructMethodsHandler::new(&mut semantic_db.interner);
         TypeChecker {
             code_handler,
             errors: UnsafeCell::new(vec![]),
             context: Context { func_stack: vec![] },
             non_struct_methods_handler,
-            semantic_state_db,
+            semantic_db,
         }
     }
 
@@ -227,18 +223,18 @@ impl TypeChecker {
             let errors_ref = &mut *self.errors.get();
             global_errors.append(errors_ref);
         };
-        (self.semantic_state_db, self.code_handler)
+        (self.semantic_db, self.code_handler)
     }
 
     pub fn is_resolved(&self, node: &OkIdentifierInDeclNode) -> bool {
-        self.semantic_state_db
+        self.semantic_db
             .identifier_in_decl_binding_table
             .get(node)
             .is_some()
     }
 
     pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> (Type, bool) {
-        self.semantic_state_db.get_type_obj_from_expr(type_expr)
+        self.semantic_db.get_type_obj_from_expr(type_expr)
     }
 
     fn extract_angle_bracket_content_from_identifier_in_use(
@@ -325,12 +321,12 @@ impl TypeChecker {
         let return_type = &prototype.return_type;
         let (params_vec, return_type, is_concretization_required) = match lambda_name.core_ref() {
             CoreIdentifierInDeclNode::Ok(ok_identifier) => match self
-                .semantic_state_db
+                .semantic_db
                 .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
             {
                 Some(symbol_index) => {
                     return self
-                        .semantic_state_db
+                        .semantic_db
                         .get_variable_symbol_data_ref(symbol_index)
                         .data_type
                         .clone()
@@ -403,7 +399,7 @@ impl TypeChecker {
         r_type: &Type,
         operator_kind: &BinaryOperatorKind,
     ) -> Option<Type> {
-        l_type.check_operator(r_type, operator_kind, &self.semantic_state_db.namespace)
+        l_type.check_operator(r_type, operator_kind, &self.semantic_db.namespace)
     }
 
     pub fn infer_concrete_types_from_arguments(
@@ -442,21 +438,15 @@ impl TypeChecker {
                     global_concrete_types,
                     &mut num_inferred_types,
                     inference_category,
-                    &self.semantic_state_db.namespace,
+                    &self.semantic_db.namespace,
                 );
                 if let Err(()) = inference_result {
                     return Err(PrototypeEquivalenceCheckError::TypeInferenceFailed);
                 }
-            } else if !param_ty.is_eq(expected_ty, &self.semantic_state_db.namespace) {
+            } else if !param_ty.is_eq(expected_ty, &self.semantic_db.namespace) {
                 mismatch_types_vec.push((
-                    expected_ty.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
-                    param_ty.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
+                    expected_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    param_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                     index + 1,
                     received_param.range(),
                 ));
@@ -491,17 +481,12 @@ impl TypeChecker {
         for (index, inferred_ty) in unpacked_inferred_concrete_types.iter().enumerate() {
             let interface_bounds = &generic_type_decls.0[index].1;
             if !inferred_ty
-                .is_type_bounded_by_interfaces(interface_bounds, &self.semantic_state_db.namespace)
+                .is_type_bounded_by_interfaces(interface_bounds, &self.semantic_db.namespace)
             {
                 error_strs.push((
-                    inferred_ty.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
-                    interface_bounds.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
+                    inferred_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    interface_bounds
+                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                 ));
             }
         }
@@ -545,16 +530,12 @@ impl TypeChecker {
                 ));
             }
             let expected_param_type = &expected_param_data[index];
-            if !param_type_obj.is_eq(expected_param_type, &self.semantic_state_db.namespace) {
+            if !param_type_obj.is_eq(expected_param_type, &self.semantic_db.namespace) {
                 mismatch_types_vec.push((
-                    expected_param_type.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
-                    param_type_obj.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
+                    expected_param_type
+                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    param_type_obj
+                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                     index + 1,
                     received_param.range(),
                 ));
@@ -583,7 +564,7 @@ impl TypeChecker {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
         let func_data = self
-            .semantic_state_db
+            .semantic_db
             .get_function_symbol_data_ref(concrete_symbol_index.symbol_ref);
         let concrete_types = &concrete_symbol_index.concrete_types;
         let prototype_result = match concrete_types {
@@ -592,7 +573,7 @@ impl TypeChecker {
                 let concrete_prototype = func_data.prototype.concretize_prototype(
                     None,
                     Some(concrete_types),
-                    &self.semantic_state_db.namespace,
+                    &self.semantic_db.namespace,
                 );
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
@@ -632,7 +613,7 @@ impl TypeChecker {
                 let concrete_return_ty = if unconcrete_return_ty.is_concretization_required() {
                     unconcrete_return_ty.concretize(
                         &ConcretizationContext::new(None, Some(&concrete_types)),
-                        &self.semantic_state_db.namespace,
+                        &self.semantic_db.namespace,
                     )
                 } else {
                     unconcrete_return_ty.clone()
@@ -649,7 +630,7 @@ impl TypeChecker {
     ) -> Result<Type, AtomStartTypeCheckError> {
         debug_assert!(concrete_symbol_index.concrete_types.is_none());
         let lambda_type = &self
-            .semantic_state_db
+            .semantic_db
             .get_variable_symbol_data_ref(concrete_symbol_index.symbol_ref)
             .data_type;
         match lambda_type.0.as_ref() {
@@ -658,10 +639,7 @@ impl TypeChecker {
                 Ok(return_ty)
             }
             _ => Err(AtomStartTypeCheckError::IdentifierNotCallable(
-                lambda_type.to_string(
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
-                ),
+                lambda_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
             )),
         }
     }
@@ -673,7 +651,7 @@ impl TypeChecker {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
         let UserDefinedTypeData::Struct(struct_data) = self
-            .semantic_state_db
+            .semantic_db
             .get_ty_symbol_data_ref(concrete_symbol_index.symbol_ref)
         else {
             return Err(AtomStartTypeCheckError::ConstructorNotFoundForTypeError(
@@ -688,7 +666,7 @@ impl TypeChecker {
                 let concrete_prototype = constructor_meta_data.prototype.concretize_prototype(
                     Some(concrete_types),
                     None,
-                    &self.semantic_state_db.namespace,
+                    &self.semantic_db.namespace,
                 );
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
@@ -757,7 +735,7 @@ impl TypeChecker {
         //     CASE 4. <...> not in decl, <...> not in usage => no error
 
         let Some(concrete_symbol_entry) = self
-            .semantic_state_db
+            .semantic_db
             .get_symbol_data_for_identifier_in_use(ok_identifier)
         else {
             return Type::new_with_unknown();
@@ -771,7 +749,7 @@ impl TypeChecker {
             }
             ConcreteSymbolDataEntry::Type(concrete_symbol_index) => {
                 let name =
-                    ok_identifier.token_value(&self.code_handler, &self.semantic_state_db.interner);
+                    ok_identifier.token_value(&self.code_handler, &self.semantic_db.interner);
                 self.check_user_defined_ty_call_expr(name, &concrete_symbol_index, params)
             }
             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
@@ -782,7 +760,7 @@ impl TypeChecker {
                 match err {
                     AtomStartTypeCheckError::ConstructorNotFoundForTypeError(struct_name) => {
                         let err = ConstructorNotFoundForTypeError::new(
-                            self.semantic_state_db.interner.lookup(struct_name),
+                            self.semantic_db.interner.lookup(struct_name),
                             func_name.range(),
                         );
                         self.log_error(Diagnostics::ConstructorNotFoundForType(err));
@@ -831,7 +809,7 @@ impl TypeChecker {
             }
         };
         let class_method_name =
-            property_name.token_value(&self.code_handler, &self.semantic_state_db.interner);
+            property_name.token_value(&self.code_handler, &self.semantic_db.interner);
         match struct_data.try_class_method(&class_method_name, concrete_types.as_ref()) {
             Some((partial_concrete_callable_data, _)) => {
                 let (concrete_types, ty_ranges, _) =
@@ -871,7 +849,7 @@ impl TypeChecker {
             }
             None => {
                 let err = ClassmethodDoesNotExistError::new(
-                    self.semantic_state_db.interner.lookup(ty_name),
+                    self.semantic_db.interner.lookup(ty_name),
                     property_name.range(),
                 );
                 self.log_error(Diagnostics::ClassmethodDoesNotExist(err));
@@ -896,7 +874,7 @@ impl TypeChecker {
             return Type::new_with_unknown();
         };
         let variant_name =
-            property_name.token_value(&self.code_handler, &self.semantic_state_db.interner);
+            property_name.token_value(&self.code_handler, &self.semantic_db.interner);
         if property_name.core_ref().generic_type_args.is_some() {
             let err = GenericTypeArgsNotExpectedError::new(
                 IdentifierKind::Variant,
@@ -909,7 +887,7 @@ impl TypeChecker {
         match enum_data.try_type_for_variant(
             variant_name,
             concrete_types.as_ref(),
-            &self.semantic_state_db.namespace,
+            &self.semantic_db.namespace,
         ) {
             Some(expected_ty) => match params {
                 Some((_, params, rparen)) => match params {
@@ -931,15 +909,15 @@ impl TypeChecker {
                                 return Type::new_with_unknown();
                             }
                             let expr_ty = self.check_expr(expr);
-                            if !expr_ty.is_eq(&expected_ty, &self.semantic_state_db.namespace) {
+                            if !expr_ty.is_eq(&expected_ty, &self.semantic_db.namespace) {
                                 let err = IncorrectExpressionTypeError::new(
                                     expected_ty.to_string(
-                                        &self.semantic_state_db.interner,
-                                        &self.semantic_state_db.namespace,
+                                        &self.semantic_db.interner,
+                                        &self.semantic_db.namespace,
                                     ),
                                     expr_ty.to_string(
-                                        &self.semantic_state_db.interner,
-                                        &self.semantic_state_db.namespace,
+                                        &self.semantic_db.interner,
+                                        &self.semantic_db.namespace,
                                     ),
                                     expr.range(),
                                 );
@@ -949,10 +927,7 @@ impl TypeChecker {
                         }
                         None => {
                             let err = UnexpectedValueProvidedToEnumVariantError::new(
-                                self.semantic_state_db
-                                    .interner
-                                    .lookup(variant_name)
-                                    .to_string(),
+                                self.semantic_db.interner.lookup(variant_name).to_string(),
                                 params.range(),
                             );
                             self.log_error(Diagnostics::UnexpectedValueProvidedToEnumVariant(err));
@@ -976,10 +951,8 @@ impl TypeChecker {
                 None => {
                     if let Some(expected_ty) = expected_ty {
                         let err = ExpectedValueForEnumVariantError::new(
-                            expected_ty.to_string(
-                                &self.semantic_state_db.interner,
-                                &self.semantic_state_db.namespace,
-                            ),
+                            expected_ty
+                                .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                             property_name.range(),
                         );
                         self.log_error(Diagnostics::ExpectedValueForEnumVariant(err));
@@ -989,7 +962,7 @@ impl TypeChecker {
             },
             None => {
                 let err = EnumVariantDoesNotExistError::new(
-                    self.semantic_state_db.interner.lookup(ty_name).to_string(),
+                    self.semantic_db.interner.lookup(ty_name).to_string(),
                     property_name.range(),
                 );
                 self.log_error(Diagnostics::EnumVariantDoesNotExist(err));
@@ -1011,15 +984,14 @@ impl TypeChecker {
         let CoreIdentifierInUseNode::Ok(ok_identifier) = ty.core_ref() else {
             return Type::new_with_unknown();
         };
-        let ty_name =
-            ok_identifier.token_value(&self.code_handler, &self.semantic_state_db.interner);
+        let ty_name = ok_identifier.token_value(&self.code_handler, &self.semantic_db.interner);
         match self
-            .semantic_state_db
+            .semantic_db
             .get_ty_symbol_data_for_identifier_in_use(ok_identifier)
         {
             Some(concrete_symbol_index) => {
                 match &self
-                    .semantic_state_db
+                    .semantic_db
                     .get_ty_symbol_data_ref(concrete_symbol_index.symbol_ref)
                 {
                     UserDefinedTypeData::Struct(struct_data) => self.check_class_method_call(
@@ -1055,11 +1027,11 @@ impl TypeChecker {
             CoreAtomStartNode::Identifier(token) => match token.core_ref() {
                 CoreIdentifierInUseNode::Ok(ok_identifier) => {
                     match self
-                        .semantic_state_db
+                        .semantic_db
                         .get_variable_symbol_data_for_identifier_in_use(ok_identifier)
                     {
                         Some(concrete_symbol_index) => self
-                            .semantic_state_db
+                            .semantic_db
                             .get_variable_symbol_data_ref(concrete_symbol_index.symbol_ref)
                             .data_type
                             .clone(),
@@ -1073,11 +1045,11 @@ impl TypeChecker {
                 match core_self_keyword {
                     CoreSelfKeywordNode::Ok(ok_self_keyword) => {
                         match self
-                            .semantic_state_db
+                            .semantic_db
                             .get_self_keyword_symbol_data_ref(ok_self_keyword)
                         {
                             Some(symbol_index) => self
-                                .semantic_state_db
+                                .semantic_db
                                 .get_variable_symbol_data_ref(symbol_index)
                                 .data_type
                                 .clone(),
@@ -1137,27 +1109,25 @@ impl TypeChecker {
             return (Type::new_with_unknown(), Some(atom_type_obj));
         }
         let property_name_str =
-            ok_identifier.token_value(&self.code_handler, &self.semantic_state_db.interner);
+            ok_identifier.token_value(&self.code_handler, &self.semantic_db.interner);
         let result = match atom_type_obj.0.as_ref() {
             CoreType::Struct(struct_ty) => {
                 let concrete_types = &struct_ty.concrete_types;
                 let ty_data = self
-                    .semantic_state_db
+                    .semantic_db
                     .get_ty_symbol_data_ref(struct_ty.symbol_index);
                 let struct_data = ty_data.get_struct_data_ref();
                 match struct_data.try_field(
                     &property_name_str,
                     concrete_types.as_ref(),
-                    &self.semantic_state_db.namespace,
+                    &self.semantic_db.namespace,
                 ) {
                     Some((type_obj, _)) => Ok(type_obj),
                     None => Err(Diagnostics::PropertyDoesNotExist(
                         PropertyDoesNotExistError::new(
                             PropertyKind::Field,
-                            atom_type_obj.to_string(
-                                &self.semantic_state_db.interner,
-                                &self.semantic_state_db.namespace,
-                            ),
+                            atom_type_obj
+                                .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                             property.range(),
                             atom.range(),
                         ),
@@ -1166,13 +1136,13 @@ impl TypeChecker {
             }
             CoreType::Generic(generic_ty) => {
                 let ty_data = self
-                    .semantic_state_db
+                    .semantic_db
                     .get_ty_symbol_data_ref(generic_ty.symbol_index);
                 let generic_data = ty_data.get_generic_data_ref();
                 match generic_data.try_field(
                     &property_name_str,
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
+                    &self.semantic_db.interner,
+                    &self.semantic_db.namespace,
                 ) {
                     GenericTypePropertyQueryResult::Ok((type_obj, _)) => Ok(type_obj),
                     GenericTypePropertyQueryResult::AmbigiousPropertyResolution(
@@ -1187,10 +1157,8 @@ impl TypeChecker {
                     GenericTypePropertyQueryResult::None => Err(Diagnostics::PropertyDoesNotExist(
                         PropertyDoesNotExistError::new(
                             PropertyKind::Field,
-                            atom_type_obj.to_string(
-                                &self.semantic_state_db.interner,
-                                &self.semantic_state_db.namespace,
-                            ),
+                            atom_type_obj
+                                .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                             property.range(),
                             atom.range(),
                         ),
@@ -1200,10 +1168,8 @@ impl TypeChecker {
             _ => Err(Diagnostics::PropertyDoesNotExist(
                 PropertyDoesNotExistError::new(
                     PropertyKind::Field,
-                    atom_type_obj.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
+                    atom_type_obj
+                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                     property.range(),
                     atom.range(),
                 ),
@@ -1228,18 +1194,18 @@ impl TypeChecker {
         // (for example: a field with lambda type) and then it goes on to find it in methods.
         // This is in sync with what Python does.
 
-        let method_name = method_name_ok_identifier
-            .token_value(&self.code_handler, &self.semantic_state_db.interner);
+        let method_name =
+            method_name_ok_identifier.token_value(&self.code_handler, &self.semantic_db.interner);
         let concrete_types = &struct_ty.concrete_types;
         let ty_data = self
-            .semantic_state_db
+            .semantic_db
             .get_ty_symbol_data_ref(struct_ty.symbol_index);
         let struct_data = ty_data.get_struct_data_ref();
         // first check if it's a property
         match struct_data.try_field(
             &method_name,
             concrete_types.as_ref(),
-            &self.semantic_state_db.namespace,
+            &self.semantic_db.namespace,
         ) {
             Some((propetry_ty, _)) => {
                 if method_name_ok_identifier
@@ -1290,17 +1256,17 @@ impl TypeChecker {
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
-        let method_name = method_name_ok_identifier
-            .token_value(&self.code_handler, &self.semantic_state_db.interner);
+        let method_name =
+            method_name_ok_identifier.token_value(&self.code_handler, &self.semantic_db.interner);
         let ty_data = self
-            .semantic_state_db
+            .semantic_db
             .get_ty_symbol_data_ref(generic_ty.symbol_index);
         let generic_data = ty_data.get_generic_data_ref();
         let interface_bounds = &generic_data.interface_bounds;
         match generic_data.try_field(
             &method_name,
-            &self.semantic_state_db.interner,
-            &self.semantic_state_db.namespace,
+            &self.semantic_db.interner,
+            &self.semantic_db.namespace,
         ) {
             GenericTypePropertyQueryResult::Ok((propetry_ty, _)) => {
                 if method_name_ok_identifier
@@ -1332,15 +1298,15 @@ impl TypeChecker {
                 // if field is not there then check in methods
                 match generic_data.has_method(
                     &method_name,
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
+                    &self.semantic_db.interner,
+                    &self.semantic_db.namespace,
                 ) {
                     GenericTypePropertyQueryResult::Ok(interface_index) => {
                         let interface_obj =
                             interface_bounds.interface_obj_at_index(interface_index);
                         let concrete_symbol_index = &interface_obj.0.as_ref().1;
                         let interface_data = self
-                            .semantic_state_db
+                            .semantic_db
                             .get_interface_symbol_data_ref(concrete_symbol_index.symbol_ref);
                         let concrete_types = &concrete_symbol_index.concrete_types;
                         match interface_data.try_method(&method_name, concrete_types.as_ref()) {
@@ -1384,7 +1350,7 @@ impl TypeChecker {
         let Some(prototype) = self.non_struct_methods_handler.try_method_for_array(
             array_ty,
             &method_name,
-            &self.semantic_state_db.namespace,
+            &self.semantic_db.namespace,
         ) else {
             return Err(MethodAccessTypeCheckError::MethodNotFound);
         };
@@ -1413,7 +1379,7 @@ impl TypeChecker {
         let Some(prototype) = self.non_struct_methods_handler.try_method_for_hashmap(
             hashmap_ty,
             &method_name,
-            &self.semantic_state_db.namespace,
+            &self.semantic_db.namespace,
         ) else {
             return Err(MethodAccessTypeCheckError::MethodNotFound);
         };
@@ -1463,10 +1429,8 @@ impl TypeChecker {
                     MethodAccessTypeCheckError::MethodNotFound => {
                         let err = PropertyDoesNotExistError::new(
                             PropertyKind::Method,
-                            atom_type_obj.to_string(
-                                &self.semantic_state_db.interner,
-                                &self.semantic_state_db.namespace,
-                            ),
+                            atom_type_obj
+                                .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                             method.range(),
                             atom.range(),
                         );
@@ -1474,10 +1438,7 @@ impl TypeChecker {
                     }
                     MethodAccessTypeCheckError::FieldNotCallable(ty) => {
                         let err = FieldNotCallableError::new(
-                            ty.to_string(
-                                &self.semantic_state_db.interner,
-                                &self.semantic_state_db.namespace,
-                            ),
+                            ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                             ok_identifier.range(),
                         );
                         self.log_error(Diagnostics::FieldNotCallable(err));
@@ -1582,7 +1543,7 @@ impl TypeChecker {
             },
             CoreType::HashMap(hashmap_data) => {
                 // TODO - instead of having `is_hashable` check, replace it with `is_type_bounded_by` `Hash` interface
-                if index_type_obj.is_eq(&hashmap_data.key_type, &self.semantic_state_db.namespace)
+                if index_type_obj.is_eq(&hashmap_data.key_type, &self.semantic_db.namespace)
                     && index_type_obj.is_hashable()
                 {
                     Some(hashmap_data.value_type.clone())
@@ -1604,14 +1565,10 @@ impl TypeChecker {
             Some(ty) => (ty, Some(atom_type_obj)),
             None => {
                 let err = ExpressionIndexingNotValidError::new(
-                    atom_type_obj.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
-                    index_type_obj.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
+                    atom_type_obj
+                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    index_type_obj
+                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                     atom.range(),
                     index_expr.range(),
                 );
@@ -1684,16 +1641,11 @@ impl TypeChecker {
 
         for expr in initials_iter {
             let ty = self.check_expr(expr);
-            if !ty.is_eq(&first_expr_ty, &self.semantic_state_db.namespace) {
+            if !ty.is_eq(&first_expr_ty, &self.semantic_db.namespace) {
                 let err = IncorrectExpressionTypeError::new(
-                    first_expr_ty.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
-                    ty.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
+                    first_expr_ty
+                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                     expr.range(),
                 );
                 self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -1725,30 +1677,19 @@ impl TypeChecker {
             let core_key_value_pair = key_value_pair.core_ref();
             let key_ty = self.check_expr(&core_key_value_pair.key_expr);
             let value_ty = self.check_expr(&core_key_value_pair.value_expr);
-            if !key_ty.is_eq(&first_key_ty, &self.semantic_state_db.namespace) {
+            if !key_ty.is_eq(&first_key_ty, &self.semantic_db.namespace) {
                 let err = IncorrectExpressionTypeError::new(
-                    first_key_ty.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
-                    key_ty.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
+                    first_key_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    key_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                     core_key_value_pair.key_expr.range(),
                 );
                 self.log_error(Diagnostics::IncorrectExpressionType(err));
             }
-            if !value_ty.is_eq(&first_value_ty, &self.semantic_state_db.namespace) {
+            if !value_ty.is_eq(&first_value_ty, &self.semantic_db.namespace) {
                 let err = IncorrectExpressionTypeError::new(
-                    first_value_ty.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
-                    value_ty.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
+                    first_value_ty
+                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    value_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                     core_key_value_pair.value_expr.range(),
                 );
                 self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -1810,10 +1751,8 @@ impl TypeChecker {
                     operand_type
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
-                        operand_type.to_string(
-                            &self.semantic_state_db.interner,
-                            &self.semantic_state_db.namespace,
-                        ),
+                        operand_type
+                            .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                         "numeric (`int`, `float`)",
                         "`+` or `-`",
                         unary_expr.range(),
@@ -1828,10 +1767,8 @@ impl TypeChecker {
                     operand_type
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
-                        operand_type.to_string(
-                            &self.semantic_state_db.interner,
-                            &self.semantic_state_db.namespace,
-                        ),
+                        operand_type
+                            .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                         "boolean",
                         "`not`",
                         unary_expr.range(),
@@ -1865,14 +1802,8 @@ impl TypeChecker {
             Some(type_obj) => type_obj,
             None => {
                 let err = BinaryOperatorInvalidOperandsError::new(
-                    l_type.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
-                    r_type.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
+                    l_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    r_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                     left_expr.range(),
                     right_expr.range(),
                     operator.range(),
@@ -1911,14 +1842,8 @@ impl TypeChecker {
                 },
                 None => {
                     let err = BinaryOperatorInvalidOperandsError::new(
-                        l_type.to_string(
-                            &self.semantic_state_db.interner,
-                            &self.semantic_state_db.namespace,
-                        ),
-                        r_type.to_string(
-                            &self.semantic_state_db.interner,
-                            &self.semantic_state_db.namespace,
-                        ),
+                        l_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                        r_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                         left_expr.range(),
                         right_expr.range(),
                         operator.range(),
@@ -1955,8 +1880,8 @@ impl TypeChecker {
                         if interior_atom_type.is_immutable() {
                             let err = ImmutableTypeNotAssignableError::new(
                                 interior_atom_type.to_string(
-                                    &self.semantic_state_db.interner,
-                                    &self.semantic_state_db.namespace,
+                                    &self.semantic_db.interner,
+                                    &self.semantic_db.namespace,
                                 ),
                                 l_index_expr.core_ref().atom.range(),
                             );
@@ -1981,16 +1906,10 @@ impl TypeChecker {
             self.log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
             return;
         }
-        if !l_type.is_eq(&r_type, &self.semantic_state_db.namespace) {
+        if !l_type.is_eq(&r_type, &self.semantic_db.namespace) {
             let err = MismatchedTypesOnLeftRightError::new(
-                l_type.to_string(
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
-                ),
-                r_type.to_string(
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
-                ),
+                l_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                r_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                 range,
                 r_assign.range(),
             );
@@ -2010,32 +1929,26 @@ impl TypeChecker {
             return;
         };
         let Some(symbol_index) = self
-            .semantic_state_db
+            .semantic_db
             .get_variable_symbol_data_for_identifier_in_decl(ok_identifier)
         else {
             return;
         };
         let variable_ty = self
-            .semantic_state_db
+            .semantic_db
             .get_variable_symbol_data_ref(symbol_index)
             .data_type
             .clone();
         if variable_ty.is_unset() {
             // TODO - check if the `r_type` is ambigious type
             // enforce availablity of type annotation here!
-            self.semantic_state_db
+            self.semantic_db
                 .get_variable_symbol_data_mut_ref(symbol_index)
                 .set_data_type(&r_type);
-        } else if !variable_ty.is_eq(&r_type, &self.semantic_state_db.namespace) {
+        } else if !variable_ty.is_eq(&r_type, &self.semantic_db.namespace) {
             let err = RightSideExpressionTypeMismatchedWithTypeFromAnnotationError::new(
-                variable_ty.to_string(
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
-                ),
-                r_type.to_string(
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
-                ),
+                variable_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                r_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                 core_variable_decl.name.range(),
                 r_variable_decl.range(),
             );
@@ -2103,7 +2016,7 @@ impl TypeChecker {
     pub fn check_bounded_method(&mut self, bounded_method_wrapper: &BoundedMethodWrapperNode) {
         let core_bounded_method_wrapper = bounded_method_wrapper.0.as_ref();
         let is_constructor = match self
-            .semantic_state_db
+            .semantic_db
             .get_bounded_kind_ref(bounded_method_wrapper)
         {
             Some(bounded_kind) => match bounded_kind {
@@ -2138,16 +2051,11 @@ impl TypeChecker {
             self.log_error(Diagnostics::ExplicitReturnStatementFoundInConstructorBody(
                 err,
             ));
-        } else if !expr_type_obj.is_eq(expected_type_obj, &self.semantic_state_db.namespace) {
+        } else if !expr_type_obj.is_eq(expected_type_obj, &self.semantic_db.namespace) {
             let err = MismatchedReturnTypeError::new(
-                expected_type_obj.to_string(
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
-                ),
-                expr_type_obj.to_string(
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
-                ),
+                expected_type_obj
+                    .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                expr_type_obj.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                 core_return_stmt.return_keyword.range(),
             );
             self.log_error(Diagnostics::MismatchedReturnType(err));
@@ -2161,13 +2069,13 @@ impl TypeChecker {
             return;
         };
         let Some(symbol_index) = self
-            .semantic_state_db
+            .semantic_db
             .get_ty_symbol_data_for_identifier_in_decl(ok_identifier)
         else {
             return;
         };
 
-        let ty_data = self.semantic_state_db.get_ty_symbol_data_ref(symbol_index);
+        let ty_data = self.semantic_db.get_ty_symbol_data_ref(symbol_index);
         let struct_data = ty_data.get_struct_data_ref();
         let implementing_interfaces = &struct_data.implementing_interfaces;
         let Some(implementing_interfaces) = implementing_interfaces else {
@@ -2179,25 +2087,23 @@ impl TypeChecker {
             let (_, interface_concrete_symbol_index) = interface_obj.get_core_ref();
             let concrete_types = &interface_concrete_symbol_index.concrete_types;
             let interface_data = self
-                .semantic_state_db
+                .semantic_db
                 .get_interface_symbol_data_ref(interface_concrete_symbol_index.symbol_ref);
             let partial_concrete_interface_methods =
                 interface_data.get_partially_concrete_interface_methods(concrete_types.as_ref());
             if let Err((missing_interface_method_names, errors)) =
                 partial_concrete_interface_methods.is_struct_implements_interface_methods(
                     struct_methods,
-                    &self.semantic_state_db.namespace,
+                    &self.semantic_db.namespace,
                 )
             {
                 let err = InterfaceMethodsInStructCheckError::new(
                     missing_interface_method_names,
                     errors,
-                    interface_obj.to_string(
-                        &self.semantic_state_db.interner,
-                        &self.semantic_state_db.namespace,
-                    ),
+                    interface_obj
+                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                     *range,
-                    &self.semantic_state_db.interner,
+                    &self.semantic_db.interner,
                 );
                 self.log_error(Diagnostics::InterfaceMethodsInStructCheck(err));
             }
@@ -2211,10 +2117,7 @@ impl TypeChecker {
         if !ty.is_bool() {
             let err = IncorrectExpressionTypeError::new(
                 "bool".to_string(),
-                ty.to_string(
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
-                ),
+                ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                 condition_expr.range(),
             );
             self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -2242,10 +2145,7 @@ impl TypeChecker {
         let CoreType::Enum(enum_ty) = expr_ty.0.as_ref() else {
             let err = IncorrectExpressionTypeError::new(
                 "<enum>".to_string(),
-                expr_ty.to_string(
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
-                ),
+                expr_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                 expr.range(),
             );
             self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -2256,7 +2156,7 @@ impl TypeChecker {
         let expr_enum_name = enum_ty.symbol_index.identifier_name();
         let concrete_types = &enum_ty.concrete_types;
         let ty_data = self
-            .semantic_state_db
+            .semantic_db
             .get_ty_symbol_data_ref(enum_ty.symbol_index);
         let enum_data = ty_data.get_enum_data_ref();
         let mut symbol_index_ty_vec = vec![];
@@ -2279,30 +2179,24 @@ impl TypeChecker {
             let enum_name = &core_case_branch.enum_name;
             if let CoreIdentifierInDeclNode::Ok(enum_name) = enum_name.core_ref() {
                 let enum_name_str =
-                    enum_name.token_value(&self.code_handler, &self.semantic_state_db.interner);
+                    enum_name.token_value(&self.code_handler, &self.semantic_db.interner);
                 if expr_enum_name != enum_name_str {
                     let err = IncorrectEnumNameError::new(
-                        self.semantic_state_db.interner.lookup(expr_enum_name),
-                        self.semantic_state_db.interner.lookup(enum_name_str),
+                        self.semantic_db.interner.lookup(expr_enum_name),
+                        self.semantic_db.interner.lookup(enum_name_str),
                         enum_name.range(),
                     );
                     self.log_error(Diagnostics::IncorrectEnumName(err));
                 } else {
-                    //self.semantic_state_db
-                    //    .identifier_in_decl_binding_table
-                    //    .insert(
-                    //        enum_name.clone(),
-                    //        SymbolDataEntry::Type(enum_ty.symbol_index),
-                    //    );
                     enum_name_decls.push(enum_name.clone());
                     let variant_name = &core_case_branch.variant_name;
                     if let CoreIdentifierInDeclNode::Ok(variant_name) = variant_name.core_ref() {
                         let variant_name_str = variant_name
-                            .token_value(&self.code_handler, &self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, &self.semantic_db.interner);
                         match enum_data.try_type_for_variant(
                             variant_name_str,
                             concrete_types.as_ref(),
-                            &self.semantic_state_db.namespace,
+                            &self.semantic_db.namespace,
                         ) {
                             Some(expected_ty) => {
                                 checked_variants.insert(variant_name_str);
@@ -2315,7 +2209,7 @@ impl TypeChecker {
                                                     variable_name.core_ref()
                                                 {
                                                     if let Some(symbol_index)
-                                                    = self.semantic_state_db.get_variable_symbol_data_for_identifier_in_decl(variable_name)
+                                                    = self.semantic_db.get_variable_symbol_data_for_identifier_in_decl(variable_name)
                                                     {
                                                         // self.semantic_state_db.namespace.variables.get_symbol_data_mut_ref(symbol_data).data.set_data_type(&expected_ty);
                                                         symbol_index_ty_vec.push((symbol_index, expected_ty));
@@ -2325,7 +2219,7 @@ impl TypeChecker {
                                             None => {
                                                 let err =
                                                     UnexpectedValueProvidedToEnumVariantError::new(
-                                                        self.semantic_state_db
+                                                        self.semantic_db
                                                             .interner
                                                             .lookup(variant_name_str)
                                                             .to_string(),
@@ -2339,8 +2233,8 @@ impl TypeChecker {
                                         if let Some(expected_ty) = expected_ty {
                                             let err = ExpectedValueForEnumVariantError::new(
                                                 expected_ty.to_string(
-                                                    &self.semantic_state_db.interner,
-                                                    &self.semantic_state_db.namespace,
+                                                    &self.semantic_db.interner,
+                                                    &self.semantic_db.namespace,
                                                 ),
                                                 variant_name.range(),
                                             );
@@ -2353,10 +2247,7 @@ impl TypeChecker {
                             }
                             None => {
                                 let err = EnumVariantDoesNotExistError::new(
-                                    self.semantic_state_db
-                                        .interner
-                                        .lookup(enum_name_str)
-                                        .to_string(),
+                                    self.semantic_db.interner.lookup(enum_name_str).to_string(),
                                     variant_name.range(),
                                 );
                                 self.log_error(Diagnostics::EnumVariantDoesNotExist(err));
@@ -2366,7 +2257,6 @@ impl TypeChecker {
                 }
             }
             let case_block = &core_case_branch.block;
-            // self.walk_block(case_block);
             case_blocks.push(case_block.clone());
         }
 
@@ -2379,27 +2269,24 @@ impl TypeChecker {
         }
         if !missing_variants.is_empty() {
             let err = EnumVariantsMissingFromMatchCaseStatementError::new(
-                self.semantic_state_db
-                    .interner
-                    .lookup(expr_enum_name)
-                    .to_string(),
+                self.semantic_db.interner.lookup(expr_enum_name).to_string(),
                 missing_variants,
                 expr.range(),
-                &self.semantic_state_db.interner,
+                &self.semantic_db.interner,
             );
             self.log_error(Diagnostics::EnumVariantsMissingFromMatchCaseStatement(err));
         }
 
         // set the symbol_index to enum_name nodes
         for enum_name in enum_name_decls {
-            self.semantic_state_db
+            self.semantic_db
                 .identifier_in_decl_binding_table
                 .insert(enum_name, SymbolDataEntry::Type(enum_ty.symbol_index));
         }
 
         // set types to the enum variant associated variables
         for (symbol_index, ty) in symbol_index_ty_vec {
-            self.semantic_state_db
+            self.semantic_db
                 .get_variable_symbol_data_mut_ref(symbol_index)
                 .set_data_type(&ty);
         }
@@ -2417,10 +2304,7 @@ impl TypeChecker {
         if !ty.is_bool() {
             let err = IncorrectExpressionTypeError::new(
                 "bool".to_string(),
-                ty.to_string(
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
-                ),
+                ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                 condition_expr.range(),
             );
             self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -2459,20 +2343,17 @@ impl TypeChecker {
         if let Some(element_ty) = element_ty {
             if let CoreIdentifierInDeclNode::Ok(ok_loop_variable) = loop_variable.core_ref() {
                 if let Some(symbol_index) = self
-                    .semantic_state_db
+                    .semantic_db
                     .get_variable_symbol_data_for_identifier_in_decl(ok_loop_variable)
                 {
-                    self.semantic_state_db
+                    self.semantic_db
                         .get_variable_symbol_data_mut_ref(symbol_index)
                         .set_data_type(&element_ty);
                 }
             };
         } else {
             let err = NonIterableExpressionError::new(
-                iterable_expr_ty.to_string(
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
-                ),
+                iterable_expr_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
                 iterable_expr.range(),
             );
             self.log_error(Diagnostics::NonIterableExpression(err));
@@ -2587,8 +2468,8 @@ impl TypeChecker {
                     range,
                     err_strs,
                     concrete_types,
-                    &self.semantic_state_db.interner,
-                    &self.semantic_state_db.namespace,
+                    &self.semantic_db.interner,
+                    &self.semantic_db.namespace,
                 );
                 self.log_error(Diagnostics::InferredTypesNotBoundedByInterfaces(err));
             }

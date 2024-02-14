@@ -58,7 +58,7 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
 
     // name-resolver
     let resolver = Resolver::new(code_handler);
-    let (mut semantic_state_db, mut semantic_errors, code_handler) = resolver.resolve_ast(&ast);
+    let (semantic_db, mut semantic_errors, code_handler) = resolver.resolve_ast(&ast);
     errors.append(&mut semantic_errors);
 
     // TODO - remove this after testing
@@ -66,8 +66,8 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
     //fs::write("ast.json", ast_str).unwrap();
 
     // type-checker
-    let type_checker = TypeChecker::new(code_handler, semantic_state_db);
-    let (semantic_state_db, code_handler) = type_checker.check_ast(&ast, &mut errors);
+    let type_checker = TypeChecker::new(code_handler, semantic_db);
+    let (semantic_db, code_handler) = type_checker.check_ast(&ast, &mut errors);
 
     if !errors.is_empty() {
         let err = &errors[0];
@@ -75,7 +75,7 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
     }
 
     // Python code-generation
-    let py_generator = PythonCodeGenerator::new(code_handler, semantic_state_db);
+    let py_generator = PythonCodeGenerator::new(code_handler, semantic_db);
     let py_code = py_generator.generate_python_code(&ast);
     Ok(py_code)
 }
