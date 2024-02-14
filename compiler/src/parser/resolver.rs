@@ -176,7 +176,7 @@ impl Resolver {
             .get(self.scope_index, self.semantic_db.interner.intern("main"))
         {
             Some(symbol_index) => {
-                let func_meta_data = self.semantic_db.get_function_symbol_data_ref(symbol_index);
+                let func_meta_data = self.semantic_db.get_function_symbol_ref(symbol_index);
                 let params = &func_meta_data.prototype.params;
                 let return_type = &func_meta_data.prototype.return_type;
                 if !params.is_empty() || !return_type.is_void() {
@@ -613,10 +613,7 @@ impl Resolver {
             LookupResult::Ok(lookup_data) => {
                 let symbol_obj = lookup_data.symbol_obj;
                 let resolved_scope_index = symbol_obj.0.scope_index;
-                let ty_kind = self
-                    .semantic_db
-                    .get_ty_symbol_data_ref(symbol_obj.0)
-                    .get_kind();
+                let ty_kind = self.semantic_db.get_ty_symbol_ref(symbol_obj.0).get_kind();
                 let result = match ty_kind {
                     UserDefineTypeKind::Struct => {
                         match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
@@ -1100,7 +1097,7 @@ impl Resolver {
             .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
         if let Some(symbol_obj) = symbol_obj {
             self.semantic_db
-                .get_function_symbol_data_mut_ref(symbol_obj.0)
+                .get_function_symbol_mut_ref(symbol_obj.0)
                 .set_generics(generic_type_decls);
         }
         for stmt in &callable_body.0.as_ref().stmts {
@@ -1246,7 +1243,7 @@ impl Resolver {
                 // enable recursive definitions
                 if let Some(symbol_obj) = &symbol_obj {
                     self.semantic_db
-                        .get_variable_symbol_data_mut_ref(symbol_obj.0)
+                        .get_variable_symbol_mut_ref(symbol_obj.0)
                         .set_is_init(true);
                 }
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
@@ -1275,7 +1272,7 @@ impl Resolver {
                 };
                 if let Some(symbol_obj) = &symbol_obj {
                     self.semantic_db
-                        .get_variable_symbol_data_mut_ref(symbol_obj.0)
+                        .get_variable_symbol_mut_ref(symbol_obj.0)
                         .set_data_type(&final_variable_ty);
                 }
             }
@@ -1285,11 +1282,11 @@ impl Resolver {
                     match ty_from_optional_annotation {
                         Some((ty, _)) => self
                             .semantic_db
-                            .get_variable_symbol_data_mut_ref(symbol_obj.0)
+                            .get_variable_symbol_mut_ref(symbol_obj.0)
                             .set_data_type_from_optional_annotation(ty),
                         None => {
                             self.semantic_db
-                                .get_variable_symbol_data_mut_ref(symbol_obj.0)
+                                .get_variable_symbol_mut_ref(symbol_obj.0)
                                 .set_is_init(true);
                         }
                     }
@@ -1324,7 +1321,7 @@ impl Resolver {
             self.visit_callable_body(body, optional_ok_identifier_node, &symbol_obj);
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_function_symbol_data_mut_ref(symbol_obj.0)
+                .get_function_symbol_mut_ref(symbol_obj.0)
                 .set_meta_data(
                     param_types_vec,
                     return_type,
@@ -1424,7 +1421,7 @@ impl Resolver {
         }
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_ty_symbol_data_mut_ref(symbol_obj.0)
+                .get_ty_symbol_mut_ref(symbol_obj.0)
                 .get_struct_data_mut_ref()
                 .set_generics_and_interfaces(struct_generic_type_decls, implementing_interfaces);
         }
@@ -1636,7 +1633,7 @@ impl Resolver {
             }
             if let Some(symbol_obj) = &symbol_obj {
                 self.semantic_db
-                    .get_ty_symbol_data_mut_ref(symbol_obj.0)
+                    .get_ty_symbol_mut_ref(symbol_obj.0)
                     .get_struct_data_mut_ref()
                     .set_meta_data(fields_map, constructor, methods, class_methods);
             }
@@ -1679,7 +1676,7 @@ impl Resolver {
         };
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_ty_symbol_data_mut_ref(symbol_obj.0)
+                .get_ty_symbol_mut_ref(symbol_obj.0)
                 .get_enum_data_mut_ref()
                 .set_generics(generic_type_decls);
         }
@@ -1730,7 +1727,7 @@ impl Resolver {
         self.close_block(Some(enum_body));
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_ty_symbol_data_mut_ref(symbol_obj.0)
+                .get_ty_symbol_mut_ref(symbol_obj.0)
                 .get_enum_data_mut_ref()
                 .set_meta_data(variants);
         }
@@ -1860,7 +1857,7 @@ impl Resolver {
         };
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_interface_symbol_data_mut_ref(symbol_obj.0)
+                .get_interface_symbol_mut_ref(symbol_obj.0)
                 .set_generics(generic_type_decls);
         }
 
@@ -1942,7 +1939,7 @@ impl Resolver {
         self.close_block(Some(interface_body));
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_interface_symbol_data_mut_ref(symbol_obj.0)
+                .get_interface_symbol_mut_ref(symbol_obj.0)
                 .set_meta_data(fields_map, methods);
         }
     }
@@ -1970,7 +1967,7 @@ impl Resolver {
                     match self.try_declare_and_bind_variable(ok_identifier) {
                         Ok(symbol_obj) => {
                             self.semantic_db
-                                .get_variable_symbol_data_mut_ref(symbol_obj.0)
+                                .get_variable_symbol_mut_ref(symbol_obj.0)
                                 .set_is_init(true);
                         }
                         Err(_) => unreachable!(),
@@ -1995,7 +1992,7 @@ impl Resolver {
             match self.try_declare_and_bind_variable(ok_loop_variable) {
                 Ok(symbol_obj) => {
                     self.semantic_db
-                        .get_variable_symbol_data_mut_ref(symbol_obj.0)
+                        .get_variable_symbol_mut_ref(symbol_obj.0)
                         .set_is_init(true);
                 }
                 Err(_) => unreachable!(),

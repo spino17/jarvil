@@ -105,11 +105,11 @@ impl<T: IsInitialized> SymbolIndex<T> {
     }
 
     pub fn declaration_line_number(&self, arena: &ScopeArena<T>) -> TextRange {
-        arena.get_symbol_data_ref(*self).decl_line_number()
+        arena.get_symbol_ref(*self).decl_line_number()
     }
 
     pub fn get_index(&self, arena: &ScopeArena<T>) -> Option<IdentDeclId<T>> {
-        arena.get_symbol_data_ref(*self).unique_id
+        arena.get_symbol_ref(*self).unique_id
     }
 
     pub fn is_suffix_required(&self, arena: &ScopeArena<T>) -> bool {

@@ -51,23 +51,23 @@ impl Index<usize> for ConcreteTypesTuple {
 
 #[derive(Debug)]
 pub struct ConcreteSymbolIndex<T: IsInitialized> {
-    pub symbol_ref: SymbolIndex<T>,
+    pub index: SymbolIndex<T>,
     pub concrete_types: Option<ConcreteTypesTuple>, // This will be `None` for symbol data which does not have any generic type params
 }
 
 impl<T: IsInitialized> Clone for ConcreteSymbolIndex<T> {
     fn clone(&self) -> Self {
         ConcreteSymbolIndex {
-            symbol_ref: self.symbol_ref,
+            index: self.index,
             concrete_types: self.concrete_types.clone(),
         }
     }
 }
 
 impl<T: IsInitialized> ConcreteSymbolIndex<T> {
-    pub fn new(symbol_ref: SymbolIndex<T>, concrete_types: Option<ConcreteTypesTuple>) -> Self {
+    pub fn new(symbol_index: SymbolIndex<T>, concrete_types: Option<ConcreteTypesTuple>) -> Self {
         ConcreteSymbolIndex {
-            symbol_ref,
+            index: symbol_index,
             concrete_types,
         }
     }

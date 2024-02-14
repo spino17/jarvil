@@ -116,7 +116,7 @@ impl PythonCodeGenerator {
     ) -> String {
         match self
             .semantic_db
-            .get_symbol_data_for_identifier_in_decl(identifier)
+            .get_symbol_for_identifier_in_decl(identifier)
         {
             Some(symbol_entry) => match symbol_entry {
                 SymbolDataEntry::Variable(symbol_index) => symbol_index
@@ -137,21 +137,21 @@ impl PythonCodeGenerator {
     pub fn get_mangled_identifier_name_in_use(&self, identifier: &OkIdentifierInUseNode) -> String {
         let Some(concrete_symbol_entry) = self
             .semantic_db
-            .get_symbol_data_for_identifier_in_use(identifier)
+            .get_symbol_for_identifier_in_use(identifier)
         else {
             return identifier.token_value_str(&self.code_handler);
         };
         match concrete_symbol_entry {
-            ConcreteSymbolDataEntry::Variable(symbol_index) => symbol_index
-                .symbol_ref
+            ConcreteSymbolDataEntry::Variable(concrete_symbol_index) => concrete_symbol_index
+                .index
                 .get_mangled_name(&self.semantic_db.namespace.variables)
                 .to_string(VAR_SUFFIX, &self.semantic_db.interner),
-            ConcreteSymbolDataEntry::Function(symbol_index) => symbol_index
-                .symbol_ref
+            ConcreteSymbolDataEntry::Function(concrete_symbol_index) => concrete_symbol_index
+                .index
                 .get_mangled_name(&self.semantic_db.namespace.functions)
                 .to_string(FUNC_SUFFIX, &self.semantic_db.interner),
-            ConcreteSymbolDataEntry::Type(symbol_index) => symbol_index
-                .symbol_ref
+            ConcreteSymbolDataEntry::Type(concrete_symbol_index) => concrete_symbol_index
+                .index
                 .get_mangled_name(&self.semantic_db.namespace.types)
                 .to_string(TY_SUFFIX, &self.semantic_db.interner),
             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
@@ -331,13 +331,13 @@ impl PythonCodeGenerator {
         };
         let Some(concrete_symbol_index) = self
             .semantic_db
-            .get_ty_symbol_data_for_identifier_in_use(ok_ty_name)
+            .get_ty_symbol_for_identifier_in_use(ok_ty_name)
         else {
             return;
         };
         match &self
             .semantic_db
-            .get_ty_symbol_data_ref(concrete_symbol_index.symbol_ref)
+            .get_ty_symbol_ref(concrete_symbol_index.index)
         {
             UserDefinedTypeData::Struct(_) => {
                 self.print_identifier_in_use(ty_name, is_trivia);
@@ -397,7 +397,7 @@ impl PythonCodeGenerator {
                 if let CoreIdentifierInDeclNode::Ok(ok_enum_name) = enum_name.core_ref() {
                     if let Some(sym_index) = self
                         .semantic_db
-                        .get_ty_symbol_data_for_identifier_in_decl(ok_enum_name)
+                        .get_ty_symbol_for_identifier_in_decl(ok_enum_name)
                     {
                         symbol_index = Some(sym_index);
                     }
@@ -410,7 +410,7 @@ impl PythonCodeGenerator {
                 let index = match symbol_index {
                     Some(symbol_index) => self
                         .semantic_db
-                        .get_ty_symbol_data_mut_ref(symbol_index)
+                        .get_ty_symbol_mut_ref(symbol_index)
                         .get_enum_data_mut_ref()
                         .try_index_for_variant(variant_name_str)
                         .unwrap(),

@@ -83,14 +83,14 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_symbol_data_for_identifier_in_decl(
+    pub fn get_symbol_for_identifier_in_decl(
         &self,
         identifier: &OkIdentifierInDeclNode,
     ) -> Option<&SymbolDataEntry> {
         self.identifier_in_decl_binding_table.get(identifier)
     }
 
-    pub fn get_symbol_data_for_identifier_in_use(
+    pub fn get_symbol_for_identifier_in_use(
         &self,
         identifier: &OkIdentifierInUseNode,
     ) -> Option<ConcreteSymbolDataEntry> {
@@ -99,29 +99,25 @@ impl SemanticStateDatabase {
             .cloned()
     }
 
-    pub fn get_variable_symbol_data_ref(
+    pub fn get_variable_symbol_ref(
         &self,
         symbol_index: SymbolIndex<VariableData>,
     ) -> &VariableData {
-        &self
-            .namespace
-            .variables
-            .get_symbol_data_ref(symbol_index)
-            .data
+        &self.namespace.variables.get_symbol_ref(symbol_index).data
     }
 
-    pub fn get_variable_symbol_data_mut_ref(
+    pub fn get_variable_symbol_mut_ref(
         &mut self,
         symbol_index: SymbolIndex<VariableData>,
     ) -> &mut VariableData {
         &mut self
             .namespace
             .variables
-            .get_symbol_data_mut_ref(symbol_index)
+            .get_symbol_mut_ref(symbol_index)
             .data
     }
 
-    pub fn get_variable_symbol_data_for_identifier_in_decl(
+    pub fn get_variable_symbol_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<VariableData>> {
@@ -134,7 +130,7 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_variable_symbol_data_for_identifier_in_use(
+    pub fn get_variable_symbol_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
     ) -> Option<&ConcreteSymbolIndex<VariableData>> {
@@ -149,29 +145,25 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_function_symbol_data_ref(
+    pub fn get_function_symbol_ref(
         &self,
         symbol_index: SymbolIndex<CallableData>,
     ) -> &CallableData {
-        &self
-            .namespace
-            .functions
-            .get_symbol_data_ref(symbol_index)
-            .data
+        &self.namespace.functions.get_symbol_ref(symbol_index).data
     }
 
-    pub fn get_function_symbol_data_mut_ref(
+    pub fn get_function_symbol_mut_ref(
         &mut self,
         symbol_index: SymbolIndex<CallableData>,
     ) -> &mut CallableData {
         &mut self
             .namespace
             .functions
-            .get_symbol_data_mut_ref(symbol_index)
+            .get_symbol_mut_ref(symbol_index)
             .data
     }
 
-    pub fn get_function_symbol_data_for_identifier_in_decl(
+    pub fn get_function_symbol_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<CallableData>> {
@@ -184,7 +176,7 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_function_symbol_data_for_identifier_in_use(
+    pub fn get_function_symbol_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
     ) -> Option<&ConcreteSymbolIndex<CallableData>> {
@@ -199,25 +191,21 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_ty_symbol_data_ref(
+    pub fn get_ty_symbol_ref(
         &self,
         symbol_index: SymbolIndex<UserDefinedTypeData>,
     ) -> &UserDefinedTypeData {
-        &self.namespace.types.get_symbol_data_ref(symbol_index).data
+        &self.namespace.types.get_symbol_ref(symbol_index).data
     }
 
-    pub fn get_ty_symbol_data_mut_ref(
+    pub fn get_ty_symbol_mut_ref(
         &mut self,
         symbol_index: SymbolIndex<UserDefinedTypeData>,
     ) -> &mut UserDefinedTypeData {
-        &mut self
-            .namespace
-            .types
-            .get_symbol_data_mut_ref(symbol_index)
-            .data
+        &mut self.namespace.types.get_symbol_mut_ref(symbol_index).data
     }
 
-    pub fn get_ty_symbol_data_for_identifier_in_decl(
+    pub fn get_ty_symbol_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<UserDefinedTypeData>> {
@@ -230,7 +218,7 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_ty_symbol_data_for_identifier_in_use(
+    pub fn get_ty_symbol_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
     ) -> Option<ConcreteSymbolIndex<UserDefinedTypeData>> {
@@ -245,29 +233,25 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_interface_symbol_data_ref(
+    pub fn get_interface_symbol_ref(
         &self,
         symbol_index: SymbolIndex<InterfaceData>,
     ) -> &InterfaceData {
-        &self
-            .namespace
-            .interfaces
-            .get_symbol_data_ref(symbol_index)
-            .data
+        &self.namespace.interfaces.get_symbol_ref(symbol_index).data
     }
 
-    pub fn get_interface_symbol_data_mut_ref(
+    pub fn get_interface_symbol_mut_ref(
         &mut self,
         symbol_index: SymbolIndex<InterfaceData>,
     ) -> &mut InterfaceData {
         &mut self
             .namespace
             .interfaces
-            .get_symbol_data_mut_ref(symbol_index)
+            .get_symbol_mut_ref(symbol_index)
             .data
     }
 
-    pub fn get_interface_symbol_data_for_identifier_in_decl(
+    pub fn get_interface_symbol_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<InterfaceData>> {
@@ -280,7 +264,7 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_interface_symbol_data_for_identifier_in_use(
+    pub fn get_interface_symbol_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
     ) -> Option<&ConcreteSymbolIndex<InterfaceData>> {
@@ -295,7 +279,7 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_self_keyword_symbol_data_ref(
+    pub fn get_self_keyword_symbol_ref(
         &self,
         node: &OkSelfKeywordNode,
     ) -> Option<SymbolIndex<VariableData>> {
