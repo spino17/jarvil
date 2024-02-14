@@ -429,6 +429,7 @@ impl TypeChecker {
         let expected_params_len = expected_params.len();
         let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![];
         let mut params_len = 0;
+
         for (index, received_param) in received_params_iter.enumerate() {
             let param_ty = self.check_expr(received_param);
             if index >= expected_params_len {
@@ -465,18 +466,22 @@ impl TypeChecker {
             }
             params_len += 1;
         }
+
         if expected_params_len > params_len {
             return Err(PrototypeEquivalenceCheckError::LessParams((
                 expected_params_len,
                 params_len,
             )));
-        } else if !mismatch_types_vec.is_empty() {
+        }
+        if !mismatch_types_vec.is_empty() {
             return Err(PrototypeEquivalenceCheckError::MismatchedType(
                 mismatch_types_vec,
             ));
-        } else if num_inferred_types != generic_type_decls_len {
+        }
+        if num_inferred_types != generic_type_decls_len {
             return Err(PrototypeEquivalenceCheckError::NotAllConcreteTypesInferred);
         }
+
         let unpacked_inferred_concrete_types: Vec<Type> = inferred_concrete_types
             .into_iter()
             .map(|x| match x {
@@ -485,6 +490,7 @@ impl TypeChecker {
             })
             .collect();
         let mut error_strs: Vec<(String, String)> = vec![]; // Vec of (inferred_ty string, interface_bounds string)
+
         for (index, inferred_ty) in unpacked_inferred_concrete_types.iter().enumerate() {
             let interface_bounds = &generic_type_decls.0[index].1;
             if !inferred_ty
@@ -502,6 +508,7 @@ impl TypeChecker {
                 ));
             }
         }
+
         if !error_strs.is_empty() {
             return Err(
                 PrototypeEquivalenceCheckError::InferredTypesNotBoundedByInterfaces(
@@ -532,6 +539,7 @@ impl TypeChecker {
         let received_params_iter = received_params.iter();
         let mut index = 0;
         let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![];
+
         for received_param in received_params_iter {
             let param_type_obj = self.check_expr(received_param);
             if index >= expected_params_len {
@@ -556,16 +564,19 @@ impl TypeChecker {
             }
             index += 1;
         }
+
         if index < expected_params_len {
             return Err(PrototypeEquivalenceCheckError::LessParams((
                 expected_params_len,
                 index,
             )));
-        } else if !mismatch_types_vec.is_empty() {
+        }
+        if !mismatch_types_vec.is_empty() {
             return Err(PrototypeEquivalenceCheckError::MismatchedType(
                 mismatch_types_vec,
             ));
         }
+
         Ok(())
     }
 
@@ -746,6 +757,7 @@ impl TypeChecker {
         let CoreIdentifierInUseNode::Ok(ok_identifier) = func_name.core_ref() else {
             return Type::new_with_unknown();
         };
+
         // NOTE: For call expression syntax like `f(...) or f<...>(...)` while resolving
         // we provide the freedom to have no <...> even if `f` expects to have it because it
         // can be inferred. This inference is done here.
@@ -755,6 +767,7 @@ impl TypeChecker {
         //          (entry will be created in `node vs concrete_symbol_data` mapping with None as key).
         //     CASE 3. <...> not in decl, <...> in usage => error while resolving
         //     CASE 4. <...> not in decl, <...> not in usage => no error
+
         let Some(symbol_data) = self
             .semantic_state_db
             .get_symbol_data_for_identifier_in_use(ok_identifier)
@@ -1060,16 +1073,14 @@ impl TypeChecker {
                         .semantic_state_db
                         .get_variable_symbol_data_for_identifier_in_use(ok_identifier)
                     {
-                        Some(variable_symbol_data) => {
-                            return self
-                                .semantic_state_db
-                                .namespace
-                                .variables
-                                .get_symbol_data_ref(variable_symbol_data.symbol_ref)
-                                .data
-                                .data_type
-                                .clone()
-                        }
+                        Some(variable_symbol_data) => self
+                            .semantic_state_db
+                            .namespace
+                            .variables
+                            .get_symbol_data_ref(variable_symbol_data.symbol_ref)
+                            .data
+                            .data_type
+                            .clone(),
                         None => Type::new_with_unknown(),
                     }
                 }
@@ -1083,16 +1094,14 @@ impl TypeChecker {
                             .semantic_state_db
                             .get_self_keyword_symbol_data_ref(ok_self_keyword)
                         {
-                            Some(symbol_data) => {
-                                return self
-                                    .semantic_state_db
-                                    .namespace
-                                    .variables
-                                    .get_symbol_data_ref(symbol_data)
-                                    .data
-                                    .data_type
-                                    .clone()
-                            }
+                            Some(symbol_data) => self
+                                .semantic_state_db
+                                .namespace
+                                .variables
+                                .get_symbol_data_ref(symbol_data)
+                                .data
+                                .data_type
+                                .clone(),
                             None => Type::new_with_unknown(),
                         }
                     }
@@ -1245,6 +1254,7 @@ impl TypeChecker {
         // for syntax `<struct_obj>.<property_name>([<params>])` first type-checker tries to find `property_name` in fields
         // (for example: a field with lambda type) and then it goes on to find it in methods.
         // This is in sync with what Python does.
+
         let method_name = method_name_ok_identifier
             .token_value(&self.code_handler, &self.semantic_state_db.interner);
         let concrete_types = &struct_ty.concrete_types;
@@ -1707,6 +1717,7 @@ impl TypeChecker {
             Some(expr) => self.check_expr(expr),
             None => unreachable!(),
         };
+
         for expr in initials_iter {
             let ty = self.check_expr(expr);
             if !ty.is_eq(&first_expr_ty, &self.semantic_state_db.namespace) {
@@ -1724,6 +1735,7 @@ impl TypeChecker {
                 self.log_error(Diagnostics::IncorrectExpressionType(err));
             }
         }
+
         Type::new_with_array(first_expr_ty)
     }
 
@@ -1744,6 +1756,7 @@ impl TypeChecker {
             }
             None => unreachable!(),
         };
+
         for key_value_pair in initials_iter {
             let core_key_value_pair = key_value_pair.core_ref();
             let key_ty = self.check_expr(&core_key_value_pair.key_expr);
@@ -1777,6 +1790,7 @@ impl TypeChecker {
                 self.log_error(Diagnostics::IncorrectExpressionType(err));
             }
         }
+
         Type::new_with_hashmap(first_key_ty, first_value_ty)
     }
 
@@ -1910,6 +1924,7 @@ impl TypeChecker {
         let operands = &core_comp_expr.operands;
         let operators = &core_comp_expr.operators;
         let operands_len = operands.len();
+
         for index in 1..operands_len {
             let left_expr = &operands[index - 1];
             let right_expr = &operands[index];
@@ -1949,6 +1964,7 @@ impl TypeChecker {
                 }
             }
         }
+
         Type::new_with_atomic(BOOL)
     }
 
@@ -2091,6 +2107,7 @@ impl TypeChecker {
             .func_stack
             .push((is_constructor, return_type_obj.clone()));
         let mut has_return_stmt: Option<TextRange> = None;
+
         for stmt in &body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
@@ -2105,6 +2122,7 @@ impl TypeChecker {
                 has_return_stmt = Some(return_stmt.range());
             }
         }
+
         if is_constructor {
             match has_return_stmt {
                 Some(return_stmt_range) => {
@@ -2190,6 +2208,7 @@ impl TypeChecker {
         else {
             return;
         };
+
         let symbol_data_ref = &self
             .semantic_state_db
             .namespace
@@ -2202,6 +2221,7 @@ impl TypeChecker {
             return;
         };
         let struct_methods = struct_data.get_methods_ref();
+
         for (interface_obj, range) in &implementing_interfaces.interfaces {
             let (_, interface_concrete_symbol_data) = interface_obj.get_core_ref();
             let concrete_types = &interface_concrete_symbol_data.concrete_types;
