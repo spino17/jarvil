@@ -270,9 +270,7 @@ impl AbstractType for Lambda {
     fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
         match self {
             Lambda::Named(semantic_data) => {
-                let mut s = interner
-                    .lookup(semantic_data.symbol_data.identifier_name())
-                    .to_string();
+                let mut s = interner.lookup(semantic_data.symbol_data.identifier_name());
                 match &semantic_data.concrete_types {
                     Some(concrete_types) => {
                         s.push('<');

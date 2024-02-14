@@ -129,7 +129,7 @@ impl InterfaceObject {
     }
 
     pub fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let mut s = interner.lookup(self.0.as_ref().0).to_string();
+        let mut s = interner.lookup(self.0.as_ref().0);
         match &self.0.as_ref().1.concrete_types {
             Some(concrete_types) => {
                 s.push('<');

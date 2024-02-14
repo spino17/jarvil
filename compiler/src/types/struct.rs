@@ -136,7 +136,7 @@ impl AbstractType for Struct {
     }
 
     fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let mut s = interner.lookup(self.get_name()).to_string();
+        let mut s = interner.lookup(self.get_name());
         let Some(concrete_types) = &self.concrete_types else {
             return s;
         };

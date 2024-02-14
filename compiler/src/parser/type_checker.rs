@@ -2309,14 +2309,8 @@ impl TypeChecker {
                     enum_name.token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                 if expr_enum_name != enum_name_str {
                     let err = IncorrectEnumNameError::new(
-                        self.semantic_state_db
-                            .interner
-                            .lookup(expr_enum_name)
-                            .to_string(),
-                        self.semantic_state_db
-                            .interner
-                            .lookup(enum_name_str)
-                            .to_string(),
+                        self.semantic_state_db.interner.lookup(expr_enum_name),
+                        self.semantic_state_db.interner.lookup(enum_name_str),
                         enum_name.range(),
                     );
                     self.log_error(Diagnostics::IncorrectEnumName(err));

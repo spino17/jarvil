@@ -46,11 +46,11 @@ impl AbstractCommand for BuildCommand {
         } else if len == 3 {
             let file_name = check_jarvil_code_file_extension(&self.command_line_args[2])?;
             self.alternate_code_file_name = Some(file_name.to_string());
-            return Ok(());
+            Ok(())
         } else {
-            return Err(AnyonError::new_with_command(
+            Err(AnyonError::new_with_command(
                 TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG.to_string(),
-            ));
+            ))
         }
     }
 
