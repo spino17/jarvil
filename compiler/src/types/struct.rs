@@ -3,7 +3,7 @@ use super::helper::{struct_enum_compare_fn, try_infer_types_from_tuple, StructEn
 use crate::core::string_interner::{Interner, StrId};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::ConcreteTypesTuple;
-use crate::scope::namespace::{self, Namespace};
+use crate::scope::namespace::Namespace;
 use crate::scope::symbol::core::SymbolIndex;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::{

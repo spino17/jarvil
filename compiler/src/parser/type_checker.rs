@@ -2397,7 +2397,7 @@ impl TypeChecker {
                 }
             }
             let case_block = &core_case_branch.block;
-            //self.walk_block(case_block);
+            self.walk_block(case_block);
         }
         let mut missing_variants: Vec<StrId> = vec![];
         for (variant, _, _) in &enum_data.variants {

@@ -1,9 +1,8 @@
 // This code is taken from the amazing blog on `Fast and Simple Rust Interner` by `matklad`:
 // `https://matklad.github.io/2020/03/22/fast-simple-rust-interner.html`
 
-use std::cell::RefCell;
-
 use rustc_hash::FxHashMap;
+use std::cell::RefCell;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct StrId(u32);

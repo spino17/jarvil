@@ -2,7 +2,7 @@ use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
-use crate::scope::namespace::{self, Namespace};
+use crate::scope::namespace::Namespace;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::OperatorCompatiblity;

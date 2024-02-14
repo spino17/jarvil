@@ -3,7 +3,7 @@ use super::function::{CallableData, PartialConcreteCallableDataRef};
 use super::interfaces::InterfaceData;
 use super::variables::VariableData;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
-use crate::scope::namespace::{self, Namespace};
+use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
 use crate::{core::string_interner::StrId, types::core::AbstractType};

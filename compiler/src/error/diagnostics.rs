@@ -1,5 +1,5 @@
 use super::helper::{range_to_span, IdentifierKind, PropertyKind};
-use crate::scope::namespace::{self, Namespace};
+use crate::scope::namespace::Namespace;
 use crate::types::core::AbstractType;
 use crate::{
     core::string_interner::{Interner, StrId},

@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use super::core::Type;
 use crate::{
     core::string_interner::{Interner, StrId},
@@ -8,17 +6,11 @@ use crate::{
         concrete::{ConcreteTypesTuple, ConcretizationContext},
         namespace::Namespace,
         scope::ScopeIndex,
-        symbol::{
-            core::SymbolIndex,
-            interfaces::InterfaceBounds,
-            types::{
-                core::UserDefinedTypeData,
-                generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory},
-            },
-        },
+        symbol::{core::SymbolIndex, types::generic_type::GenericTypeDeclarationPlaceCategory},
     },
     types::core::AbstractType,
 };
+use std::marker::PhantomData;
 
 pub fn get_unbounded_generic_type_with_declaration_index(
     index: usize,

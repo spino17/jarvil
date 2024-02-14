@@ -1,4 +1,4 @@
-use crate::scope::namespace::{self, Namespace};
+use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
 use crate::scope::traits::IsInitialized;
 use crate::{

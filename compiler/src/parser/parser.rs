@@ -1,5 +1,3 @@
-use serde::Serialize;
-
 use super::resolver::BlockKind;
 use crate::ast::ast::Node;
 use crate::ast::ast::{
@@ -18,6 +16,7 @@ use crate::error::diagnostics::Diagnostics;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
+use serde::Serialize;
 use std::cell::RefCell;
 
 pub trait Parser {

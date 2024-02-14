@@ -1,7 +1,7 @@
 use super::{
     scope::{ScopeArena, ScopeIndex},
     symbol::{
-        core::{IdentDeclId, Symbol, SymbolIndex},
+        core::{IdentDeclId, SymbolIndex},
         function::{CallableData, CallableKind, FunctionSymbolData},
         interfaces::{InterfaceBounds, InterfaceData, InterfaceSymbolData},
         types::{

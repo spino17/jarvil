@@ -1,5 +1,5 @@
 use crate::core::string_interner::Interner;
-use crate::scope::namespace::{self, Namespace};
+use crate::scope::namespace::Namespace;
 use crate::types::array::core::Array;
 use crate::types::hashmap::core::HashMap;
 use crate::{

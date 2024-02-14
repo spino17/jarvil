@@ -2,7 +2,7 @@ use crate::scope::lookup::LookupResult;
 use crate::scope::mangled::MangledIdentifierName;
 use crate::scope::scope::ScopeIndex;
 use crate::scope::semantic_db::SemanticStateDatabase;
-use crate::scope::symbol::core::{ConcreteSymbolDataEntry, Symbol, SymbolDataEntry, SymbolIndex};
+use crate::scope::symbol::core::{ConcreteSymbolDataEntry, SymbolDataEntry, SymbolIndex};
 use crate::scope::symbol::variables::VariableData;
 use crate::{
     ast::{

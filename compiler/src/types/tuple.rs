@@ -6,7 +6,7 @@ use crate::{
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::{ConcreteTypesTuple, ConcretizationContext},
-        namespace::{self, Namespace},
+        namespace::Namespace,
         symbol::{
             interfaces::InterfaceBounds, types::generic_type::GenericTypeDeclarationPlaceCategory,
         },

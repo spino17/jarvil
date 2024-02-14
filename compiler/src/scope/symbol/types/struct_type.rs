@@ -1,6 +1,6 @@
 use crate::core::string_interner::StrId;
 use crate::scope::concrete::ConcreteTypesTuple;
-use crate::scope::namespace::{self, Namespace};
+use crate::scope::namespace::Namespace;
 use crate::scope::symbol::common::{FieldsMap, MethodsMap};
 use crate::scope::symbol::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
 use crate::scope::symbol::interfaces::InterfaceBounds;

@@ -53,8 +53,6 @@ use crate::parser::resolver::{BlockKind, Resolver};
 use crate::scope::scope::ScopeIndex;
 use crate::types::core::Type;
 use serde::Serialize;
-use std::borrow::BorrowMut;
-use std::cell::RefMut;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use text_size::TextRange;
