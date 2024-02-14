@@ -152,7 +152,7 @@ impl Namespace {
             |scope: &ScopeArena<VariableData>, scope_index: ScopeIndex, key: StrId| {
                 scope
                     .get(scope_index, key)
-                    .map(|symbol_data| symbol_data.declaration_line_number(scope))
+                    .map(|symbol_index| symbol_index.declaration_line_number(scope))
             };
         Ok(self
             .variables
@@ -180,7 +180,7 @@ impl Namespace {
             |scope: &ScopeArena<VariableData>, scope_index: ScopeIndex, key: StrId| {
                 scope
                     .get(scope_index, key)
-                    .map(|symbol_data| symbol_data.declaration_line_number(scope))
+                    .map(|symbol_index| symbol_index.declaration_line_number(scope))
             };
         Ok(self
             .variables
@@ -206,7 +206,7 @@ impl Namespace {
             |scope: &ScopeArena<CallableData>, scope_index: ScopeIndex, key: StrId| {
                 scope
                     .get(scope_index, key)
-                    .map(|symbol_data| symbol_data.declaration_line_number(scope))
+                    .map(|symbol_index| symbol_index.declaration_line_number(scope))
             };
         Ok(self
             .functions
@@ -233,7 +233,7 @@ impl Namespace {
             |scope: &ScopeArena<UserDefinedTypeData>, scope_index: ScopeIndex, key: StrId| {
                 scope
                     .lookup(scope_index, key)
-                    .map(|(symbol_data, _, _)| symbol_data.declaration_line_number(scope))
+                    .map(|(symbol_index, _, _)| symbol_index.declaration_line_number(scope))
             };
         Ok(self
             .types
@@ -319,7 +319,7 @@ impl Namespace {
             |scope: &ScopeArena<InterfaceData>, scope_index: ScopeIndex, key: StrId| {
                 scope
                     .lookup(scope_index, key)
-                    .map(|(symbol_data, _, _)| symbol_data.declaration_line_number(scope))
+                    .map(|(symbol_index, _, _)| symbol_index.declaration_line_number(scope))
             };
         Ok(self
             .interfaces

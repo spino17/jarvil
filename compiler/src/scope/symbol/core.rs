@@ -140,23 +140,20 @@ pub enum ConcreteSymbolDataEntry {
 }
 
 impl ConcreteSymbolDataEntry {
-    pub fn new(symbol_data: SymbolDataEntry, concrete_types: Option<ConcreteTypesTuple>) -> Self {
-        match symbol_data {
-            SymbolDataEntry::Variable(variable_symbol_data) => ConcreteSymbolDataEntry::Variable(
-                ConcreteSymbolIndex::new(variable_symbol_data, concrete_types),
+    pub fn new(symbol_entry: SymbolDataEntry, concrete_types: Option<ConcreteTypesTuple>) -> Self {
+        match symbol_entry {
+            SymbolDataEntry::Variable(symbol_index) => ConcreteSymbolDataEntry::Variable(
+                ConcreteSymbolIndex::new(symbol_index, concrete_types),
             ),
-            SymbolDataEntry::Function(func_symbol_data) => ConcreteSymbolDataEntry::Function(
-                ConcreteSymbolIndex::new(func_symbol_data, concrete_types),
+            SymbolDataEntry::Function(symbol_index) => ConcreteSymbolDataEntry::Function(
+                ConcreteSymbolIndex::new(symbol_index, concrete_types),
             ),
-            SymbolDataEntry::Type(type_symbol_data) => ConcreteSymbolDataEntry::Type(
-                ConcreteSymbolIndex::new(type_symbol_data, concrete_types),
+            SymbolDataEntry::Type(symbol_index) => ConcreteSymbolDataEntry::Type(
+                ConcreteSymbolIndex::new(symbol_index, concrete_types),
             ),
-            SymbolDataEntry::Interface(interface_symbol_data) => {
-                ConcreteSymbolDataEntry::Interface(ConcreteSymbolIndex::new(
-                    interface_symbol_data,
-                    concrete_types,
-                ))
-            }
+            SymbolDataEntry::Interface(symbol_index) => ConcreteSymbolDataEntry::Interface(
+                ConcreteSymbolIndex::new(symbol_index, concrete_types),
+            ),
         }
     }
 }

@@ -49,12 +49,12 @@ impl GenericTypeData {
         let mut property_containing_interface_objs: Vec<String> = vec![];
         let mut result: Option<(Type, TextRange)> = None;
         for (interface_obj, _) in &self.interface_bounds.interfaces {
-            let concrete_symbol_data = &interface_obj.0.as_ref().1;
+            let concrete_symbol_index = &interface_obj.0.as_ref().1;
             let interface_data = &namespace
                 .interfaces
-                .get_symbol_data_ref(concrete_symbol_data.symbol_ref)
+                .get_symbol_data_ref(concrete_symbol_index.symbol_ref)
                 .data;
-            let concrete_types = &concrete_symbol_data.concrete_types;
+            let concrete_types = &concrete_symbol_index.concrete_types;
             match interface_data.try_field(field_name, concrete_types.as_ref(), namespace) {
                 Some((ty, decl_range)) => {
                     property_containing_interface_objs
@@ -86,10 +86,10 @@ impl GenericTypeData {
         let mut property_containing_interface_objs: Vec<String> = vec![];
         let mut result: Option<usize> = None;
         for (index, (interface_obj, _)) in self.interface_bounds.interfaces.iter().enumerate() {
-            let concrete_symbol_data = &interface_obj.0.as_ref().1;
+            let concrete_symbol_index = &interface_obj.0.as_ref().1;
             let interface_data = &namespace
                 .interfaces
-                .get_symbol_data_ref(concrete_symbol_data.symbol_ref)
+                .get_symbol_data_ref(concrete_symbol_index.symbol_ref)
                 .data;
             if interface_data.has_method(method_name) {
                 property_containing_interface_objs

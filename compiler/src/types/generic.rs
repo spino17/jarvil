@@ -15,18 +15,16 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Generic {
-    pub semantic_data: SymbolIndex<UserDefinedTypeData>,
+    pub symbol_index: SymbolIndex<UserDefinedTypeData>,
 }
 
 impl Generic {
-    pub fn new(symbol_data: SymbolIndex<UserDefinedTypeData>) -> Generic {
-        Generic {
-            semantic_data: symbol_data,
-        }
+    pub fn new(symbol_index: SymbolIndex<UserDefinedTypeData>) -> Generic {
+        Generic { symbol_index }
     }
 
     pub fn name(&self) -> StrId {
-        self.semantic_data.identifier_name()
+        self.symbol_index.identifier_name()
     }
 }
 
@@ -49,18 +47,18 @@ impl AbstractType for Generic {
             CoreType::Generic(generic_data) => Some(generic_data),
             _ => None,
         };
-        let self_symbol_data = &namespace.types.get_symbol_data_ref(self.semantic_data).data;
-        let self_generic_data = self_symbol_data.get_generic_data_ref();
+        let self_ty_data = &namespace.types.get_symbol_data_ref(self.symbol_index).data;
+        let self_generic_data = self_ty_data.get_generic_data_ref();
         let self_index = self_generic_data.index;
         let self_category = &self_generic_data.category;
         match self_category {
             GenericTypeDeclarationPlaceCategory::InCallable => match is_other_ty_generic {
                 Some(generic_data) => {
-                    let other_symbol_data = &namespace
+                    let other_data = &namespace
                         .types
-                        .get_symbol_data_ref(generic_data.semantic_data)
+                        .get_symbol_data_ref(generic_data.symbol_index)
                         .data;
-                    let other_generic_data = other_symbol_data.get_generic_data_ref();
+                    let other_generic_data = other_data.get_generic_data_ref();
                     let other_index = other_generic_data.index;
                     let other_category = &other_generic_data.category;
                     match other_category {
@@ -87,8 +85,8 @@ impl AbstractType for Generic {
     }
 
     fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
-        let symbol_data = &namespace.types.get_symbol_data_ref(self.semantic_data).data;
-        let generic_data = symbol_data.get_generic_data_ref();
+        let ty_data = &namespace.types.get_symbol_data_ref(self.symbol_index).data;
+        let generic_data = ty_data.get_generic_data_ref();
         let index = generic_data.index;
         let category = &generic_data.category;
         match category {
@@ -110,8 +108,8 @@ impl AbstractType for Generic {
         interface_bounds: &InterfaceBounds,
         namespace: &Namespace,
     ) -> bool {
-        let symbol_data = &namespace.types.get_symbol_data_ref(self.semantic_data).data;
-        let ty_interface_bounds = &symbol_data.get_generic_data_ref().interface_bounds;
+        let ty_data = &namespace.types.get_symbol_data_ref(self.symbol_index).data;
+        let ty_interface_bounds = &ty_data.get_generic_data_ref().interface_bounds;
         interface_bounds.is_subset(ty_interface_bounds, namespace)
     }
 
@@ -124,8 +122,8 @@ impl AbstractType for Generic {
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
     ) -> Result<(), ()> {
-        let symbol_data = &namespace.types.get_symbol_data_ref(self.semantic_data).data;
-        let generic_data_ref = symbol_data.get_generic_data_ref();
+        let ty_data = &namespace.types.get_symbol_data_ref(self.symbol_index).data;
+        let generic_data_ref = ty_data.get_generic_data_ref();
         let index = generic_data_ref.index;
         let decl_place = generic_data_ref.category;
         if inference_category == decl_place {
@@ -158,8 +156,8 @@ impl AbstractType for Generic {
     }
 
     fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let symbol_data = &namespace.types.get_symbol_data_ref(self.semantic_data).data;
-        let generic_data = symbol_data.get_generic_data_ref();
+        let ty_data = &namespace.types.get_symbol_data_ref(self.symbol_index).data;
+        let generic_data = ty_data.get_generic_data_ref();
         let interface_bounds = &generic_data.interface_bounds;
         format!(
             "{}{}",

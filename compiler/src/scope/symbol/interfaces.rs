@@ -93,12 +93,12 @@ pub struct InterfaceObject(pub Rc<(StrId, ConcreteSymbolIndex<InterfaceData>)>);
 impl InterfaceObject {
     pub fn new(
         name: StrId,
-        symbol_data: SymbolIndex<InterfaceData>,
+        symbol_index: SymbolIndex<InterfaceData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> Self {
         InterfaceObject(Rc::new((
             name,
-            ConcreteSymbolIndex::new(symbol_data, concrete_types),
+            ConcreteSymbolIndex::new(symbol_index, concrete_types),
         )))
     }
 

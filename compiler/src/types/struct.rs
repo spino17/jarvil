@@ -13,17 +13,17 @@ use crate::scope::{
 
 #[derive(Debug)]
 pub struct Struct {
-    pub symbol_data: SymbolIndex<UserDefinedTypeData>,
+    pub symbol_index: SymbolIndex<UserDefinedTypeData>,
     pub concrete_types: Option<ConcreteTypesTuple>,
 }
 
 impl Struct {
     pub fn new(
-        symbol_data: SymbolIndex<UserDefinedTypeData>,
+        symbol_index: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> Struct {
         Struct {
-            symbol_data,
+            symbol_index,
             concrete_types,
         }
     }
@@ -35,7 +35,7 @@ impl StructEnumType for Struct {
     }
 
     fn get_name(&self) -> StrId {
-        self.symbol_data.identifier_name()
+        self.symbol_index.identifier_name()
     }
 }
 
@@ -79,14 +79,14 @@ impl AbstractType for Struct {
 
     fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
         let Some(concrete_types) = &self.concrete_types else {
-            return Type::new_with_struct(self.symbol_data, None);
+            return Type::new_with_struct(self.symbol_index, None);
         };
         let mut concretized_concrete_types = vec![];
         for ty in concrete_types.iter() {
             concretized_concrete_types.push(ty.concretize(context, namespace));
         }
         Type::new_with_struct(
-            self.symbol_data,
+            self.symbol_index,
             Some(ConcreteTypesTuple::new(concretized_concrete_types)),
         )
     }
@@ -96,8 +96,8 @@ impl AbstractType for Struct {
         interface_bounds: &InterfaceBounds,
         namespace: &Namespace,
     ) -> bool {
-        let symbol_data = &namespace.types.get_symbol_data_ref(self.symbol_data).data;
-        match &symbol_data.get_struct_data_ref().implementing_interfaces {
+        let ty_data = &namespace.types.get_symbol_data_ref(self.symbol_index).data;
+        match &ty_data.get_struct_data_ref().implementing_interfaces {
             Some(ty_interface_bounds) => interface_bounds.is_subset(ty_interface_bounds, namespace),
             None => false,
         }

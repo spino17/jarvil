@@ -104,8 +104,8 @@ impl SemanticStateDatabase {
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<VariableData>> {
         match self.identifier_in_decl_binding_table.get(node) {
-            Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Variable(variable_symbol_data) => Some(*variable_symbol_data),
+            Some(symbol_entry) => match symbol_entry {
+                SymbolDataEntry::Variable(symbol_index) => Some(*symbol_index),
                 _ => unreachable!(),
             },
             None => None,
@@ -117,9 +117,9 @@ impl SemanticStateDatabase {
         node: &OkIdentifierInUseNode,
     ) -> Option<&ConcreteSymbolIndex<VariableData>> {
         match self.identifier_in_use_binding_table.get(node) {
-            Some(symbol_data) => match symbol_data {
-                ConcreteSymbolDataEntry::Variable(variable_symbol_data) => {
-                    Some(variable_symbol_data)
+            Some(concrete_symbol_entry) => match concrete_symbol_entry {
+                ConcreteSymbolDataEntry::Variable(concrete_symbol_index) => {
+                    Some(concrete_symbol_index)
                 }
                 _ => unreachable!(),
             },
@@ -132,8 +132,8 @@ impl SemanticStateDatabase {
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<CallableData>> {
         match self.identifier_in_decl_binding_table.get(node) {
-            Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Function(func_symbol_data) => Some(*func_symbol_data),
+            Some(symbol_entry) => match symbol_entry {
+                SymbolDataEntry::Function(symbol_index) => Some(*symbol_index),
                 _ => unreachable!(),
             },
             None => None,
@@ -145,8 +145,10 @@ impl SemanticStateDatabase {
         node: &OkIdentifierInUseNode,
     ) -> Option<&ConcreteSymbolIndex<CallableData>> {
         match self.identifier_in_use_binding_table.get(node) {
-            Some(symbol_data) => match symbol_data {
-                ConcreteSymbolDataEntry::Function(func_symbol_data) => Some(func_symbol_data),
+            Some(concrete_symbol_entry) => match concrete_symbol_entry {
+                ConcreteSymbolDataEntry::Function(concrete_symbol_index) => {
+                    Some(concrete_symbol_index)
+                }
                 _ => unreachable!(),
             },
             None => None,
@@ -158,8 +160,8 @@ impl SemanticStateDatabase {
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<UserDefinedTypeData>> {
         match self.identifier_in_decl_binding_table.get(node) {
-            Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Type(type_symbol_data) => Some(*type_symbol_data),
+            Some(symbol_entry) => match symbol_entry {
+                SymbolDataEntry::Type(symbol_index) => Some(*symbol_index),
                 _ => unreachable!(),
             },
             None => None,
@@ -171,8 +173,10 @@ impl SemanticStateDatabase {
         node: &OkIdentifierInUseNode,
     ) -> Option<ConcreteSymbolIndex<UserDefinedTypeData>> {
         match self.identifier_in_use_binding_table.get(node) {
-            Some(symbol_data) => match symbol_data {
-                ConcreteSymbolDataEntry::Type(type_symbol_data) => Some(type_symbol_data.clone()),
+            Some(concrete_symbol_entry) => match concrete_symbol_entry {
+                ConcreteSymbolDataEntry::Type(concrete_symbol_index) => {
+                    Some(concrete_symbol_index.clone())
+                }
                 _ => unreachable!(),
             },
             None => None,
@@ -184,8 +188,8 @@ impl SemanticStateDatabase {
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<InterfaceData>> {
         match self.identifier_in_decl_binding_table.get(node) {
-            Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Interface(interface_symbol_data) => Some(*interface_symbol_data),
+            Some(symbol_entry) => match symbol_entry {
+                SymbolDataEntry::Interface(symbol_index) => Some(*symbol_index),
                 _ => unreachable!(),
             },
             None => None,
@@ -197,9 +201,9 @@ impl SemanticStateDatabase {
         node: &OkIdentifierInUseNode,
     ) -> Option<&ConcreteSymbolIndex<InterfaceData>> {
         match self.identifier_in_use_binding_table.get(node) {
-            Some(symbol_data) => match symbol_data {
-                ConcreteSymbolDataEntry::Interface(interface_symbol_data) => {
-                    Some(interface_symbol_data)
+            Some(concrete_symbol_entry) => match concrete_symbol_entry {
+                ConcreteSymbolDataEntry::Interface(concrete_symbol_index) => {
+                    Some(concrete_symbol_index)
                 }
                 _ => unreachable!(),
             },

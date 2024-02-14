@@ -297,45 +297,45 @@ impl Resolver {
     pub fn bind_decl_to_identifier_in_decl(
         &mut self,
         node: &OkIdentifierInDeclNode,
-        symbol_data: SymbolDataEntry,
+        symbol_entry: SymbolDataEntry,
     ) {
         self.semantic_state_db
             .identifier_in_decl_binding_table
-            .insert(node.clone(), symbol_data);
+            .insert(node.clone(), symbol_entry);
     }
 
     pub fn bind_decl_to_identifier_in_use<T: AbstractSymbol>(
         &mut self,
         node: &OkIdentifierInUseNode,
-        symbol_data: &T,
+        symbol_obj: &T,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(Option<ConcreteTypesTuple>, bool), GenericTypeArgsCheckError> {
         // (index to the registry, has_generics)
         let (concrete_types, ty_ranges, has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
-        symbol_data.check_generic_type_args(
+        symbol_obj.check_generic_type_args(
             &concrete_types,
             &ty_ranges,
             is_concrete_types_none_allowed,
             &self.semantic_state_db.interner,
             &self.semantic_state_db.namespace,
         )?;
-        let concrete_symbol_data =
-            ConcreteSymbolDataEntry::new(symbol_data.get_entry(), concrete_types.clone());
+        let concrete_symbol_entry =
+            ConcreteSymbolDataEntry::new(symbol_obj.get_entry(), concrete_types.clone());
         self.semantic_state_db
             .identifier_in_use_binding_table
-            .insert(node.clone(), concrete_symbol_data);
+            .insert(node.clone(), concrete_symbol_entry);
         Ok((concrete_types, has_generics))
     }
 
     pub fn bind_decl_to_self_keyword(
         &mut self,
         node: &OkSelfKeywordNode,
-        symbol_data: SymbolIndex<VariableData>,
+        symbol_index: SymbolIndex<VariableData>,
     ) {
         self.semantic_state_db
             .self_keyword_binding_table
-            .insert(node.clone(), symbol_data);
+            .insert(node.clone(), symbol_index);
     }
 
     pub fn try_resolving<
@@ -354,7 +354,7 @@ impl Resolver {
             LookupResult::Ok(lookup_data) => {
                 match self.bind_decl_to_identifier_in_use(
                     identifier,
-                    &lookup_data.symbol_data,
+                    &lookup_data.symbol_obj,
                     is_concrete_types_none_allowed,
                 ) {
                     Ok((concrete_types, _)) => ResolveResult::Ok(lookup_data, concrete_types, name),
@@ -464,10 +464,10 @@ impl Resolver {
             .lookup_in_variables_namespace(self.scope_index, name)
         {
             LookupResult::Ok(lookup_data) => {
-                let symbol_data = lookup_data.symbol_data;
+                let symbol_obj = lookup_data.symbol_obj;
                 let depth = lookup_data.depth;
-                self.bind_decl_to_self_keyword(self_keyword, symbol_data.0);
-                Some((symbol_data.0, depth))
+                self.bind_decl_to_self_keyword(self_keyword, symbol_obj.0);
+                Some((symbol_obj.0, depth))
             }
             LookupResult::NotInitialized(_) => unreachable!(),
             LookupResult::Unresolved => None,
@@ -499,9 +499,9 @@ impl Resolver {
             unique_id,
         );
         match result {
-            Ok(symbol_data) => {
-                self.bind_decl_to_identifier_in_decl(identifier, symbol_data.get_entry());
-                Ok(symbol_data)
+            Ok(symbol_obj) => {
+                self.bind_decl_to_identifier_in_decl(identifier, symbol_obj.get_entry());
+                Ok(symbol_obj)
             }
             Err(err) => Err(err),
         }
@@ -616,28 +616,25 @@ impl Resolver {
             .lookup_in_types_namespace(scope_index, name)
         {
             LookupResult::Ok(lookup_data) => {
-                let symbol_data = lookup_data.symbol_data;
-                let resolved_scope_index = symbol_data.0.scope_index;
+                let symbol_obj = lookup_data.symbol_obj;
+                let resolved_scope_index = symbol_obj.0.scope_index;
                 let ty_kind = self
                     .semantic_state_db
                     .namespace
                     .types
-                    .get_symbol_data_ref(symbol_data.0)
+                    .get_symbol_data_ref(symbol_obj.0)
                     .data
                     .get_kind();
                 let result = match ty_kind {
                     UserDefineTypeKind::Struct => {
-                        match self.bind_decl_to_identifier_in_use(
-                            ok_identifier,
-                            &symbol_data,
-                            false,
-                        ) {
+                        match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
+                        {
                             Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
                                 if has_generics_inside_angle_bracket_types {
                                     *has_generics = true;
                                 }
                                 TypeResolveKind::Resolved(Type::new_with_struct(
-                                    symbol_data.0,
+                                    symbol_obj.0,
                                     concrete_types,
                                 ))
                             }
@@ -650,17 +647,14 @@ impl Resolver {
                         }
                     }
                     UserDefineTypeKind::Enum => {
-                        match self.bind_decl_to_identifier_in_use(
-                            ok_identifier,
-                            &symbol_data,
-                            false,
-                        ) {
+                        match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
+                        {
                             Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
                                 if has_generics_inside_angle_bracket_types {
                                     *has_generics = true;
                                 }
                                 TypeResolveKind::Resolved(Type::new_with_enum(
-                                    symbol_data.0,
+                                    symbol_obj.0,
                                     concrete_types,
                                 ))
                             }
@@ -673,17 +667,14 @@ impl Resolver {
                         }
                     }
                     UserDefineTypeKind::Lambda => {
-                        match self.bind_decl_to_identifier_in_use(
-                            ok_identifier,
-                            &symbol_data,
-                            false,
-                        ) {
+                        match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
+                        {
                             Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
                                 if has_generics_inside_angle_bracket_types {
                                     *has_generics = true;
                                 }
                                 TypeResolveKind::Resolved(Type::new_with_lambda_named(
-                                    symbol_data.0,
+                                    symbol_obj.0,
                                     concrete_types,
                                 ))
                             }
@@ -718,14 +709,14 @@ impl Resolver {
                             Ok(_) => {
                                 match self.bind_decl_to_identifier_in_use(
                                     ok_identifier,
-                                    &symbol_data,
+                                    &symbol_obj,
                                     false,
                                 ) {
                                     Ok((concrete_types, _)) => {
                                         debug_assert!(concrete_types.is_none());
                                         *has_generics = true;
                                         TypeResolveKind::Resolved(Type::new_with_generic(
-                                            symbol_data.0,
+                                            symbol_obj.0,
                                         ))
                                     }
                                     Err(err) => TypeResolveKind::Unresolved(vec![
@@ -739,7 +730,7 @@ impl Resolver {
                             Err(_) => TypeResolveKind::Unresolved(vec![
                                 UnresolvedIdentifier::GenericResolvedToOutsideScope(
                                     ok_identifier,
-                                    symbol_data.0.declaration_line_number(
+                                    symbol_obj.0.declaration_line_number(
                                         &self.semantic_state_db.namespace.types,
                                     ),
                                 ),
@@ -843,7 +834,7 @@ impl Resolver {
         match self.try_resolving_interface(interface_expr, true) {
             ResolveResult::Ok(lookup_data, concrete_types, name) => Some(InterfaceObject::new(
                 name,
-                lookup_data.symbol_data.0,
+                lookup_data.symbol_obj.0,
                 concrete_types,
             )),
             _ => None,
@@ -945,17 +936,17 @@ impl Resolver {
                     ok_identifier_in_decl.range(),
                     unique_id,
                 ) {
-                Ok(symbol_data) => {
+                Ok(symbol_obj) => {
                     self.bind_decl_to_identifier_in_decl(
                         ok_identifier_in_decl,
-                        symbol_data.get_entry(),
+                        symbol_obj.get_entry(),
                     );
                     generic_type_params_vec.push((
                         generic_ty_name,
                         interface_bounds,
                         ok_identifier_in_decl.range(),
                     ));
-                    concrete_types.push(Type::new_with_generic(symbol_data.0))
+                    concrete_types.push(Type::new_with_generic(symbol_obj.0))
                 }
                 Err((param_name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
@@ -1054,11 +1045,8 @@ impl Resolver {
                     unique_id,
                 );
                 match result {
-                    Ok(symbol_data) => {
-                        self.bind_decl_to_identifier_in_decl(
-                            ok_identifier,
-                            symbol_data.get_entry(),
-                        );
+                    Ok(symbol_obj) => {
+                        self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_obj.get_entry());
                         if param_ty_has_generics {
                             generics_containing_params_indexes.push(param_types_vec.len());
                         }
@@ -1100,7 +1088,7 @@ impl Resolver {
         &mut self,
         callable_body: &CallableBodyNode,
         optional_identifier_in_decl: Option<&OkIdentifierInDeclNode>,
-        symbol_data: &Option<FunctionSymbolData>,
+        symbol_obj: &Option<FunctionSymbolData>,
     ) -> (
         Vec<Type>,
         Type,
@@ -1118,11 +1106,11 @@ impl Resolver {
             generic_type_decls,
         ) = self
             .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
-        if let Some(symbol_data) = symbol_data {
+        if let Some(symbol_obj) = symbol_obj {
             self.semantic_state_db
                 .namespace
                 .functions
-                .get_symbol_data_mut_ref(symbol_data.0)
+                .get_symbol_data_mut_ref(symbol_obj.0)
                 .data
                 .set_generics(generic_type_decls);
         }
@@ -1239,11 +1227,11 @@ impl Resolver {
 
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
-        let mut symbol_data: Option<VariableSymbolData> = None;
+        let mut symbol_obj: Option<VariableSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             match self.try_declare_and_bind_variable(ok_identifier) {
-                Ok(local_symbol_data) => {
-                    symbol_data = Some(local_symbol_data);
+                Ok(local_symbol_obj) => {
+                    symbol_obj = Some(local_symbol_obj);
                 }
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
@@ -1267,11 +1255,11 @@ impl Resolver {
             CoreRVariableDeclarationNode::Lambda(lambda_r_assign) => {
                 // For case of lambda variable, it is allowed to be referenced inside the body to
                 // enable recursive definitions
-                if let Some(symbol_data) = &symbol_data {
+                if let Some(symbol_obj) = &symbol_obj {
                     self.semantic_state_db
                         .namespace
                         .variables
-                        .get_symbol_data_mut_ref(symbol_data.0)
+                        .get_symbol_data_mut_ref(symbol_obj.0)
                         .data
                         .set_is_init(true);
                 }
@@ -1299,31 +1287,31 @@ impl Resolver {
                     }
                     None => lambda_ty,
                 };
-                if let Some(symbol_data) = &symbol_data {
+                if let Some(symbol_obj) = &symbol_obj {
                     self.semantic_state_db
                         .namespace
                         .variables
-                        .get_symbol_data_mut_ref(symbol_data.0)
+                        .get_symbol_data_mut_ref(symbol_obj.0)
                         .data
                         .set_data_type(&final_variable_ty);
                 }
             }
             CoreRVariableDeclarationNode::Expression(expr_r_assign) => {
                 self.walk_expr_stmt(expr_r_assign);
-                if let Some(symbol_data) = &symbol_data {
+                if let Some(symbol_obj) = &symbol_obj {
                     match ty_from_optional_annotation {
                         Some((ty, _)) => self
                             .semantic_state_db
                             .namespace
                             .variables
-                            .get_symbol_data_mut_ref(symbol_data.0)
+                            .get_symbol_data_mut_ref(symbol_obj.0)
                             .data
                             .set_data_type_from_optional_annotation(ty),
                         None => {
                             self.semantic_state_db
                                 .namespace
                                 .variables
-                                .get_symbol_data_mut_ref(symbol_data.0)
+                                .get_symbol_data_mut_ref(symbol_obj.0)
                                 .data
                                 .set_is_init(true);
                         }
@@ -1338,11 +1326,11 @@ impl Resolver {
         let func_name = &core_func_decl.name;
         let body = &core_func_decl.body;
         let mut optional_ok_identifier_node = None;
-        let mut symbol_data: Option<FunctionSymbolData> = None;
+        let mut symbol_obj: Option<FunctionSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = func_name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
             match self.try_declare_and_bind_function(ok_identifier) {
-                Ok(local_symbol_data) => symbol_data = Some(local_symbol_data),
+                Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
                         IdentKind::Function,
@@ -1356,12 +1344,12 @@ impl Resolver {
             }
         }
         let (param_types_vec, return_type, _, is_concretization_required) =
-            self.visit_callable_body(body, optional_ok_identifier_node, &symbol_data);
-        if let Some(symbol_data) = &symbol_data {
+            self.visit_callable_body(body, optional_ok_identifier_node, &symbol_obj);
+        if let Some(symbol_obj) = &symbol_obj {
             self.semantic_state_db
                 .namespace
                 .functions
-                .get_symbol_data_mut_ref(symbol_data.0)
+                .get_symbol_data_mut_ref(symbol_obj.0)
                 .data
                 .set_meta_data(
                     param_types_vec,
@@ -1380,12 +1368,12 @@ impl Resolver {
         let struct_body = &core_struct_decl.block;
         let implementing_interfaces_node = &core_struct_decl.implementing_interfaces;
         let mut optional_ok_identifier_node = None;
-        let mut symbol_data: Option<UserDefinedTypeSymbolData> = None;
+        let mut symbol_obj: Option<UserDefinedTypeSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
             match self.try_declare_and_bind_struct_type(ok_identifier) {
-                Ok(local_symbol_data) => {
-                    symbol_data = Some(local_symbol_data);
+                Ok(local_symbol_obj) => {
+                    symbol_obj = Some(local_symbol_obj);
                 }
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
@@ -1407,8 +1395,8 @@ impl Resolver {
                         ok_identifier,
                         GenericTypeDeclarationPlaceCategory::InStruct,
                     );
-                let struct_ty = match &symbol_data {
-                    Some(symbol_data) => Type::new_with_struct(symbol_data.0, concrete_types),
+                let struct_ty = match &symbol_obj {
+                    Some(symbol_obj) => Type::new_with_struct(symbol_obj.0, concrete_types),
                     None => Type::new_with_unknown(),
                 };
                 (struct_generic_type_decls, struct_ty)
@@ -1460,11 +1448,11 @@ impl Resolver {
                 implementing_interfaces = Some(interfaces);
             }
         }
-        if let Some(symbol_data) = &symbol_data {
+        if let Some(symbol_obj) = &symbol_obj {
             self.semantic_state_db
                 .namespace
                 .types
-                .get_symbol_data_mut_ref(symbol_data.0)
+                .get_symbol_data_mut_ref(symbol_obj.0)
                 .data
                 .get_struct_data_mut_ref()
                 .set_generics_and_interfaces(struct_generic_type_decls, implementing_interfaces);
@@ -1675,11 +1663,11 @@ impl Resolver {
                         .push(Diagnostics::ConstructorNotFoundInsideStructDeclaration(err));
                 }
             }
-            if let Some(symbol_data) = &symbol_data {
+            if let Some(symbol_obj) = &symbol_obj {
                 self.semantic_state_db
                     .namespace
                     .types
-                    .get_symbol_data_mut_ref(symbol_data.0)
+                    .get_symbol_data_mut_ref(symbol_obj.0)
                     .data
                     .get_struct_data_mut_ref()
                     .set_meta_data(fields_map, constructor, methods, class_methods);
@@ -1692,11 +1680,11 @@ impl Resolver {
         let core_enum_type_decl = enum_type_decl.core_ref();
         let name = &core_enum_type_decl.name;
         let mut optional_ok_identifier_in_decl = None;
-        let mut symbol_data: Option<UserDefinedTypeSymbolData> = None;
+        let mut symbol_obj: Option<UserDefinedTypeSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
             optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
             match self.try_declare_and_bind_enum_type(ok_identifier_in_decl) {
-                Ok(local_symbol_data) => symbol_data = Some(local_symbol_data),
+                Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
                         IdentKind::UserDefinedType,
@@ -1721,11 +1709,11 @@ impl Resolver {
             }
             None => None,
         };
-        if let Some(symbol_data) = &symbol_data {
+        if let Some(symbol_obj) = &symbol_obj {
             self.semantic_state_db
                 .namespace
                 .types
-                .get_symbol_data_mut_ref(symbol_data.0)
+                .get_symbol_data_mut_ref(symbol_obj.0)
                 .data
                 .get_enum_data_mut_ref()
                 .set_generics(generic_type_decls);
@@ -1775,11 +1763,11 @@ impl Resolver {
             }
         }
         self.close_block(Some(enum_body));
-        if let Some(symbol_data) = &symbol_data {
+        if let Some(symbol_obj) = &symbol_obj {
             self.semantic_state_db
                 .namespace
                 .types
-                .get_symbol_data_mut_ref(symbol_data.0)
+                .get_symbol_data_mut_ref(symbol_obj.0)
                 .data
                 .get_enum_data_mut_ref()
                 .set_meta_data(variants);
@@ -1860,8 +1848,8 @@ impl Resolver {
                 unique_id,
             );
         match result {
-            Ok(symbol_data) => {
-                self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_data.get_entry());
+            Ok(symbol_obj) => {
+                self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_obj.get_entry());
             }
             Err((name, previous_decl_range)) => {
                 let err = IdentifierAlreadyDeclaredError::new(
@@ -1880,11 +1868,11 @@ impl Resolver {
         let core_interface_decl = interface_decl.core_ref();
         let name = &core_interface_decl.name;
         let mut optional_ok_identifier_in_decl = None;
-        let mut symbol_data: Option<InterfaceSymbolData> = None;
+        let mut symbol_obj: Option<InterfaceSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
             optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
             match self.try_declare_and_bind_interface(ok_identifier_in_decl) {
-                Ok(local_symbol_data) => symbol_data = Some(local_symbol_data),
+                Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
                         IdentKind::Interface,
@@ -1909,11 +1897,11 @@ impl Resolver {
             }
             None => None,
         };
-        if let Some(symbol_data) = &symbol_data {
+        if let Some(symbol_obj) = &symbol_obj {
             self.semantic_state_db
                 .namespace
                 .interfaces
-                .get_symbol_data_mut_ref(symbol_data.0)
+                .get_symbol_data_mut_ref(symbol_obj.0)
                 .data
                 .set_generics(generic_type_decls);
         }
@@ -1994,11 +1982,11 @@ impl Resolver {
             }
         }
         self.close_block(Some(interface_body));
-        if let Some(symbol_data) = &symbol_data {
+        if let Some(symbol_obj) = &symbol_obj {
             self.semantic_state_db
                 .namespace
                 .interfaces
-                .get_symbol_data_mut_ref(symbol_data.0)
+                .get_symbol_data_mut_ref(symbol_obj.0)
                 .data
                 .set_meta_data(fields_map, methods);
         }
@@ -2025,11 +2013,11 @@ impl Resolver {
             if let Some((_, variable_name, _)) = &core_case_branch.variable_name {
                 if let CoreIdentifierInDeclNode::Ok(ok_identifier) = variable_name.core_ref() {
                     match self.try_declare_and_bind_variable(ok_identifier) {
-                        Ok(symbol_data) => {
+                        Ok(symbol_obj) => {
                             self.semantic_state_db
                                 .namespace
                                 .variables
-                                .get_symbol_data_mut_ref(symbol_data.0)
+                                .get_symbol_data_mut_ref(symbol_obj.0)
                                 .data
                                 .set_is_init(true);
                         }
@@ -2053,11 +2041,11 @@ impl Resolver {
         self.open_block(block.core_ref().kind);
         if let CoreIdentifierInDeclNode::Ok(ok_loop_variable) = loop_variable.core_ref() {
             match self.try_declare_and_bind_variable(ok_loop_variable) {
-                Ok(symbol_data) => {
+                Ok(symbol_obj) => {
                     self.semantic_state_db
                         .namespace
                         .variables
-                        .get_symbol_data_mut_ref(symbol_data.0)
+                        .get_symbol_data_mut_ref(symbol_obj.0)
                         .data
                         .set_is_init(true);
                 }
@@ -2080,7 +2068,7 @@ impl Resolver {
             if lookup_data.depth > 0 {
                 self.set_to_variable_non_locals(
                     lookup_data
-                        .symbol_data
+                        .symbol_obj
                         .get_mangled_name(&self.semantic_state_db.namespace),
                     lookup_data.enclosing_func_scope_depth,
                 );
@@ -2146,7 +2134,7 @@ impl Resolver {
                                     let depth = lookup_data.depth;
                                     if depth > 0 {
                                         self.set_to_variable_non_locals(
-                                            lookup_data.symbol_data.get_mangled_name(
+                                            lookup_data.symbol_obj.get_mangled_name(
                                                 &self.semantic_state_db.namespace,
                                             ),
                                             lookup_data.enclosing_func_scope_depth,

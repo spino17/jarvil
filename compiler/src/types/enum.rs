@@ -18,17 +18,17 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Enum {
-    pub symbol_data: SymbolIndex<UserDefinedTypeData>,
+    pub symbol_index: SymbolIndex<UserDefinedTypeData>,
     pub concrete_types: Option<ConcreteTypesTuple>,
 }
 
 impl Enum {
     pub fn new(
-        symbol_data: SymbolIndex<UserDefinedTypeData>,
+        symbol_index: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> Enum {
         Enum {
-            symbol_data,
+            symbol_index,
             concrete_types,
         }
     }
@@ -40,7 +40,7 @@ impl StructEnumType for Enum {
     }
 
     fn get_name(&self) -> StrId {
-        self.symbol_data.identifier_name()
+        self.symbol_index.identifier_name()
     }
 }
 
@@ -84,14 +84,14 @@ impl AbstractType for Enum {
 
     fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
         let Some(concrete_types) = &self.concrete_types else {
-            return Type::new_with_enum(self.symbol_data, None);
+            return Type::new_with_enum(self.symbol_index, None);
         };
         let mut concretized_concrete_types = vec![];
         for ty in concrete_types.iter() {
             concretized_concrete_types.push(ty.concretize(context, namespace));
         }
         Type::new_with_enum(
-            self.symbol_data,
+            self.symbol_index,
             Some(ConcreteTypesTuple::new(concretized_concrete_types)),
         )
     }

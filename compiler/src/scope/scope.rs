@@ -222,14 +222,14 @@ impl<T: IsInitialized> ScopeArena<T> {
         scope_index: ScopeIndex,
         key: StrId,
     ) -> IntermediateLookupResult<T> {
-        let Some((symbol_data, depth, enclosing_func_scope_depth)) = self.lookup(scope_index, key)
+        let Some((symbol_index, depth, enclosing_func_scope_depth)) = self.lookup(scope_index, key)
         else {
             return IntermediateLookupResult::Unresolved;
         };
-        if self.get_symbol_data_ref(symbol_data).data.is_initialized() {
-            IntermediateLookupResult::Ok((symbol_data, depth, enclosing_func_scope_depth))
+        if self.get_symbol_data_ref(symbol_index).data.is_initialized() {
+            IntermediateLookupResult::Ok((symbol_index, depth, enclosing_func_scope_depth))
         } else {
-            IntermediateLookupResult::NotInitialized(symbol_data.declaration_line_number(self))
+            IntermediateLookupResult::NotInitialized(symbol_index.declaration_line_number(self))
         }
     }
 

@@ -138,33 +138,33 @@ impl TypesArena {
     // user-defined-types
     pub fn new_with_struct(
         &mut self,
-        symbol_data: SymbolIndex<UserDefinedTypeData>,
+        symbol_index: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> TypeId {
         self.add(TypeObject::new(
-            CoreType::Struct(Struct::new(symbol_data, concrete_types)),
+            CoreType::Struct(Struct::new(symbol_index, concrete_types)),
             false,
         ))
     }
 
     pub fn new_with_enum(
         &mut self,
-        symbol_data: SymbolIndex<UserDefinedTypeData>,
+        symbol_index: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> TypeId {
         self.add(TypeObject::new(
-            CoreType::Enum(Enum::new(symbol_data, concrete_types)),
+            CoreType::Enum(Enum::new(symbol_index, concrete_types)),
             false,
         ))
     }
 
     pub fn new_with_lambda_named(
         &mut self,
-        symbol_data: SymbolIndex<UserDefinedTypeData>,
+        symbol_index: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> TypeId {
         self.add(TypeObject::new(
-            CoreType::Lambda(Lambda::new_with_named(symbol_data, concrete_types)),
+            CoreType::Lambda(Lambda::new_with_named(symbol_index, concrete_types)),
             false,
         ))
     }
@@ -176,9 +176,9 @@ impl TypesArena {
         ))
     }
 
-    pub fn new_with_generic(&mut self, symbol_data: SymbolIndex<UserDefinedTypeData>) -> TypeId {
+    pub fn new_with_generic(&mut self, symbol_index: SymbolIndex<UserDefinedTypeData>) -> TypeId {
         self.add(TypeObject::new(
-            CoreType::Generic(Generic::new(symbol_data)),
+            CoreType::Generic(Generic::new(symbol_index)),
             false,
         ))
     }

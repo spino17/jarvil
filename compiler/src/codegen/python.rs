@@ -84,7 +84,7 @@ impl PythonCodeGenerator {
                 self.semantic_state_db.interner.intern("main"),
             ) {
             LookupResult::Ok(lookup_data) => match lookup_data
-                .symbol_data
+                .symbol_obj
                 .0
                 .get_index(&self.semantic_state_db.namespace.functions)
             {
@@ -121,14 +121,14 @@ impl PythonCodeGenerator {
             .semantic_state_db
             .get_symbol_data_for_identifier_in_decl(identifier)
         {
-            Some(symbol_data) => match symbol_data {
-                SymbolDataEntry::Variable(variable_symbol_data) => variable_symbol_data
+            Some(symbol_entry) => match symbol_entry {
+                SymbolDataEntry::Variable(symbol_index) => symbol_index
                     .get_mangled_name(&self.semantic_state_db.namespace.variables)
                     .to_string(VAR_SUFFIX, &self.semantic_state_db.interner),
-                SymbolDataEntry::Function(func_symbol_data) => func_symbol_data
+                SymbolDataEntry::Function(symbol_index) => symbol_index
                     .get_mangled_name(&self.semantic_state_db.namespace.functions)
                     .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner),
-                SymbolDataEntry::Type(type_symbol_data) => type_symbol_data
+                SymbolDataEntry::Type(symbol_index) => symbol_index
                     .get_mangled_name(&self.semantic_state_db.namespace.types)
                     .to_string(TY_SUFFIX, &self.semantic_state_db.interner),
                 SymbolDataEntry::Interface(_) => unreachable!(),
@@ -138,22 +138,22 @@ impl PythonCodeGenerator {
     }
 
     pub fn get_mangled_identifier_name_in_use(&self, identifier: &OkIdentifierInUseNode) -> String {
-        let Some(symbol_data) = self
+        let Some(concrete_symbol_entry) = self
             .semantic_state_db
             .get_symbol_data_for_identifier_in_use(identifier)
         else {
             return identifier.token_value_str(&self.code_handler);
         };
-        match symbol_data {
-            ConcreteSymbolDataEntry::Variable(variable_symbol_data) => variable_symbol_data
+        match concrete_symbol_entry {
+            ConcreteSymbolDataEntry::Variable(symbol_index) => symbol_index
                 .symbol_ref
                 .get_mangled_name(&self.semantic_state_db.namespace.variables)
                 .to_string(VAR_SUFFIX, &self.semantic_state_db.interner),
-            ConcreteSymbolDataEntry::Function(func_symbol_data) => func_symbol_data
+            ConcreteSymbolDataEntry::Function(symbol_index) => symbol_index
                 .symbol_ref
                 .get_mangled_name(&self.semantic_state_db.namespace.functions)
                 .to_string(FUNC_SUFFIX, &self.semantic_state_db.interner),
-            ConcreteSymbolDataEntry::Type(type_symbol_data) => type_symbol_data
+            ConcreteSymbolDataEntry::Type(symbol_index) => symbol_index
                 .symbol_ref
                 .get_mangled_name(&self.semantic_state_db.namespace.types)
                 .to_string(TY_SUFFIX, &self.semantic_state_db.interner),
@@ -349,7 +349,7 @@ impl PythonCodeGenerator {
         let CoreIdentifierInUseNode::Ok(ok_ty_name) = ty_name.core_ref() else {
             return;
         };
-        let Some(concrete_symbol_data) = self
+        let Some(concrete_symbol_index) = self
             .semantic_state_db
             .get_type_symbol_data_for_identifier_in_use(ok_ty_name)
         else {
@@ -359,7 +359,7 @@ impl PythonCodeGenerator {
             .semantic_state_db
             .namespace
             .types
-            .get_symbol_data_ref(concrete_symbol_data.symbol_ref)
+            .get_symbol_data_ref(concrete_symbol_index.symbol_ref)
             .data
         {
             UserDefinedTypeData::Struct(_) => {
@@ -431,11 +431,11 @@ impl PythonCodeGenerator {
                 let variant_name_str = ok_variant_name
                     .token_value(&self.code_handler, &mut self.semantic_state_db.interner);
                 let index = match symbol_index {
-                    Some(symbol_data) => self
+                    Some(symbol_index) => self
                         .semantic_state_db
                         .namespace
                         .types
-                        .get_symbol_data_mut_ref(symbol_data)
+                        .get_symbol_data_mut_ref(symbol_index)
                         .data
                         .get_enum_data_mut_ref()
                         .try_index_for_variant(variant_name_str)
