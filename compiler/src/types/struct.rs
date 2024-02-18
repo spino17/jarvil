@@ -96,8 +96,11 @@ impl AbstractType for Struct {
         interface_bounds: &InterfaceBounds,
         namespace: &Namespace,
     ) -> bool {
-        let ty_data = &namespace.types_ref().get_symbol_ref(self.symbol_index).data;
-        match &ty_data.get_struct_data_ref().implementing_interfaces {
+        let ty_data = namespace
+            .types_ref()
+            .get_symbol_ref(self.symbol_index)
+            .data_ref();
+        match ty_data.get_struct_data_ref().implementing_interfaces() {
             Some(ty_interface_bounds) => interface_bounds.is_subset(ty_interface_bounds, namespace),
             None => false,
         }

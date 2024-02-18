@@ -40,21 +40,21 @@ impl Namespace {
         // filling side scope for types with generic types with indexes 0 and 1
         namespace.types[ScopeIndex::side()].set(
             interner.intern("T"),
-            UserDefinedTypeData::Generic(GenericTypeData {
-                index: 0,
-                category: GenericTypeDeclarationPlaceCategory::InStruct,
-                interface_bounds: InterfaceBounds::default(),
-            }),
+            UserDefinedTypeData::Generic(GenericTypeData::new(
+                0,
+                GenericTypeDeclarationPlaceCategory::InStruct,
+                InterfaceBounds::default(),
+            )),
             TextRange::default(),
             None,
         );
         namespace.types[ScopeIndex::side()].set(
             interner.intern("U"),
-            UserDefinedTypeData::Generic(GenericTypeData {
-                index: 1,
-                category: GenericTypeDeclarationPlaceCategory::InStruct,
-                interface_bounds: InterfaceBounds::default(),
-            }),
+            UserDefinedTypeData::Generic(GenericTypeData::new(
+                1,
+                GenericTypeDeclarationPlaceCategory::InStruct,
+                InterfaceBounds::default(),
+            )),
             TextRange::default(),
             None,
         );

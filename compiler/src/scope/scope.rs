@@ -24,10 +24,8 @@ impl<T> Scope<T> {
         decl_line_number: TextRange,
         unique_id: Option<IdentDeclId<T>>,
     ) {
-        self.table.insert(
-            ident_name,
-            Symbol::new(ident_name, data, decl_line_number, unique_id),
-        );
+        self.table
+            .insert(ident_name, Symbol::new(data, decl_line_number, unique_id));
     }
 
     fn get(&self, name: &StrId) -> Option<&Symbol<T>> {
@@ -99,35 +97,27 @@ impl<T: IsInitialized> ScopeArena<T> {
         unique_id: Option<IdentDeclId<T>>,
     ) -> SymbolIndex<T> {
         self[scope_index].set(ident_name, data, decl_line_number, unique_id);
-        SymbolIndex {
-            scope_index,
-            ident_name,
-            phanton: PhantomData,
-        }
+        SymbolIndex::new(scope_index, ident_name)
     }
 
     pub fn get(&self, scope_index: ScopeIndex, key: StrId) -> Option<SymbolIndex<T>> {
         if self[scope_index].get(&key).is_none() {
             return None;
         }
-        Some(SymbolIndex {
-            scope_index,
-            ident_name: key,
-            phanton: PhantomData,
-        })
+        Some(SymbolIndex::new(scope_index, key))
     }
 
     pub fn get_symbol_ref(&self, index: SymbolIndex<T>) -> &Symbol<T> {
-        let scope = &self[index.scope_index];
-        let Some(symbol_ref) = scope.get(&index.ident_name) else {
+        let scope = &self[index.scope_index()];
+        let Some(symbol_ref) = scope.get(&index.ident_name()) else {
             unreachable!()
         };
         symbol_ref
     }
 
     pub fn get_symbol_mut_ref(&mut self, index: SymbolIndex<T>) -> &mut Symbol<T> {
-        let scope = &mut self[index.scope_index];
-        let Some(symbol_ref) = scope.get_mut(&index.ident_name) else {
+        let scope = &mut self[index.scope_index()];
+        let Some(symbol_ref) = scope.get_mut(&index.ident_name()) else {
             unreachable!()
         };
         symbol_ref
@@ -182,15 +172,7 @@ impl<T: IsInitialized> ScopeArena<T> {
         let scope = &self[scope_index];
         let mut previous_scope_kind = scope.scope_kind;
         if scope.get(&key).is_some() {
-            return Some((
-                SymbolIndex {
-                    scope_index,
-                    ident_name: key,
-                    phanton: PhantomData,
-                },
-                0,
-                None,
-            ));
+            return Some((SymbolIndex::new(scope_index, key), 0, None));
         }
         let mut parent_scope_index = scope.parent_scope;
         let mut depth = 1;
@@ -201,11 +183,7 @@ impl<T: IsInitialized> ScopeArena<T> {
             let scope = &self[scope_index];
             if scope.get(&key).is_some() {
                 return Some((
-                    SymbolIndex {
-                        scope_index,
-                        ident_name: key,
-                        phanton: PhantomData,
-                    },
+                    SymbolIndex::new(scope_index, key),
                     depth,
                     enclosing_func_scope_depth,
                 ));
@@ -226,7 +204,11 @@ impl<T: IsInitialized> ScopeArena<T> {
         else {
             return IntermediateLookupResult::Unresolved;
         };
-        if self.get_symbol_ref(symbol_index).data.is_initialized() {
+        if self
+            .get_symbol_ref(symbol_index)
+            .data_ref()
+            .is_initialized()
+        {
             IntermediateLookupResult::Ok((symbol_index, depth, enclosing_func_scope_depth))
         } else {
             IntermediateLookupResult::NotInitialized(symbol_index.declaration_line_number(self))

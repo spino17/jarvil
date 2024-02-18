@@ -118,10 +118,10 @@ impl InterfaceObject {
     pub fn is_eq(&self, other: &InterfaceObject, namespace: &Namespace) -> bool {
         if self.0.as_ref().0.eq(&other.0.as_ref().0) {
             // names of interfaces should be same
-            let Some(self_concrete_types) = &self.0.as_ref().1.concrete_types else {
+            let Some(self_concrete_types) = self.0.as_ref().1.concrete_types() else {
                 return true;
             };
-            let Some(other_concrete_types) = &other.0.as_ref().1.concrete_types else {
+            let Some(other_concrete_types) = other.0.as_ref().1.concrete_types() else {
                 unreachable!()
             };
             let self_len = self_concrete_types.len();
@@ -139,7 +139,7 @@ impl InterfaceObject {
 
     pub fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
         let mut s = interner.lookup(self.0.as_ref().0);
-        match &self.0.as_ref().1.concrete_types {
+        match self.0.as_ref().1.concrete_types() {
             Some(concrete_types) => {
                 s.push('<');
                 s.push_str(&concrete_types.to_string(interner, namespace));
@@ -283,8 +283,9 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                         let generic_type_decls_len = interface_method_generic_type_decls.len();
                         for index in 0..generic_type_decls_len {
                             let interface_generic_bound =
-                                &interface_method_generic_type_decls.0[index].1;
-                            let struct_generic_bound = &struct_method_generic_type_decls.0[index].1;
+                                interface_method_generic_type_decls.interface_bounds(index);
+                            let struct_generic_bound =
+                                struct_method_generic_type_decls.interface_bounds(index);
                             if !interface_generic_bound.is_eq(struct_generic_bound, namespace) {
                                 return Err(PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range));
                             }
@@ -403,7 +404,7 @@ impl AbstractSymbol for InterfaceSymbolData {
         namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(!is_concrete_types_none_allowed);
-        let interface_data = &namespace.interfaces_ref().get_symbol_ref(self.0).data;
+        let interface_data = namespace.interfaces_ref().get_symbol_ref(self.0).data_ref();
         let generic_type_decls = interface_data.generics();
         check_concrete_types_bounded_by_interfaces(
             generic_type_decls,

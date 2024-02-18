@@ -10,23 +10,14 @@ use crate::{
     },
     types::core::AbstractType,
 };
-use std::marker::PhantomData;
 
 pub fn get_unbounded_generic_type_with_declaration_index(
     index: usize,
     interner: &Interner,
 ) -> Type {
     match index {
-        0 => Type::new_with_generic(SymbolIndex {
-            scope_index: ScopeIndex::side(),
-            ident_name: interner.intern("T"),
-            phanton: PhantomData,
-        }),
-        1 => Type::new_with_generic(SymbolIndex {
-            scope_index: ScopeIndex::side(),
-            ident_name: interner.intern("U"),
-            phanton: PhantomData,
-        }),
+        0 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("T"))),
+        1 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("U"))),
         _ => unreachable!(),
     }
 }

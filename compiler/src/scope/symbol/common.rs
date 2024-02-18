@@ -11,55 +11,6 @@ use rustc_hash::FxHashMap;
 use std::marker::PhantomData;
 use text_size::TextRange;
 
-#[derive(Debug)]
-pub struct UniqueKeyGenerator<T> {
-    state: usize,
-    phanton: PhantomData<T>,
-}
-
-impl<T> UniqueKeyGenerator<T> {
-    pub fn generate_unique_id(&mut self) -> IdentDeclId<T> {
-        let id = self.state;
-        self.state += 1;
-        IdentDeclId::new(id)
-    }
-}
-
-impl<T> Default for UniqueKeyGenerator<T> {
-    fn default() -> Self {
-        UniqueKeyGenerator {
-            state: 0,
-            phanton: PhantomData,
-        }
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct GlobalUniqueKeyGenerator {
-    variables: UniqueKeyGenerator<VariableData>,
-    types: UniqueKeyGenerator<UserDefinedTypeData>,
-    functions: UniqueKeyGenerator<CallableData>,
-    interfaces: UniqueKeyGenerator<InterfaceData>,
-}
-
-impl GlobalUniqueKeyGenerator {
-    pub fn generate_unique_id_for_variable(&mut self) -> IdentDeclId<VariableData> {
-        self.variables.generate_unique_id()
-    }
-
-    pub fn generate_unique_id_for_function(&mut self) -> IdentDeclId<CallableData> {
-        self.functions.generate_unique_id()
-    }
-
-    pub fn generate_unique_id_for_type(&mut self) -> IdentDeclId<UserDefinedTypeData> {
-        self.types.generate_unique_id()
-    }
-
-    pub fn generate_unique_id_for_interface(&mut self) -> IdentDeclId<InterfaceData> {
-        self.interfaces.generate_unique_id()
-    }
-}
-
 #[derive(Debug, Default)]
 pub struct FieldsMap {
     fields: FxHashMap<StrId, (Type, TextRange)>,
@@ -115,7 +66,7 @@ impl MethodsMap {
         let Some((callable_data, range)) = self.methods.get(method_name) else {
             return None;
         };
-        return Some((
+        Some((
             PartialConcreteCallableDataRef::new(
                 callable_data,
                 match global_concrete_types {
@@ -124,10 +75,59 @@ impl MethodsMap {
                 },
             ),
             *range,
-        ));
+        ))
     }
 
     pub fn has_method(&self, method_name: &StrId) -> bool {
         self.methods.get(method_name).is_some()
+    }
+}
+
+#[derive(Debug)]
+pub struct UniqueKeyGenerator<T> {
+    state: usize,
+    phanton: PhantomData<T>,
+}
+
+impl<T> UniqueKeyGenerator<T> {
+    pub fn generate_unique_id(&mut self) -> IdentDeclId<T> {
+        let id = self.state;
+        self.state += 1;
+        IdentDeclId::new(id)
+    }
+}
+
+impl<T> Default for UniqueKeyGenerator<T> {
+    fn default() -> Self {
+        UniqueKeyGenerator {
+            state: 0,
+            phanton: PhantomData,
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct GlobalUniqueKeyGenerator {
+    variables: UniqueKeyGenerator<VariableData>,
+    types: UniqueKeyGenerator<UserDefinedTypeData>,
+    functions: UniqueKeyGenerator<CallableData>,
+    interfaces: UniqueKeyGenerator<InterfaceData>,
+}
+
+impl GlobalUniqueKeyGenerator {
+    pub fn generate_unique_id_for_variable(&mut self) -> IdentDeclId<VariableData> {
+        self.variables.generate_unique_id()
+    }
+
+    pub fn generate_unique_id_for_function(&mut self) -> IdentDeclId<CallableData> {
+        self.functions.generate_unique_id()
+    }
+
+    pub fn generate_unique_id_for_type(&mut self) -> IdentDeclId<UserDefinedTypeData> {
+        self.types.generate_unique_id()
+    }
+
+    pub fn generate_unique_id_for_interface(&mut self) -> IdentDeclId<InterfaceData> {
+        self.interfaces.generate_unique_id()
     }
 }

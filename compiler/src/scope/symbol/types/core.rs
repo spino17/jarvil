@@ -49,8 +49,8 @@ impl UserDefinedTypeData {
 
     pub fn is_initialized(&self) -> bool {
         match self {
-            UserDefinedTypeData::Struct(struct_data) => struct_data.is_init,
-            UserDefinedTypeData::Enum(enum_data) => enum_data.is_init,
+            UserDefinedTypeData::Struct(struct_data) => struct_data.is_init(),
+            UserDefinedTypeData::Enum(enum_data) => enum_data.is_init(),
             UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => true,
         }
     }
@@ -149,7 +149,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
         interner: &Interner,
         namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
-        match &namespace.types_ref().get_symbol_ref(self.0).data {
+        match namespace.types_ref().get_symbol_ref(self.0).data_ref() {
             UserDefinedTypeData::Struct(struct_data) => {
                 let generic_type_decls = struct_data.generics();
                 check_concrete_types_bounded_by_interfaces(

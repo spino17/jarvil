@@ -147,15 +147,15 @@ impl PythonCodeGenerator {
         };
         match concrete_symbol_entry {
             ConcreteSymbolDataEntry::Variable(concrete_symbol_index) => concrete_symbol_index
-                .index
+                .symbol_index()
                 .get_mangled_name(self.semantic_db.namespace_ref().variables_ref())
                 .to_string(VAR_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Function(concrete_symbol_index) => concrete_symbol_index
-                .index
+                .symbol_index()
                 .get_mangled_name(self.semantic_db.namespace_ref().functions_ref())
                 .to_string(FUNC_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Type(concrete_symbol_index) => concrete_symbol_index
-                .index
+                .symbol_index()
                 .get_mangled_name(self.semantic_db.namespace_ref().types_ref())
                 .to_string(TY_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
@@ -341,7 +341,7 @@ impl PythonCodeGenerator {
         };
         match &self
             .semantic_db
-            .get_ty_symbol_ref(concrete_symbol_index.index)
+            .get_ty_symbol_ref(concrete_symbol_index.symbol_index())
         {
             UserDefinedTypeData::Struct(_) => {
                 self.print_identifier_in_use(ty_name, is_trivia);

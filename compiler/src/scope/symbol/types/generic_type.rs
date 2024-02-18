@@ -18,9 +18,9 @@ pub enum GenericTypePropertyQueryResult<T> {
 
 #[derive(Debug)]
 pub struct GenericTypeData {
-    pub index: usize, // index in the sequence of all generic type params in declaration
-    pub category: GenericTypeDeclarationPlaceCategory,
-    pub interface_bounds: InterfaceBounds,
+    index: usize, // index in the sequence of all generic type params in declaration
+    category: GenericTypeDeclarationPlaceCategory,
+    interface_bounds: InterfaceBounds,
 }
 
 impl GenericTypeData {
@@ -36,8 +36,16 @@ impl GenericTypeData {
         }
     }
 
-    pub fn get_index(&self) -> usize {
+    pub fn index(&self) -> usize {
         self.index
+    }
+
+    pub fn category(&self) -> GenericTypeDeclarationPlaceCategory {
+        self.category
+    }
+
+    pub fn interface_bounds(&self) -> &InterfaceBounds {
+        &self.interface_bounds
     }
 
     pub fn try_field(
@@ -50,12 +58,12 @@ impl GenericTypeData {
         let mut result: Option<(Type, TextRange)> = None;
         for (interface_obj, _) in self.interface_bounds.iter() {
             let concrete_symbol_index = interface_obj.concrete_symbol_index();
-            let interface_data = &namespace
+            let interface_data = namespace
                 .interfaces_ref()
-                .get_symbol_ref(concrete_symbol_index.index)
-                .data;
-            let concrete_types = &concrete_symbol_index.concrete_types;
-            match interface_data.try_field(field_name, concrete_types.as_ref(), namespace) {
+                .get_symbol_ref(concrete_symbol_index.symbol_index())
+                .data_ref();
+            let concrete_types = concrete_symbol_index.concrete_types();
+            match interface_data.try_field(field_name, concrete_types, namespace) {
                 Some((ty, decl_range)) => {
                     property_containing_interface_objs
                         .push(interface_obj.to_string(interner, namespace));
@@ -87,10 +95,10 @@ impl GenericTypeData {
         let mut result: Option<usize> = None;
         for (index, (interface_obj, _)) in self.interface_bounds.iter().enumerate() {
             let concrete_symbol_index = interface_obj.concrete_symbol_index();
-            let interface_data = &namespace
+            let interface_data = namespace
                 .interfaces_ref()
-                .get_symbol_ref(concrete_symbol_index.index)
-                .data;
+                .get_symbol_ref(concrete_symbol_index.symbol_index())
+                .data_ref();
             if interface_data.has_method(method_name) {
                 property_containing_interface_objs
                     .push(interface_obj.to_string(interner, namespace));
@@ -118,9 +126,17 @@ pub enum GenericTypeDeclarationPlaceCategory {
 }
 
 #[derive(Debug)]
-pub struct GenericTypeParams(pub Vec<(StrId, InterfaceBounds, TextRange)>);
+pub struct GenericTypeParams(Vec<(StrId, InterfaceBounds, TextRange)>);
 
 impl GenericTypeParams {
+    pub fn new(generic_ty_params_vec: Vec<(StrId, InterfaceBounds, TextRange)>) -> Self {
+        GenericTypeParams(generic_ty_params_vec)
+    }
+
+    pub fn interface_bounds(&self, index: usize) -> &InterfaceBounds {
+        &self.0[index].1
+    }
+
     pub fn len(&self) -> usize {
         self.0.len()
     }

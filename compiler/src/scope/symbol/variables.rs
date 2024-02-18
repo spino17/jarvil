@@ -56,7 +56,7 @@ impl Default for VariableData {
 }
 
 #[derive(Debug)]
-pub struct VariableSymbolData(pub SymbolIndex<VariableData>);
+pub struct VariableSymbolData(SymbolIndex<VariableData>);
 
 impl AbstractSymbol for VariableSymbolData {
     type SymbolTy = VariableData;

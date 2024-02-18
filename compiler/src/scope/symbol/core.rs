@@ -17,25 +17,26 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 pub struct Symbol<T> {
-    pub ident_name: StrId,
-    pub data: T,
-    pub decl_line_number: TextRange,
-    pub unique_id: Option<IdentDeclId<T>>,
+    data: T,
+    decl_line_number: TextRange,
+    unique_id: Option<IdentDeclId<T>>,
 }
 
 impl<T> Symbol<T> {
-    pub fn new(
-        ident_name: StrId,
-        data: T,
-        decl_line_number: TextRange,
-        unique_id: Option<IdentDeclId<T>>,
-    ) -> Self {
+    pub fn new(data: T, decl_line_number: TextRange, unique_id: Option<IdentDeclId<T>>) -> Self {
         Symbol {
-            ident_name,
             data,
             decl_line_number,
             unique_id,
         }
+    }
+
+    pub fn data_ref(&self) -> &T {
+        &self.data
+    }
+
+    pub fn data_mut_ref(&mut self) -> &mut T {
+        &mut self.data
     }
 
     pub fn decl_line_number(&self) -> TextRange {
@@ -86,9 +87,27 @@ impl<T> IdentDeclId<T> {
 
 #[derive(Debug)]
 pub struct SymbolIndex<T: IsInitialized> {
-    pub scope_index: ScopeIndex,
-    pub ident_name: StrId,
-    pub phanton: PhantomData<T>,
+    scope_index: ScopeIndex,
+    ident_name: StrId,
+    phanton: PhantomData<T>,
+}
+
+impl<T: IsInitialized> SymbolIndex<T> {
+    pub fn new(scope_index: ScopeIndex, ident_name: StrId) -> Self {
+        SymbolIndex {
+            scope_index,
+            ident_name,
+            phanton: PhantomData,
+        }
+    }
+
+    pub fn scope_index(&self) -> ScopeIndex {
+        self.scope_index
+    }
+
+    pub fn ident_name(&self) -> StrId {
+        self.ident_name
+    }
 }
 
 impl<T: IsInitialized> Copy for SymbolIndex<T> {}

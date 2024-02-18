@@ -13,12 +13,12 @@ use text_size::TextRange;
 #[derive(Debug)]
 pub struct StructTypeData {
     fields: FieldsMap,
-    pub constructor: CallableData,
+    constructor: CallableData,
     methods: MethodsMap,
     class_methods: MethodsMap,
     generics: Option<GenericTypeParams>,
-    pub implementing_interfaces: Option<InterfaceBounds>,
-    pub is_init: bool,
+    implementing_interfaces: Option<InterfaceBounds>,
+    is_init: bool,
 }
 
 impl StructTypeData {
@@ -45,6 +45,18 @@ impl StructTypeData {
         self.generics = generics_spec;
         self.implementing_interfaces = implementing_interfaces;
         self.is_init = true;
+    }
+
+    pub fn is_init(&self) -> bool {
+        self.is_init
+    }
+
+    pub fn constructor(&self) -> &CallableData {
+        &self.constructor
+    }
+
+    pub fn implementing_interfaces(&self) -> Option<&InterfaceBounds> {
+        self.implementing_interfaces.as_ref()
     }
 
     pub fn generics(&self) -> Option<&GenericTypeParams> {

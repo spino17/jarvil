@@ -475,8 +475,8 @@ impl Resolver {
             LookupResult::Ok(lookup_data) => {
                 let symbol_obj = lookup_data.symbol_obj;
                 let depth = lookup_data.depth;
-                self.bind_decl_to_self_keyword(self_keyword, symbol_obj.0);
-                Some((symbol_obj.0, depth))
+                self.bind_decl_to_self_keyword(self_keyword, symbol_obj.symbol_index());
+                Some((symbol_obj.symbol_index(), depth))
             }
             LookupResult::NotInitialized(_) => unreachable!(),
             LookupResult::Unresolved => None,
@@ -625,7 +625,7 @@ impl Resolver {
         {
             LookupResult::Ok(lookup_data) => {
                 let symbol_obj = lookup_data.symbol_obj;
-                let resolved_scope_index = symbol_obj.0.scope_index;
+                let resolved_scope_index = symbol_obj.0.scope_index();
                 let ty_kind = self.semantic_db.get_ty_symbol_ref(symbol_obj.0).get_kind();
                 let result = match ty_kind {
                     UserDefineTypeKind::Struct => {
@@ -961,7 +961,7 @@ impl Resolver {
             }
         }
         (
-            Some(GenericTypeParams(generic_type_params_vec)),
+            Some(GenericTypeParams::new(generic_type_params_vec)),
             Some(ConcreteTypesTuple::new(concrete_types)),
         )
     }
@@ -1257,7 +1257,7 @@ impl Resolver {
                 // enable recursive definitions
                 if let Some(symbol_obj) = &symbol_obj {
                     self.semantic_db
-                        .get_variable_symbol_mut_ref(symbol_obj.0)
+                        .get_variable_symbol_mut_ref(symbol_obj.symbol_index())
                         .set_is_init(true);
                 }
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
@@ -1286,7 +1286,7 @@ impl Resolver {
                 };
                 if let Some(symbol_obj) = &symbol_obj {
                     self.semantic_db
-                        .get_variable_symbol_mut_ref(symbol_obj.0)
+                        .get_variable_symbol_mut_ref(symbol_obj.symbol_index())
                         .set_data_type(&final_variable_ty);
                 }
             }
@@ -1296,11 +1296,11 @@ impl Resolver {
                     match ty_from_optional_annotation {
                         Some((ty, _)) => self
                             .semantic_db
-                            .get_variable_symbol_mut_ref(symbol_obj.0)
+                            .get_variable_symbol_mut_ref(symbol_obj.symbol_index())
                             .set_data_type_from_optional_annotation(ty),
                         None => {
                             self.semantic_db
-                                .get_variable_symbol_mut_ref(symbol_obj.0)
+                                .get_variable_symbol_mut_ref(symbol_obj.symbol_index())
                                 .set_is_init(true);
                         }
                     }
@@ -1985,7 +1985,7 @@ impl Resolver {
                     match self.try_declare_and_bind_variable(ok_identifier) {
                         Ok(symbol_obj) => {
                             self.semantic_db
-                                .get_variable_symbol_mut_ref(symbol_obj.0)
+                                .get_variable_symbol_mut_ref(symbol_obj.symbol_index())
                                 .set_is_init(true);
                         }
                         Err(_) => unreachable!(),
@@ -2010,7 +2010,7 @@ impl Resolver {
             match self.try_declare_and_bind_variable(ok_loop_variable) {
                 Ok(symbol_obj) => {
                     self.semantic_db
-                        .get_variable_symbol_mut_ref(symbol_obj.0)
+                        .get_variable_symbol_mut_ref(symbol_obj.symbol_index())
                         .set_is_init(true);
                 }
                 Err(_) => unreachable!(),

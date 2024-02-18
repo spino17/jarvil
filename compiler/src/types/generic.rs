@@ -47,20 +47,23 @@ impl AbstractType for Generic {
             CoreType::Generic(generic_data) => Some(generic_data),
             _ => None,
         };
-        let self_ty_data = &namespace.types_ref().get_symbol_ref(self.symbol_index).data;
+        let self_ty_data = namespace
+            .types_ref()
+            .get_symbol_ref(self.symbol_index)
+            .data_ref();
         let self_generic_data = self_ty_data.get_generic_data_ref();
-        let self_index = self_generic_data.index;
-        let self_category = &self_generic_data.category;
+        let self_index = self_generic_data.index();
+        let self_category = self_generic_data.category();
         match self_category {
             GenericTypeDeclarationPlaceCategory::InCallable => match is_other_ty_generic {
                 Some(generic_data) => {
-                    let other_data = &namespace
+                    let other_data = namespace
                         .types_ref()
                         .get_symbol_ref(generic_data.symbol_index)
-                        .data;
+                        .data_ref();
                     let other_generic_data = other_data.get_generic_data_ref();
-                    let other_index = other_generic_data.index;
-                    let other_category = &other_generic_data.category;
+                    let other_index = other_generic_data.index();
+                    let other_category = other_generic_data.category();
                     match other_category {
                         GenericTypeDeclarationPlaceCategory::InCallable => {
                             self_index == other_index
@@ -73,7 +76,7 @@ impl AbstractType for Generic {
             GenericTypeDeclarationPlaceCategory::InStruct => match is_other_ty_generic {
                 Some(_) => false,
                 None => {
-                    let concrete_types = match context.struct_concrete_types {
+                    let concrete_types = match context.struct_concrete_types() {
                         Some(concrete_types) => concrete_types,
                         None => unreachable!(),
                     };
@@ -85,17 +88,22 @@ impl AbstractType for Generic {
     }
 
     fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
-        let ty_data = &namespace.types_ref().get_symbol_ref(self.symbol_index).data;
+        let ty_data = namespace
+            .types_ref()
+            .get_symbol_ref(self.symbol_index)
+            .data_ref();
         let generic_data = ty_data.get_generic_data_ref();
-        let index = generic_data.index;
-        let category = &generic_data.category;
+        let index = generic_data.index();
+        let category = generic_data.category();
         match category {
-            GenericTypeDeclarationPlaceCategory::InStruct => match context.struct_concrete_types {
-                Some(concrete_types) => concrete_types[index].clone(),
-                None => unreachable!(),
-            },
+            GenericTypeDeclarationPlaceCategory::InStruct => {
+                match context.struct_concrete_types() {
+                    Some(concrete_types) => concrete_types[index].clone(),
+                    None => unreachable!(),
+                }
+            }
             GenericTypeDeclarationPlaceCategory::InCallable => {
-                match context.function_local_concrete_types {
+                match context.function_local_concrete_types() {
                     Some(concrete_types) => concrete_types[index].clone(),
                     None => unreachable!(),
                 }
@@ -108,8 +116,11 @@ impl AbstractType for Generic {
         interface_bounds: &InterfaceBounds,
         namespace: &Namespace,
     ) -> bool {
-        let ty_data = &namespace.types_ref().get_symbol_ref(self.symbol_index).data;
-        let ty_interface_bounds = &ty_data.get_generic_data_ref().interface_bounds;
+        let ty_data = namespace
+            .types_ref()
+            .get_symbol_ref(self.symbol_index)
+            .data_ref();
+        let ty_interface_bounds = ty_data.get_generic_data_ref().interface_bounds();
         interface_bounds.is_subset(ty_interface_bounds, namespace)
     }
 
@@ -122,10 +133,13 @@ impl AbstractType for Generic {
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
     ) -> Result<(), ()> {
-        let ty_data = &namespace.types_ref().get_symbol_ref(self.symbol_index).data;
+        let ty_data = namespace
+            .types_ref()
+            .get_symbol_ref(self.symbol_index)
+            .data_ref();
         let generic_data_ref = ty_data.get_generic_data_ref();
-        let index = generic_data_ref.index;
-        let decl_place = generic_data_ref.category;
+        let index = generic_data_ref.index();
+        let decl_place = generic_data_ref.category();
         if inference_category == decl_place {
             let entry_ty = &mut inferred_concrete_types[index];
             match entry_ty {
@@ -156,9 +170,12 @@ impl AbstractType for Generic {
     }
 
     fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let ty_data = &namespace.types_ref().get_symbol_ref(self.symbol_index).data;
+        let ty_data = namespace
+            .types_ref()
+            .get_symbol_ref(self.symbol_index)
+            .data_ref();
         let generic_data = ty_data.get_generic_data_ref();
-        let interface_bounds = &generic_data.interface_bounds;
+        let interface_bounds = generic_data.interface_bounds();
         format!(
             "{}{}",
             interner.lookup(self.name()),

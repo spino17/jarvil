@@ -51,8 +51,8 @@ impl Index<usize> for ConcreteTypesTuple {
 
 #[derive(Debug)]
 pub struct ConcreteSymbolIndex<T: IsInitialized> {
-    pub index: SymbolIndex<T>,
-    pub concrete_types: Option<ConcreteTypesTuple>, // This will be `None` for symbol data which does not have any generic type params
+    index: SymbolIndex<T>,
+    concrete_types: Option<ConcreteTypesTuple>, // This will be `None` for symbol data which does not have any generic type params
 }
 
 impl<T: IsInitialized> Clone for ConcreteSymbolIndex<T> {
@@ -72,15 +72,19 @@ impl<T: IsInitialized> ConcreteSymbolIndex<T> {
         }
     }
 
-    pub fn get_concrete_types(&self) -> &Option<ConcreteTypesTuple> {
-        &self.concrete_types
+    pub fn symbol_index(&self) -> SymbolIndex<T> {
+        self.index
+    }
+
+    pub fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+        self.concrete_types.as_ref()
     }
 }
 
 #[derive(Debug, Default)]
 pub struct ConcretizationContext<'a> {
-    pub struct_concrete_types: Option<&'a ConcreteTypesTuple>,
-    pub function_local_concrete_types: Option<&'a ConcreteTypesTuple>,
+    struct_concrete_types: Option<&'a ConcreteTypesTuple>,
+    function_local_concrete_types: Option<&'a ConcreteTypesTuple>,
 }
 
 impl<'a> ConcretizationContext<'a> {
@@ -92,5 +96,13 @@ impl<'a> ConcretizationContext<'a> {
             struct_concrete_types,
             function_local_concrete_types,
         }
+    }
+
+    pub fn struct_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+        self.struct_concrete_types
+    }
+
+    pub fn function_local_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+        self.function_local_concrete_types
     }
 }

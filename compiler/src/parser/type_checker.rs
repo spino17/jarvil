@@ -489,7 +489,7 @@ impl TypeChecker {
         let mut error_strs: Vec<(String, String)> = vec![]; // Vec of (inferred_ty string, interface_bounds string)
 
         for (index, inferred_ty) in unpacked_inferred_concrete_types.iter().enumerate() {
-            let interface_bounds = &generic_type_decls.0[index].1;
+            let interface_bounds = generic_type_decls.interface_bounds(index);
             if !inferred_ty
                 .is_type_bounded_by_interfaces(interface_bounds, self.semantic_db.namespace_ref())
             {
@@ -584,8 +584,8 @@ impl TypeChecker {
     ) -> Result<Type, AtomStartTypeCheckError> {
         let func_data = self
             .semantic_db
-            .get_function_symbol_ref(concrete_symbol_index.index);
-        let concrete_types = &concrete_symbol_index.concrete_types;
+            .get_function_symbol_ref(concrete_symbol_index.symbol_index());
+        let concrete_types = concrete_symbol_index.concrete_types();
         let prototype_result = match concrete_types {
             Some(concrete_types) => {
                 // CASE 1
@@ -650,10 +650,10 @@ impl TypeChecker {
         concrete_symbol_index: &ConcreteSymbolIndex<VariableData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
-        debug_assert!(concrete_symbol_index.concrete_types.is_none());
+        debug_assert!(concrete_symbol_index.concrete_types().is_none());
         let lambda_type = &self
             .semantic_db
-            .get_variable_symbol_ref(concrete_symbol_index.index)
+            .get_variable_symbol_ref(concrete_symbol_index.symbol_index())
             .ty();
         match lambda_type.0.as_ref() {
             CoreType::Lambda(lambda_data) => {
@@ -677,14 +677,14 @@ impl TypeChecker {
     ) -> Result<Type, AtomStartTypeCheckError> {
         let UserDefinedTypeData::Struct(struct_data) = self
             .semantic_db
-            .get_ty_symbol_ref(concrete_symbol_index.index)
+            .get_ty_symbol_ref(concrete_symbol_index.symbol_index())
         else {
             return Err(AtomStartTypeCheckError::ConstructorNotFoundForTypeError(
                 name,
             ));
         };
-        let concrete_types = &concrete_symbol_index.concrete_types;
-        let constructor_meta_data = &struct_data.constructor;
+        let concrete_types = concrete_symbol_index.concrete_types();
+        let constructor_meta_data = struct_data.constructor();
         let prototype_result = match concrete_types {
             Some(concrete_types) => {
                 // CASE 1
@@ -722,8 +722,8 @@ impl TypeChecker {
             CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
                 self.check_params_type_and_count(prototype.params(), params)?;
                 let return_ty = Type::new_with_struct(
-                    concrete_symbol_index.index,
-                    concrete_types.clone(), // expensive clone
+                    concrete_symbol_index.symbol_index(),
+                    concrete_types.cloned(), // expensive clone
                 );
                 Ok(return_ty)
             }
@@ -738,7 +738,7 @@ impl TypeChecker {
                     GenericTypeDeclarationPlaceCategory::InStruct,
                 )?;
                 Ok(Type::new_with_struct(
-                    concrete_symbol_index.index,
+                    concrete_symbol_index.symbol_index(),
                     Some(concrete_types),
                 ))
             }
@@ -815,7 +815,7 @@ impl TypeChecker {
     fn check_class_method_call(
         &self,
         struct_data: &StructTypeData,
-        concrete_types: &Option<ConcreteTypesTuple>,
+        concrete_types: Option<&ConcreteTypesTuple>,
         ty_node: &OkIdentifierInUseNode,
         ty_name: StrId,
         property_name: &IdentifierInUseNode,
@@ -839,7 +839,7 @@ impl TypeChecker {
         };
         let class_method_name =
             property_name.token_value(&self.code_handler, self.semantic_db.interner());
-        match struct_data.try_class_method(&class_method_name, concrete_types.as_ref()) {
+        match struct_data.try_class_method(&class_method_name, concrete_types) {
             Some((partial_concrete_callable_data, _)) => {
                 let (concrete_types, ty_ranges, _) =
                     self.extract_angle_bracket_content_from_identifier_in_use(property_name);
@@ -912,10 +912,10 @@ impl TypeChecker {
             self.log_error(Diagnostics::GenericTypeArgsNotExpected(err));
             return Type::new_with_unknown();
         }
-        let concrete_types = &concrete_symbol_index.concrete_types;
+        let concrete_types = concrete_symbol_index.concrete_types();
         match enum_data.try_type_for_variant(
             variant_name,
-            concrete_types.as_ref(),
+            concrete_types,
             self.semantic_db.namespace_ref(),
         ) {
             Some(expected_ty) => match params {
@@ -1000,7 +1000,10 @@ impl TypeChecker {
                 return Type::new_with_unknown();
             }
         }
-        Type::new_with_enum(concrete_symbol_index.index, concrete_types.clone())
+        Type::new_with_enum(
+            concrete_symbol_index.symbol_index(),
+            concrete_types.cloned(),
+        )
     }
 
     fn check_atom_start_enum_variant_expr_or_class_method_call(
@@ -1023,11 +1026,11 @@ impl TypeChecker {
             Some(concrete_symbol_index) => {
                 match &self
                     .semantic_db
-                    .get_ty_symbol_ref(concrete_symbol_index.index)
+                    .get_ty_symbol_ref(concrete_symbol_index.symbol_index())
                 {
                     UserDefinedTypeData::Struct(struct_data) => self.check_class_method_call(
                         struct_data,
-                        &concrete_symbol_index.concrete_types,
+                        concrete_symbol_index.concrete_types(),
                         ok_identifier,
                         ty_name,
                         property_name,
@@ -1063,7 +1066,7 @@ impl TypeChecker {
                     {
                         Some(concrete_symbol_index) => self
                             .semantic_db
-                            .get_variable_symbol_ref(concrete_symbol_index.index)
+                            .get_variable_symbol_ref(concrete_symbol_index.symbol_index())
                             .ty()
                             .clone(),
                         None => Type::new_with_unknown(),
@@ -1291,7 +1294,7 @@ impl TypeChecker {
             method_name_ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
         let ty_data = self.semantic_db.get_ty_symbol_ref(generic_ty.symbol_index);
         let generic_data = ty_data.get_generic_data_ref();
-        let interface_bounds = &generic_data.interface_bounds;
+        let interface_bounds = generic_data.interface_bounds();
         match generic_data.try_field(
             &method_name,
             self.semantic_db.interner(),
@@ -1336,9 +1339,9 @@ impl TypeChecker {
                         let concrete_symbol_index = interface_obj.concrete_symbol_index();
                         let interface_data = self
                             .semantic_db
-                            .get_interface_symbol_ref(concrete_symbol_index.index);
-                        let concrete_types = &concrete_symbol_index.concrete_types;
-                        match interface_data.try_method(&method_name, concrete_types.as_ref()) {
+                            .get_interface_symbol_ref(concrete_symbol_index.symbol_index());
+                        let concrete_types = concrete_symbol_index.concrete_types();
+                        match interface_data.try_method(&method_name, concrete_types) {
                             Some((partial_concrete_callable_data, _)) => {
                                 let (concrete_types, ty_ranges, _) = self
                                     .extract_angle_bracket_content_from_identifier_in_use(
@@ -2164,7 +2167,7 @@ impl TypeChecker {
 
         let ty_data = self.semantic_db.get_ty_symbol_ref(symbol_index);
         let struct_data = ty_data.get_struct_data_ref();
-        let implementing_interfaces = &struct_data.implementing_interfaces;
+        let implementing_interfaces = struct_data.implementing_interfaces();
         let Some(implementing_interfaces) = implementing_interfaces else {
             return;
         };
@@ -2172,12 +2175,12 @@ impl TypeChecker {
 
         for (interface_obj, range) in implementing_interfaces.iter() {
             let (_, interface_concrete_symbol_index) = interface_obj.get_core_ref();
-            let concrete_types = &interface_concrete_symbol_index.concrete_types;
+            let concrete_types = interface_concrete_symbol_index.concrete_types();
             let interface_data = self
                 .semantic_db
-                .get_interface_symbol_ref(interface_concrete_symbol_index.index);
+                .get_interface_symbol_ref(interface_concrete_symbol_index.symbol_index());
             let partial_concrete_interface_methods =
-                interface_data.get_partially_concrete_interface_methods(concrete_types.as_ref());
+                interface_data.get_partially_concrete_interface_methods(concrete_types);
             if let Err((missing_interface_method_names, errors)) =
                 partial_concrete_interface_methods.is_struct_implements_interface_methods(
                     struct_methods,
@@ -2362,7 +2365,7 @@ impl TypeChecker {
 
         // report any missing enum variant case
         let mut missing_variants: Vec<StrId> = vec![];
-        for (variant, _, _) in &enum_data.variants {
+        for (variant, _, _) in enum_data.variants() {
             if !checked_variants.contains(variant) {
                 missing_variants.push(*variant);
             }
