@@ -9,10 +9,10 @@ macro_rules! impl_op_compatiblity {
             CoreType::Lambda(lambda_type) => lambda_type.$t($u, $n),
             CoreType::Generic(generic_type) => generic_type.$t($u, $n),
             CoreType::Enum(enum_type) => enum_type.$t($u, $n),
-            CoreType::Unknown => return None,
-            CoreType::Void => return None,
-            CoreType::Unset => return None,
-            CoreType::Any => return None,
+            CoreType::Unknown => None,
+            CoreType::Void => None,
+            CoreType::Unset => None,
+            CoreType::Any => None,
         }
     };
 }
