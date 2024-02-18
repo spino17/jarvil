@@ -5,9 +5,9 @@ use crate::scope::symbol::types::generic_type::GenericTypeParams;
 use text_size::TextRange;
 
 pub fn check_concrete_types_bounded_by_interfaces(
-    generic_type_decls: &Option<GenericTypeParams>,
-    concrete_types: &Option<ConcreteTypesTuple>,
-    type_ranges: &Option<Vec<TextRange>>,
+    generic_type_decls: Option<&GenericTypeParams>,
+    concrete_types: Option<&ConcreteTypesTuple>,
+    type_ranges: Option<&Vec<TextRange>>,
     is_concrete_types_none_allowed: bool,
     interner: &Interner,
     namespace: &Namespace,

@@ -129,21 +129,29 @@ pub struct UserDefinedTypeSymbolData(pub SymbolIndex<UserDefinedTypeData>);
 
 impl AbstractSymbol for UserDefinedTypeSymbolData {
     type SymbolTy = UserDefinedTypeData;
+
+    fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy>
+    where
+        <Self as AbstractSymbol>::SymbolTy: IsInitialized,
+    {
+        self.0
+    }
+
     fn get_entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Type(self.0)
     }
 
     fn check_generic_type_args(
         &self,
-        concrete_types: &Option<ConcreteTypesTuple>,
-        type_ranges: &Option<Vec<TextRange>>,
+        concrete_types: Option<&ConcreteTypesTuple>,
+        type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         interner: &Interner,
         namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
-        match &namespace.types.get_symbol_ref(self.0).data {
+        match &namespace.types_ref().get_symbol_ref(self.0).data {
             UserDefinedTypeData::Struct(struct_data) => {
-                let generic_type_decls = &struct_data.generics;
+                let generic_type_decls = struct_data.generics();
                 check_concrete_types_bounded_by_interfaces(
                     generic_type_decls,
                     concrete_types,
@@ -154,7 +162,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
                 )
             }
             UserDefinedTypeData::Lambda(lambda_data) => {
-                let generic_type_decls = &lambda_data.get_generic_type_decls();
+                let generic_type_decls = lambda_data.get_generic_type_decls();
                 check_concrete_types_bounded_by_interfaces(
                     generic_type_decls,
                     concrete_types,
@@ -165,7 +173,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
                 )
             }
             UserDefinedTypeData::Enum(enum_data) => {
-                let generic_type_decls = &enum_data.generics;
+                let generic_type_decls = enum_data.generics();
                 check_concrete_types_bounded_by_interfaces(
                     generic_type_decls,
                     concrete_types,
@@ -185,7 +193,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
     }
 
     fn get_mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<Self::SymbolTy> {
-        self.0.get_mangled_name(&namespace.types)
+        self.0.get_mangled_name(namespace.types_ref())
     }
 }
 

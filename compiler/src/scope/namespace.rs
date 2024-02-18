@@ -22,10 +22,10 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 pub struct Namespace {
-    pub variables: ScopeArena<VariableData>,
-    pub types: ScopeArena<UserDefinedTypeData>,
-    pub functions: ScopeArena<CallableData>,
-    pub interfaces: ScopeArena<InterfaceData>,
+    variables: ScopeArena<VariableData>,
+    functions: ScopeArena<CallableData>,
+    types: ScopeArena<UserDefinedTypeData>,
+    interfaces: ScopeArena<InterfaceData>,
 }
 
 impl Namespace {
@@ -60,6 +60,38 @@ impl Namespace {
         );
 
         namespace
+    }
+
+    pub fn variables_ref(&self) -> &ScopeArena<VariableData> {
+        &self.variables
+    }
+
+    pub fn variables_mut_ref(&mut self) -> &mut ScopeArena<VariableData> {
+        &mut self.variables
+    }
+
+    pub fn functions_ref(&self) -> &ScopeArena<CallableData> {
+        &self.functions
+    }
+
+    pub fn functions_mut_ref(&mut self) -> &mut ScopeArena<CallableData> {
+        &mut self.functions
+    }
+
+    pub fn types_ref(&self) -> &ScopeArena<UserDefinedTypeData> {
+        &self.types
+    }
+
+    pub fn types_mut_ref(&mut self) -> &mut ScopeArena<UserDefinedTypeData> {
+        &mut self.types
+    }
+
+    pub fn interfaces_ref(&self) -> &ScopeArena<InterfaceData> {
+        &self.interfaces
+    }
+
+    pub fn interfaces_mut_ref(&mut self) -> &mut ScopeArena<InterfaceData> {
+        &mut self.interfaces
     }
 
     pub fn parent_scope_index(&self, scope_index: ScopeIndex) -> Option<ScopeIndex> {

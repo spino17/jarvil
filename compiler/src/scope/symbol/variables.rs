@@ -10,8 +10,8 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 pub struct VariableData {
-    pub data_type: Type,
-    pub is_init: bool,
+    data_type: Type,
+    is_init: bool,
 }
 
 impl VariableData {
@@ -20,6 +20,10 @@ impl VariableData {
             data_type: variable_type.clone(),
             is_init,
         }
+    }
+
+    pub fn ty(&self) -> &Type {
+        &self.data_type
     }
 
     pub fn set_data_type(&mut self, data_type: &Type) {
@@ -56,14 +60,22 @@ pub struct VariableSymbolData(pub SymbolIndex<VariableData>);
 
 impl AbstractSymbol for VariableSymbolData {
     type SymbolTy = VariableData;
+
+    fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy>
+    where
+        <Self as AbstractSymbol>::SymbolTy: IsInitialized,
+    {
+        self.0
+    }
+
     fn get_entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Variable(self.0)
     }
 
     fn check_generic_type_args(
         &self,
-        concrete_types: &Option<ConcreteTypesTuple>,
-        _type_ranges: &Option<Vec<TextRange>>,
+        concrete_types: Option<&ConcreteTypesTuple>,
+        _type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         _interner: &Interner,
         _namespace: &Namespace,
@@ -76,7 +88,7 @@ impl AbstractSymbol for VariableSymbolData {
     }
 
     fn get_mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<VariableData> {
-        self.0.get_mangled_name(&namespace.variables)
+        self.0.get_mangled_name(namespace.variables_ref())
     }
 }
 

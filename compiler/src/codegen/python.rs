@@ -4,6 +4,7 @@ use crate::scope::scope::ScopeIndex;
 use crate::scope::semantic_db::SemanticStateDatabase;
 use crate::scope::symbol::core::{ConcreteSymbolDataEntry, SymbolDataEntry, SymbolIndex};
 use crate::scope::symbol::variables::VariableData;
+use crate::scope::traits::AbstractSymbol;
 use crate::{
     ast::{
         ast::{
@@ -85,8 +86,8 @@ impl PythonCodeGenerator {
             ) {
             LookupResult::Ok(lookup_data) => match lookup_data
                 .symbol_obj
-                .0
-                .get_index(&self.semantic_db.namespace_ref().functions)
+                .symbol_index()
+                .get_index(self.semantic_db.namespace_ref().functions_ref())
             {
                 Some(index) => index,
                 None => unreachable!(),
@@ -123,13 +124,13 @@ impl PythonCodeGenerator {
         {
             Some(symbol_entry) => match symbol_entry {
                 SymbolDataEntry::Variable(symbol_index) => symbol_index
-                    .get_mangled_name(&self.semantic_db.namespace_ref().variables)
+                    .get_mangled_name(self.semantic_db.namespace_ref().variables_ref())
                     .to_string(VAR_SUFFIX, self.semantic_db.interner()),
                 SymbolDataEntry::Function(symbol_index) => symbol_index
-                    .get_mangled_name(&self.semantic_db.namespace_ref().functions)
+                    .get_mangled_name(self.semantic_db.namespace_ref().functions_ref())
                     .to_string(FUNC_SUFFIX, self.semantic_db.interner()),
                 SymbolDataEntry::Type(symbol_index) => symbol_index
-                    .get_mangled_name(&self.semantic_db.namespace_ref().types)
+                    .get_mangled_name(self.semantic_db.namespace_ref().types_ref())
                     .to_string(TY_SUFFIX, self.semantic_db.interner()),
                 SymbolDataEntry::Interface(_) => unreachable!(),
             },
@@ -147,15 +148,15 @@ impl PythonCodeGenerator {
         match concrete_symbol_entry {
             ConcreteSymbolDataEntry::Variable(concrete_symbol_index) => concrete_symbol_index
                 .index
-                .get_mangled_name(&self.semantic_db.namespace_ref().variables)
+                .get_mangled_name(self.semantic_db.namespace_ref().variables_ref())
                 .to_string(VAR_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Function(concrete_symbol_index) => concrete_symbol_index
                 .index
-                .get_mangled_name(&self.semantic_db.namespace_ref().functions)
+                .get_mangled_name(self.semantic_db.namespace_ref().functions_ref())
                 .to_string(FUNC_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Type(concrete_symbol_index) => concrete_symbol_index
                 .index
-                .get_mangled_name(&self.semantic_db.namespace_ref().types)
+                .get_mangled_name(self.semantic_db.namespace_ref().types_ref())
                 .to_string(TY_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
         }

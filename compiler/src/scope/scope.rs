@@ -54,7 +54,7 @@ impl ScopeIndex {
 
 #[derive(Debug)]
 pub struct ScopeArena<T: IsInitialized> {
-    pub arena: Vec<Box<Scope<T>>>,
+    arena: Vec<Box<Scope<T>>>,
 }
 
 impl<T: IsInitialized> Index<ScopeIndex> for ScopeArena<T> {

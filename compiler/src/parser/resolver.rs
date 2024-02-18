@@ -180,16 +180,21 @@ impl Resolver {
         match self
             .semantic_db
             .namespace_ref()
-            .functions
+            .functions_ref()
             .get(self.scope_index, self.semantic_db.interner().intern("main"))
         {
             Some(symbol_index) => {
                 let func_meta_data = self.semantic_db.get_function_symbol_ref(symbol_index);
-                let params = &func_meta_data.prototype.params;
-                let return_type = &func_meta_data.prototype.return_type;
+                let prototype = func_meta_data.concretized_prototype(
+                    None,
+                    None,
+                    self.semantic_db.namespace_ref(),
+                );
+                let params = prototype.params();
+                let return_type = prototype.return_ty();
                 if !params.is_empty() || !return_type.is_void() {
                     let span = symbol_index
-                        .declaration_line_number(&self.semantic_db.namespace_ref().functions);
+                        .declaration_line_number(self.semantic_db.namespace_ref().functions_ref());
                     let err = MainFunctionWrongTypeError::new(span);
                     self.errors.push(Diagnostics::MainFunctionWrongType(err));
                 }
@@ -319,8 +324,8 @@ impl Resolver {
         let (concrete_types, ty_ranges, has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
         symbol_obj.check_generic_type_args(
-            &concrete_types,
-            &ty_ranges,
+            concrete_types.as_ref(),
+            ty_ranges.as_ref(),
             is_concrete_types_none_allowed,
             self.semantic_db.interner(),
             self.semantic_db.namespace_ref(),
@@ -728,7 +733,7 @@ impl Resolver {
                                 UnresolvedIdentifier::GenericResolvedToOutsideScope(
                                     ok_identifier,
                                     symbol_obj.0.declaration_line_number(
-                                        &self.semantic_db.namespace_ref().types,
+                                        self.semantic_db.namespace_ref().types_ref(),
                                     ),
                                 ),
                             ]),
@@ -829,7 +834,7 @@ impl Resolver {
         match self.try_resolving_interface(interface_expr, true) {
             ResolveResult::Ok(lookup_data, concrete_types, name) => Some(InterfaceObject::new(
                 name,
-                lookup_data.symbol_obj.0,
+                lookup_data.symbol_obj.symbol_index(),
                 concrete_types,
             )),
             _ => None,
@@ -1106,7 +1111,7 @@ impl Resolver {
             .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
         if let Some(symbol_obj) = symbol_obj {
             self.semantic_db
-                .get_function_symbol_mut_ref(symbol_obj.0)
+                .get_function_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_generics(generic_type_decls);
         }
         for stmt in &callable_body.0.as_ref().stmts {
@@ -1330,7 +1335,7 @@ impl Resolver {
             self.visit_callable_body(body, optional_ok_identifier_node, &symbol_obj);
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_function_symbol_mut_ref(symbol_obj.0)
+                .get_function_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_meta_data(
                     param_types_vec,
                     return_type,
@@ -1870,7 +1875,7 @@ impl Resolver {
         };
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_interface_symbol_mut_ref(symbol_obj.0)
+                .get_interface_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_generics(generic_type_decls);
         }
 
@@ -1952,7 +1957,7 @@ impl Resolver {
         self.close_block(Some(interface_body));
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_interface_symbol_mut_ref(symbol_obj.0)
+                .get_interface_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_meta_data(fields_map, methods);
         }
     }

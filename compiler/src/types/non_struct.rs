@@ -32,10 +32,7 @@ impl<T: AbstractNonStructTypes> CoreNonStructMethodsHandler<T> {
             return None;
         };
         let concrete_types = ty.get_concrete_types();
-        match callable_data
-            .prototype
-            .concretize_prototype(Some(&concrete_types), None, namespace)
-        {
+        match callable_data.concretized_prototype(Some(&concrete_types), None, namespace) {
             RefOrOwned::Ref(_) => unreachable!(),
             RefOrOwned::Owned(prototype) => Some(prototype),
         }

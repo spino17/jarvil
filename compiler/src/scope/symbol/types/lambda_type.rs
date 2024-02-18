@@ -33,25 +33,17 @@ impl LambdaTypeData {
         }
     }
 
-    pub fn get_concrete_prototype(
+    pub fn get_prototype(
         &self,
         global_concrete_types: Option<&ConcreteTypesTuple>,
         namespace: &Namespace,
     ) -> RefOrOwned<CallablePrototypeData> {
-        match global_concrete_types {
-            Some(concrete_types) => {
-                return self.meta_data.prototype.concretize_prototype(
-                    None,
-                    Some(concrete_types),
-                    namespace,
-                );
-            }
-            None => return RefOrOwned::Ref(&self.meta_data.prototype),
-        }
+        self.meta_data
+            .concretized_prototype(None, global_concrete_types, namespace)
     }
 
-    pub fn get_generic_type_decls(&self) -> &Option<GenericTypeParams> {
-        &self.meta_data.generics
+    pub fn get_generic_type_decls(&self) -> Option<&GenericTypeParams> {
+        self.meta_data.generics()
     }
 }
 

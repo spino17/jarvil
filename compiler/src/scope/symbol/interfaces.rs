@@ -19,6 +19,7 @@ use crate::types::core::AbstractType;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use std::rc::Rc;
+use std::slice::Iter;
 use std::vec;
 use text_size::TextRange;
 
@@ -26,8 +27,8 @@ use text_size::TextRange;
 pub struct InterfaceData {
     fields: FieldsMap,
     methods: MethodsMap,
-    pub generics: Option<GenericTypeParams>,
-    pub is_init: bool,
+    generics: Option<GenericTypeParams>,
+    is_init: bool,
 }
 
 impl InterfaceData {
@@ -43,6 +44,10 @@ impl InterfaceData {
     pub fn set_generics(&mut self, generics_spec: Option<GenericTypeParams>) {
         self.generics = generics_spec;
         self.is_init = true;
+    }
+
+    pub fn generics(&self) -> Option<&GenericTypeParams> {
+        self.generics.as_ref()
     }
 
     pub fn try_field<'a>(
@@ -88,7 +93,7 @@ impl IsInitialized for InterfaceData {
 }
 
 #[derive(Debug, Clone)]
-pub struct InterfaceObject(pub Rc<(StrId, ConcreteSymbolIndex<InterfaceData>)>); // (name, semantic data)
+pub struct InterfaceObject(Rc<(StrId, ConcreteSymbolIndex<InterfaceData>)>); // (name, semantic data)
 
 impl InterfaceObject {
     pub fn new(
@@ -100,6 +105,10 @@ impl InterfaceObject {
             name,
             ConcreteSymbolIndex::new(symbol_index, concrete_types),
         )))
+    }
+
+    pub fn concrete_symbol_index(&self) -> &ConcreteSymbolIndex<InterfaceData> {
+        &self.0.as_ref().1
     }
 
     pub fn get_core_ref(&self) -> &(StrId, ConcreteSymbolIndex<InterfaceData>) {
@@ -157,7 +166,7 @@ impl InterfaceObject {
 // is the case).
 #[derive(Debug, Default, Clone)]
 pub struct InterfaceBounds {
-    pub interfaces: Vec<(InterfaceObject, TextRange)>,
+    interfaces: Vec<(InterfaceObject, TextRange)>,
 }
 
 impl InterfaceBounds {
@@ -167,6 +176,10 @@ impl InterfaceBounds {
 
     pub fn len(&self) -> usize {
         self.interfaces.len()
+    }
+
+    pub fn iter(&self) -> Iter<'_, (InterfaceObject, TextRange)> {
+        self.interfaces.iter()
     }
 
     pub fn contains(&self, obj: &InterfaceObject, namespace: &Namespace) -> Option<TextRange> {
@@ -254,8 +267,8 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         range: TextRange,
         namespace: &Namespace,
     ) -> Result<(), PartialConcreteInterfaceMethodsCheckError> {
-        let interface_method_generic_type_decls = &interface_method_callable_data.generics;
-        let struct_method_generic_type_decls = &struct_method_callable_data.generics;
+        let interface_method_generic_type_decls = &interface_method_callable_data.generics();
+        let struct_method_generic_type_decls = &struct_method_callable_data.generics();
         match interface_method_generic_type_decls {
             Some(interface_method_generic_type_decls) => {
                 match struct_method_generic_type_decls {
@@ -277,11 +290,14 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                             }
                         }
                         // check if prototypes match
-                        if !interface_method_callable_data.prototype.is_structurally_eq(
-                            &struct_method_callable_data.prototype,
-                            &ConcretizationContext::new(self.concrete_types, None),
-                            namespace,
-                        ) {
+                        if !interface_method_callable_data
+                            .structural_prototype()
+                            .is_structurally_eq(
+                                &struct_method_callable_data.structural_prototype(),
+                                &ConcretizationContext::new(self.concrete_types, None),
+                                namespace,
+                            )
+                        {
                             return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
                         }
                         Ok(())
@@ -300,11 +316,14 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                     ),
                 ),
                 None => {
-                    if !interface_method_callable_data.prototype.is_structurally_eq(
-                        &struct_method_callable_data.prototype,
-                        &ConcretizationContext::new(self.concrete_types, None),
-                        namespace,
-                    ) {
+                    if !interface_method_callable_data
+                        .structural_prototype()
+                        .is_structurally_eq(
+                            &struct_method_callable_data.structural_prototype(),
+                            &ConcretizationContext::new(self.concrete_types, None),
+                            namespace,
+                        )
+                    {
                         return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
                     }
                     Ok(())
@@ -359,25 +378,33 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
 }
 
 #[derive(Debug)]
-pub struct InterfaceSymbolData(pub SymbolIndex<InterfaceData>);
+pub struct InterfaceSymbolData(SymbolIndex<InterfaceData>);
 
 impl AbstractSymbol for InterfaceSymbolData {
     type SymbolTy = InterfaceData;
+
+    fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy>
+    where
+        <Self as AbstractSymbol>::SymbolTy: IsInitialized,
+    {
+        self.0
+    }
+
     fn get_entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Interface(self.0)
     }
 
     fn check_generic_type_args(
         &self,
-        concrete_types: &Option<ConcreteTypesTuple>,
-        type_ranges: &Option<Vec<TextRange>>,
+        concrete_types: Option<&ConcreteTypesTuple>,
+        type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         interner: &Interner,
         namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(!is_concrete_types_none_allowed);
-        let interface_data = &namespace.interfaces.get_symbol_ref(self.0).data;
-        let generic_type_decls = &interface_data.generics;
+        let interface_data = &namespace.interfaces_ref().get_symbol_ref(self.0).data;
+        let generic_type_decls = interface_data.generics();
         check_concrete_types_bounded_by_interfaces(
             generic_type_decls,
             concrete_types,

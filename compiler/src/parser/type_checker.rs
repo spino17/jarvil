@@ -187,7 +187,7 @@ pub struct TypeChecker {
 }
 
 impl TypeChecker {
-    pub fn new(code_handler: JarvilCodeHandler, mut semantic_db: SemanticStateDatabase) -> Self {
+    pub fn new(code_handler: JarvilCodeHandler, semantic_db: SemanticStateDatabase) -> Self {
         let non_struct_methods_handler = NonStructMethodsHandler::new(semantic_db.interner());
         TypeChecker {
             code_handler,
@@ -332,7 +332,7 @@ impl TypeChecker {
                     return self
                         .semantic_db
                         .get_variable_symbol_ref(symbol_index)
-                        .data_type
+                        .ty()
                         .clone()
                 }
                 None => self.params_and_return_type_obj_from_expr(return_type, params),
@@ -422,7 +422,7 @@ impl TypeChecker {
             vec![InferredConcreteTypesEntry::Uninferred; generic_type_decls_len];
         let mut num_inferred_types = 0; // this should be `len_concrete_types` at the end of inference process
         let received_params_iter = received_params.iter();
-        let expected_params = &expected_prototype.params;
+        let expected_params = expected_prototype.params();
         let expected_params_len = expected_params.len();
         let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![];
         let mut params_len = 0;
@@ -589,7 +589,7 @@ impl TypeChecker {
         let prototype_result = match concrete_types {
             Some(concrete_types) => {
                 // CASE 1
-                let concrete_prototype = func_data.prototype.concretize_prototype(
+                let concrete_prototype = func_data.concretized_prototype(
                     None,
                     Some(concrete_types),
                     self.semantic_db.namespace_ref(),
@@ -599,7 +599,7 @@ impl TypeChecker {
                 )
             }
             None => {
-                match &func_data.generics {
+                match func_data.generics() {
                     Some(generic_type_decls) => {
                         // CASE 2
                         CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
@@ -608,7 +608,11 @@ impl TypeChecker {
                     }
                     // CASE 4
                     None => CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
-                        RefOrOwned::Ref(&func_data.prototype),
+                        func_data.concretized_prototype(
+                            None,
+                            None,
+                            self.semantic_db.namespace_ref(),
+                        ),
                     ),
                 }
             }
@@ -623,21 +627,20 @@ impl TypeChecker {
             ) => {
                 let concrete_types = self.infer_concrete_types_from_arguments(
                     generic_type_decls,
-                    &func_data.prototype,
+                    func_data.structural_prototype(),
                     None,
                     params,
                     GenericTypeDeclarationPlaceCategory::InCallable,
                 )?;
-                let unconcrete_return_ty = &func_data.prototype.return_type;
-                let concrete_return_ty = if unconcrete_return_ty.is_concretization_required() {
-                    unconcrete_return_ty.concretize(
-                        &ConcretizationContext::new(None, Some(&concrete_types)),
-                        self.semantic_db.namespace_ref(),
-                    )
-                } else {
-                    unconcrete_return_ty.clone()
-                };
-                Ok(concrete_return_ty)
+                let concrete_return_ty = func_data.concretized_return_ty(
+                    None,
+                    Some(&concrete_types),
+                    self.semantic_db.namespace_ref(),
+                );
+                match concrete_return_ty {
+                    RefOrOwned::Ref(ty) => Ok(ty.clone()),
+                    RefOrOwned::Owned(ty) => Ok(ty),
+                }
             }
         }
     }
@@ -651,7 +654,7 @@ impl TypeChecker {
         let lambda_type = &self
             .semantic_db
             .get_variable_symbol_ref(concrete_symbol_index.index)
-            .data_type;
+            .ty();
         match lambda_type.0.as_ref() {
             CoreType::Lambda(lambda_data) => {
                 let return_ty = lambda_data.is_received_params_valid(self, params)?;
@@ -685,7 +688,7 @@ impl TypeChecker {
         let prototype_result = match concrete_types {
             Some(concrete_types) => {
                 // CASE 1
-                let concrete_prototype = constructor_meta_data.prototype.concretize_prototype(
+                let concrete_prototype = constructor_meta_data.concretized_prototype(
                     Some(concrete_types),
                     None,
                     self.semantic_db.namespace_ref(),
@@ -695,7 +698,7 @@ impl TypeChecker {
                 )
             }
             None => {
-                match &struct_data.generics {
+                match struct_data.generics() {
                     Some(generic_type_decls) => {
                         // CASE 2
                         CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
@@ -705,7 +708,11 @@ impl TypeChecker {
                     None => {
                         // CASE 4
                         CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
-                            RefOrOwned::Ref(&constructor_meta_data.prototype),
+                            constructor_meta_data.concretized_prototype(
+                                None,
+                                None,
+                                self.semantic_db.namespace_ref(),
+                            ),
                         )
                     }
                 }
@@ -713,7 +720,7 @@ impl TypeChecker {
         };
         match prototype_result {
             CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
-                self.check_params_type_and_count(&prototype.params, params)?;
+                self.check_params_type_and_count(prototype.params(), params)?;
                 let return_ty = Type::new_with_struct(
                     concrete_symbol_index.index,
                     concrete_types.clone(), // expensive clone
@@ -725,7 +732,7 @@ impl TypeChecker {
             ) => {
                 let concrete_types = self.infer_concrete_types_from_arguments(
                     generic_type_decls,
-                    &constructor_meta_data.prototype,
+                    constructor_meta_data.structural_prototype(),
                     None,
                     params,
                     GenericTypeDeclarationPlaceCategory::InStruct,
@@ -1057,7 +1064,7 @@ impl TypeChecker {
                         Some(concrete_symbol_index) => self
                             .semantic_db
                             .get_variable_symbol_ref(concrete_symbol_index.index)
-                            .data_type
+                            .ty()
                             .clone(),
                         None => Type::new_with_unknown(),
                     }
@@ -1075,7 +1082,7 @@ impl TypeChecker {
                             Some(symbol_index) => self
                                 .semantic_db
                                 .get_variable_symbol_ref(symbol_index)
-                                .data_type
+                                .ty()
                                 .clone(),
                             None => Type::new_with_unknown(),
                         }
@@ -1326,7 +1333,7 @@ impl TypeChecker {
                     GenericTypePropertyQueryResult::Ok(interface_index) => {
                         let interface_obj =
                             interface_bounds.interface_obj_at_index(interface_index);
-                        let concrete_symbol_index = &interface_obj.0.as_ref().1;
+                        let concrete_symbol_index = interface_obj.concrete_symbol_index();
                         let interface_data = self
                             .semantic_db
                             .get_interface_symbol_ref(concrete_symbol_index.index);
@@ -2006,7 +2013,7 @@ impl TypeChecker {
         let variable_ty = self
             .semantic_db
             .get_variable_symbol_ref(symbol_index)
-            .data_type
+            .ty()
             .clone();
         if variable_ty.is_unset() {
             // TODO - check if the `r_type` is ambigious type
@@ -2163,7 +2170,7 @@ impl TypeChecker {
         };
         let struct_methods = struct_data.get_methods_ref();
 
-        for (interface_obj, range) in &implementing_interfaces.interfaces {
+        for (interface_obj, range) in implementing_interfaces.iter() {
             let (_, interface_concrete_symbol_index) = interface_obj.get_core_ref();
             let concrete_types = &interface_concrete_symbol_index.concrete_types;
             let interface_data = self

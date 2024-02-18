@@ -11,7 +11,7 @@ use text_size::TextRange;
 #[derive(Debug, Default)]
 pub struct EnumTypeData {
     pub variants: Vec<(StrId, Option<Type>, TextRange)>,
-    pub generics: Option<GenericTypeParams>,
+    generics: Option<GenericTypeParams>,
     pub is_init: bool,
 }
 
@@ -23,6 +23,10 @@ impl EnumTypeData {
     pub fn set_generics(&mut self, generics_spec: Option<GenericTypeParams>) {
         self.generics = generics_spec;
         self.is_init = true;
+    }
+
+    pub fn generics(&self) -> Option<&GenericTypeParams> {
+        self.generics.as_ref()
     }
 
     pub fn try_type_for_variant<'a>(

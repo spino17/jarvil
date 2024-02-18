@@ -45,7 +45,7 @@ impl SemanticStateDatabase {
         // fill the built-in functions inside the global namespace
         let builtin_functions = get_builtin_functions();
         for (name, callable_data) in builtin_functions {
-            namespace.functions.force_insert(
+            namespace.functions_mut_ref().force_insert(
                 ScopeIndex::global(), // index of global namespace
                 interner.intern(name),
                 callable_data,
@@ -155,7 +155,11 @@ impl SemanticStateDatabase {
         &self,
         symbol_index: SymbolIndex<VariableData>,
     ) -> &VariableData {
-        &self.namespace.variables.get_symbol_ref(symbol_index).data
+        &self
+            .namespace
+            .variables_ref()
+            .get_symbol_ref(symbol_index)
+            .data
     }
 
     pub fn get_variable_symbol_mut_ref(
@@ -164,7 +168,7 @@ impl SemanticStateDatabase {
     ) -> &mut VariableData {
         &mut self
             .namespace
-            .variables
+            .variables_mut_ref()
             .get_symbol_mut_ref(symbol_index)
             .data
     }
@@ -201,7 +205,11 @@ impl SemanticStateDatabase {
         &self,
         symbol_index: SymbolIndex<CallableData>,
     ) -> &CallableData {
-        &self.namespace.functions.get_symbol_ref(symbol_index).data
+        &self
+            .namespace
+            .functions_ref()
+            .get_symbol_ref(symbol_index)
+            .data
     }
 
     pub fn get_function_symbol_mut_ref(
@@ -210,7 +218,7 @@ impl SemanticStateDatabase {
     ) -> &mut CallableData {
         &mut self
             .namespace
-            .functions
+            .functions_mut_ref()
             .get_symbol_mut_ref(symbol_index)
             .data
     }
@@ -247,14 +255,18 @@ impl SemanticStateDatabase {
         &self,
         symbol_index: SymbolIndex<UserDefinedTypeData>,
     ) -> &UserDefinedTypeData {
-        &self.namespace.types.get_symbol_ref(symbol_index).data
+        &self.namespace.types_ref().get_symbol_ref(symbol_index).data
     }
 
     pub fn get_ty_symbol_mut_ref(
         &mut self,
         symbol_index: SymbolIndex<UserDefinedTypeData>,
     ) -> &mut UserDefinedTypeData {
-        &mut self.namespace.types.get_symbol_mut_ref(symbol_index).data
+        &mut self
+            .namespace
+            .types_mut_ref()
+            .get_symbol_mut_ref(symbol_index)
+            .data
     }
 
     pub fn get_ty_symbol_for_identifier_in_decl(
@@ -289,7 +301,11 @@ impl SemanticStateDatabase {
         &self,
         symbol_index: SymbolIndex<InterfaceData>,
     ) -> &InterfaceData {
-        &self.namespace.interfaces.get_symbol_ref(symbol_index).data
+        &self
+            .namespace
+            .interfaces_ref()
+            .get_symbol_ref(symbol_index)
+            .data
     }
 
     pub fn get_interface_symbol_mut_ref(
@@ -298,7 +314,7 @@ impl SemanticStateDatabase {
     ) -> &mut InterfaceData {
         &mut self
             .namespace
-            .interfaces
+            .interfaces_mut_ref()
             .get_symbol_mut_ref(symbol_index)
             .data
     }

@@ -48,10 +48,10 @@ impl GenericTypeData {
     ) -> GenericTypePropertyQueryResult<(Type, TextRange)> {
         let mut property_containing_interface_objs: Vec<String> = vec![];
         let mut result: Option<(Type, TextRange)> = None;
-        for (interface_obj, _) in &self.interface_bounds.interfaces {
-            let concrete_symbol_index = &interface_obj.0.as_ref().1;
+        for (interface_obj, _) in self.interface_bounds.iter() {
+            let concrete_symbol_index = interface_obj.concrete_symbol_index();
             let interface_data = &namespace
-                .interfaces
+                .interfaces_ref()
                 .get_symbol_ref(concrete_symbol_index.index)
                 .data;
             let concrete_types = &concrete_symbol_index.concrete_types;
@@ -85,10 +85,10 @@ impl GenericTypeData {
     ) -> GenericTypePropertyQueryResult<usize> {
         let mut property_containing_interface_objs: Vec<String> = vec![];
         let mut result: Option<usize> = None;
-        for (index, (interface_obj, _)) in self.interface_bounds.interfaces.iter().enumerate() {
-            let concrete_symbol_index = &interface_obj.0.as_ref().1;
+        for (index, (interface_obj, _)) in self.interface_bounds.iter().enumerate() {
+            let concrete_symbol_index = interface_obj.concrete_symbol_index();
             let interface_data = &namespace
-                .interfaces
+                .interfaces_ref()
                 .get_symbol_ref(concrete_symbol_index.index)
                 .data;
             if interface_data.has_method(method_name) {

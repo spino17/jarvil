@@ -16,7 +16,7 @@ pub struct StructTypeData {
     pub constructor: CallableData,
     methods: MethodsMap,
     class_methods: MethodsMap,
-    pub generics: Option<GenericTypeParams>,
+    generics: Option<GenericTypeParams>,
     pub implementing_interfaces: Option<InterfaceBounds>,
     pub is_init: bool,
 }
@@ -45,6 +45,10 @@ impl StructTypeData {
         self.generics = generics_spec;
         self.implementing_interfaces = implementing_interfaces;
         self.is_init = true;
+    }
+
+    pub fn generics(&self) -> Option<&GenericTypeParams> {
+        self.generics.as_ref()
     }
 
     pub fn try_field<'a>(
