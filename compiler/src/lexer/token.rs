@@ -22,13 +22,43 @@ use text_size::TextRange;
 
 #[derive(Debug, Clone)]
 pub struct Token {
-    pub line_number: usize,
-    pub core_token: CoreToken,
-    pub range: TextRange,
-    pub trivia: Option<Vec<Token>>,
+    line_number: usize,
+    core_token: CoreToken,
+    range: TextRange,
+    trivia: Option<Vec<Token>>,
 }
 
 impl Token {
+    pub fn new(
+        line_number: usize,
+        core_token: CoreToken,
+        range: TextRange,
+        trivia: Option<Vec<Token>>,
+    ) -> Self {
+        Token {
+            line_number,
+            core_token,
+            range,
+            trivia,
+        }
+    }
+
+    pub fn line_number(&self) -> usize {
+        self.line_number
+    }
+
+    pub fn core_token(&self) -> &CoreToken {
+        &self.core_token
+    }
+
+    pub fn range(&self) -> TextRange {
+        self.range
+    }
+
+    pub fn trivia(&self) -> Option<&Vec<Token>> {
+        self.trivia.as_ref()
+    }
+
     pub fn set_trivia(&mut self, trivia_vec: Vec<Token>) {
         self.trivia = Some(trivia_vec);
     }

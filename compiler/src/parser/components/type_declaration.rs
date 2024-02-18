@@ -11,7 +11,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
     let type_keyword_node = parser.expect("type");
     let type_name_node = parser.expect_identifier_in_decl();
     let token = parser.curr_token();
-    match token.core_token {
+    match token.core_token() {
         CoreToken::STRUCT_KEYWORD => {
             let mut implementing_interfaces_node: Option<(
                 TokenNode,
@@ -28,7 +28,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             }
             let colon_node = parser.expect(":");
             let block_node = parser.block(
-                |token| match token.core_token {
+                |token| match token.core_token() {
                     CoreToken::IDENTIFIER => true,
                     CoreToken::DEF => true,
                     _ => false,
@@ -50,7 +50,7 @@ pub fn type_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             let enum_keyword_node = parser.expect("enum");
             let colon_node = parser.expect(":");
             let block_node = parser.block(
-                |token| match token.core_token {
+                |token| match token.core_token() {
                     CoreToken::IDENTIFIER => true,
                     _ => false,
                 },

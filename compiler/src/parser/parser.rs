@@ -102,7 +102,7 @@ impl JarvilParser {
 
     pub fn curr_token_precedence_and_name(&self) -> (u8, &'static str) {
         let token = &self.token_vec[self.lookahead];
-        (token.get_precedence(), token.core_token.to_string())
+        (token.get_precedence(), token.core_token().to_string())
     }
 
     pub fn is_curr_token_on_newline(&self) -> bool {
@@ -180,7 +180,7 @@ impl JarvilParser {
         let parsing_fn = |parser: &mut JarvilParser| {
             let identifier_in_decl_node = parser.expect_identifier();
             let token = parser.curr_token();
-            match token.core_token {
+            match token.core_token() {
                 CoreToken::COLON => {
                     let colon_node = parser.expect(":");
                     let interface_bounds_node = parser.expect_symbol_separated_sequence(
@@ -216,7 +216,7 @@ impl JarvilParser {
             let ok_token_node = OkTokenNode::new(token.clone());
             self.scan_next_token();
             let next_token = self.curr_token();
-            match next_token.core_token {
+            match next_token.core_token() {
                 CoreToken::LBRACKET => {
                     let langle_node = self.expect("<");
                     let angle_bracketed_content_node = angle_bracketed_content_parsing_fn(self);
@@ -330,7 +330,7 @@ impl JarvilParser {
         let mut expected_indent_spaces = context::indent_spaces() as i64 * self.indent_level;
         loop {
             let token = &self.token_vec[self.lookahead];
-            match &token.core_token {
+            match &token.core_token() {
                 CoreToken::NEWLINE => {
                     extra_newlines.push(SkippedTokenNode::new(token.clone()));
                 }
@@ -344,7 +344,7 @@ impl JarvilParser {
                 _ => {
                     // At this point we are sure that the token index is set to the first token on a newline
                     let indent_spaces = (token.start_index()
-                        - self.code_handler.get_line_start_index(token.line_number))
+                        - self.code_handler.get_line_start_index(token.line_number()))
                         as i64;
                     //let alternate_line_index = match &token.trivia {
                     //    Some(trivia) => {
@@ -361,7 +361,8 @@ impl JarvilParser {
                             skipped_tokens,
                             extra_newlines,
                         };
-                    } else if indent_spaces > expected_indent_spaces {
+                    }
+                    if indent_spaces > expected_indent_spaces {
                         return IndentResult {
                             kind: IndentResultKind::IncorrectIndentation((
                                 expected_indent_spaces,
@@ -370,13 +371,12 @@ impl JarvilParser {
                             skipped_tokens,
                             extra_newlines,
                         };
-                    } else {
-                        return IndentResult {
-                            kind: IndentResultKind::BlockOver,
-                            skipped_tokens,
-                            extra_newlines,
-                        };
                     }
+                    return IndentResult {
+                        kind: IndentResultKind::BlockOver,
+                        skipped_tokens,
+                        extra_newlines,
+                    };
                 }
             }
             self.scan_next_token();

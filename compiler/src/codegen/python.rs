@@ -35,7 +35,7 @@ pub fn get_whitespaces_from_indent_level(indent_level: usize) -> String {
 
 pub fn get_trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
     match token.core_ref() {
-        CoreTokenNode::Ok(ok_token_node) => match &ok_token_node.core_ref().token.trivia {
+        CoreTokenNode::Ok(ok_token_node) => match ok_token_node.core_ref().token.trivia() {
             Some(trivia) => Some(trivia),
             None => None,
         },
@@ -159,13 +159,13 @@ impl PythonCodeGenerator {
     }
 
     pub fn print_token(&mut self, token: &Token) {
-        let trivia = match &token.trivia {
+        let trivia = match token.trivia() {
             Some(trivia) => Some(trivia),
             None => None,
         };
         self.print_trivia(trivia);
         let token_value = token.token_value_str(&self.code_handler);
-        match token.core_token {
+        match token.core_token() {
             CoreToken::SINGLE_LINE_COMMENT => {
                 self.add_str_to_python_code("\n");
             }
@@ -223,7 +223,7 @@ impl PythonCodeGenerator {
         let token_value = self.get_mangled_identifier_name_in_decl(identifier);
         if is_trivia {
             let token = &identifier.0.as_ref().name.core_ref().token;
-            let trivia = match &token.trivia {
+            let trivia = match token.trivia() {
                 Some(trivia) => Some(trivia),
                 None => None,
             };
@@ -240,7 +240,7 @@ impl PythonCodeGenerator {
         let token_value = self.get_mangled_identifier_name_in_use(identifier);
         if is_trivia {
             let token = &identifier.0.as_ref().name.core_ref().token;
-            let trivia = match &token.trivia {
+            let trivia = match token.trivia() {
                 Some(trivia) => Some(trivia),
                 None => None,
             };

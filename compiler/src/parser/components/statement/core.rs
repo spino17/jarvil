@@ -39,7 +39,7 @@ pub const STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS: [&str; 12] = [
 ];
 
 pub fn is_statement_at_global_scope_starting_with(token: &Token) -> bool {
-    match token.core_token {
+    match token.core_token() {
         CoreToken::DEF => true,
         CoreToken::TYPE_KEYWORD => true,
         CoreToken::INTERFACE_KEYWORD => true,
@@ -48,7 +48,7 @@ pub fn is_statement_at_global_scope_starting_with(token: &Token) -> bool {
 }
 
 pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
-    match token.core_token {
+    match token.core_token() {
         CoreToken::LET => true,
         CoreToken::DEF => true,
         CoreToken::FOR => true,
@@ -63,7 +63,7 @@ pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
 }
 
 pub fn is_statement_within_control_flow_starting_with(token: &Token) -> bool {
-    match token.core_token {
+    match token.core_token() {
         CoreToken::LET => true,
         CoreToken::DEF => true,
         CoreToken::FOR => true,
@@ -85,7 +85,7 @@ pub fn is_statement_within_control_flow_starting_with(token: &Token) -> bool {
 // no other statement is allowed except ones starting with `<identifier>` and `def`.
 pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = parser.curr_token();
-    let statement_node = match token.core_token {
+    let statement_node = match token.core_token() {
         CoreToken::LET => {
             let variable_decl_node = parser.variable_decl();
             StatementNode::new_with_variable_declaration(variable_decl_node)
@@ -118,7 +118,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         CoreToken::RETURN => {
             let return_node = parser.expect("return");
             let token = parser.curr_token();
-            match token.core_token {
+            match token.core_token() {
                 CoreToken::NEWLINE | CoreToken::ENDMARKER => {
                     let newline_node = parser.expect_terminators();
                     StatementNode::new_with_return_statement(return_node, None, newline_node)
@@ -153,7 +153,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         _ => {
             let expr_node = parser.expr();
             let token = parser.curr_token();
-            match token.core_token {
+            match token.core_token() {
                 CoreToken::EQUAL => {
                     let assignment_node = parser.assignment(expr_node);
                     StatementNode::new_with_assignment(assignment_node)
@@ -170,7 +170,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
 
 pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = parser.curr_token();
-    match token.core_token {
+    match token.core_token() {
         CoreToken::IDENTIFIER => {
             let name_type_spec_node = parser.name_type_spec();
             let newline_node = parser.expect_terminators();
@@ -184,7 +184,7 @@ pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
 
 pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = parser.curr_token();
-    match token.core_token {
+    match token.core_token() {
         CoreToken::IDENTIFIER => {
             let name_type_spec_node = parser.name_type_spec();
             let newline_node = parser.expect_terminators();

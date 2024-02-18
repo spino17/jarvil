@@ -16,25 +16,25 @@ pub trait Lexer {
 }
 
 pub struct CoreLexer {
-    pub index: usize,
-    pub line_number: usize,
-    pub code_lines: Vec<usize>,
-    pub line_start_index: usize,
-    pub errors: Vec<Diagnostics>,
+    index: usize,
+    line_number: usize,
+    code_lines: Vec<usize>,
+    line_start_index: usize,
+    errors: Vec<Diagnostics>,
 }
 
 impl Lexer for CoreLexer {
     fn tokenize(mut self, code: &mut JarvilCode) -> (Vec<Token>, Vec<Diagnostics>, Vec<usize>) {
         let mut token_vec: Vec<Token> = Vec::new();
-        token_vec.push(Token {
-            line_number: self.line_number,
-            core_token: CoreToken::NEWLINE,
-            range: TextRange::new(
+        token_vec.push(Token::new(
+            self.line_number,
+            CoreToken::NEWLINE,
+            TextRange::new(
                 TextSize::try_from(0_usize).unwrap(),
                 TextSize::try_from(0_usize).unwrap(),
             ),
-            trivia: None,
-        });
+            None,
+        ));
         let mut eof_trivia_vec: Vec<Token> = vec![];
         while self.index < code.len() {
             let token = self.extract_lexeme(code);
@@ -63,10 +63,10 @@ impl Lexer for CoreLexer {
             }
         }
         self.code_lines.push(self.line_start_index);
-        let mut token = Token {
-            line_number: self.line_number,
-            core_token: CoreToken::ENDMARKER,
-            range: TextRange::new(
+        let mut token = Token::new(
+            self.line_number,
+            CoreToken::ENDMARKER,
+            TextRange::new(
                 // ideally span of `ENDMARKER` should be (code.len() - code.len()), however to display error messages
                 // we need to have non-zero range span.
                 TextSize::try_from(if code.len() > 0 {
@@ -77,8 +77,8 @@ impl Lexer for CoreLexer {
                 .unwrap(),
                 TextSize::try_from(code.len()).unwrap(),
             ),
-            trivia: None,
-        };
+            None,
+        );
         if !eof_trivia_vec.is_empty() {
             token.set_trivia(eof_trivia_vec);
         }
@@ -200,12 +200,7 @@ impl CoreLexer {
             }
             _ => {}
         }
-        Token {
-            line_number: start_line_number,
-            core_token,
-            range,
-            trivia: None,
-        }
+        Token::new(start_line_number, core_token, range, None)
     }
 
     // ------------------- lexeme extraction state machine functions -------------------

@@ -16,7 +16,7 @@ pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
     }
     let equal_node = parser.expect("=");
     let token = parser.curr_token();
-    let r_node = match token.core_token {
+    let r_node = match token.core_token() {
         CoreToken::LAMBDA_KEYWORD => {
             let lambda_keyword_node = parser.expect(LAMBDA_KEYWORD);
             let callable_body = parser.callable_body(BlockKind::Lambda);

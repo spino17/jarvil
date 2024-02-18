@@ -2312,10 +2312,10 @@ impl OkTokenNode {
 
 impl Node for OkTokenNode {
     fn range(&self) -> TextRange {
-        self.0.as_ref().token.range
+        self.0.as_ref().token.range()
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().token.line_number
+        self.0.as_ref().token.line_number()
     }
 }
 
@@ -2352,10 +2352,13 @@ impl MissingTokenNode {
 impl Node for MissingTokenNode {
     fn range(&self) -> TextRange {
         let received_token = &self.0.as_ref().received_token;
-        TextRange::new(received_token.range.start(), received_token.range.start())
+        TextRange::new(
+            received_token.range().start(),
+            received_token.range().start(),
+        )
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().received_token.line_number
+        self.0.as_ref().received_token.line_number()
     }
 }
 
@@ -2370,10 +2373,10 @@ impl SkippedTokenNode {
 
 impl Node for SkippedTokenNode {
     fn range(&self) -> TextRange {
-        self.0.as_ref().skipped_token.range
+        self.0.as_ref().skipped_token.range()
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().skipped_token.line_number
+        self.0.as_ref().skipped_token.line_number()
     }
 }
 
