@@ -26,15 +26,15 @@ use text_size::TextRange;
 
 // This contains all the relevant semantic information collected over various AST passes
 pub struct SemanticStateDatabase {
-    pub namespace: Namespace,
-    pub interner: Interner,
-    pub unique_key_generator: GlobalUniqueKeyGenerator,
-    pub identifier_in_decl_binding_table: FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry>,
-    pub identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
-    pub type_expr_obj_table: FxHashMap<TypeExpressionNode, (Type, bool)>,
-    pub self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolIndex<VariableData>>, // `self` (node) -> scope_index
-    pub block_non_locals: FxHashMap<BlockNode, FxHashSet<MangledIdentifierName<VariableData>>>,
-    pub bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
+    namespace: Namespace,
+    interner: Interner,
+    unique_key_generator: GlobalUniqueKeyGenerator,
+    identifier_in_decl_binding_table: FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry>,
+    identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
+    type_expr_obj_table: FxHashMap<TypeExpressionNode, (Type, bool)>,
+    self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolIndex<VariableData>>, // `self` (node) -> scope_index
+    block_non_locals: FxHashMap<BlockNode, FxHashSet<MangledIdentifierName<VariableData>>>,
+    bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
 }
 
 impl SemanticStateDatabase {
@@ -64,6 +64,58 @@ impl SemanticStateDatabase {
             block_non_locals: FxHashMap::default(),
             bounded_method_kind: FxHashMap::default(),
         }
+    }
+
+    pub fn namespace_ref(&self) -> &Namespace {
+        &self.namespace
+    }
+
+    pub fn namespace_mut_ref(&mut self) -> &mut Namespace {
+        &mut self.namespace
+    }
+
+    pub fn unique_key_generator_mut_ref(&mut self) -> &mut GlobalUniqueKeyGenerator {
+        &mut self.unique_key_generator
+    }
+
+    pub fn interner(&self) -> &Interner {
+        &self.interner
+    }
+
+    pub fn identifier_in_decl_binding_table_ref(
+        &self,
+    ) -> &FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry> {
+        &self.identifier_in_decl_binding_table
+    }
+
+    pub fn identifier_in_decl_binding_table_mut_ref(
+        &mut self,
+    ) -> &mut FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry> {
+        &mut self.identifier_in_decl_binding_table
+    }
+
+    pub fn identifier_in_use_binding_table_ref(
+        &self,
+    ) -> &FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry> {
+        &self.identifier_in_use_binding_table
+    }
+
+    pub fn identifier_in_use_binding_table_mut_ref(
+        &mut self,
+    ) -> &mut FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry> {
+        &mut self.identifier_in_use_binding_table
+    }
+
+    pub fn self_keyword_binding_table_ref(
+        &self,
+    ) -> &FxHashMap<OkSelfKeywordNode, SymbolIndex<VariableData>> {
+        &self.self_keyword_binding_table
+    }
+
+    pub fn self_keyword_binding_table_mut_ref(
+        &mut self,
+    ) -> &mut FxHashMap<OkSelfKeywordNode, SymbolIndex<VariableData>> {
+        &mut self.self_keyword_binding_table
     }
 
     pub fn set_type_expr_obj_mapping(

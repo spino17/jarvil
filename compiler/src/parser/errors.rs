@@ -14,18 +14,16 @@ impl JarvilParser {
         expected_symbols: &[&'static str],
         received_token: &Token,
     ) {
-        if self.ignore_all_errors {
+        if self.ignore_all_errors() {
             return;
         }
         // -> TODO - check whether error on same line already exists
         let err = MissingTokenError::new(expected_symbols, received_token);
-        self.errors
-            .borrow_mut()
-            .push(Diagnostics::MissingToken(err));
+        self.log_error(Diagnostics::MissingToken(err));
     }
 
     pub fn log_trailing_skipped_tokens_error(&self, skipped_tokens: Vec<SkippedTokenNode>) {
-        if self.ignore_all_errors {
+        if self.ignore_all_errors() {
             return;
         }
         // -> TODO - check whether error on same line already exists
@@ -36,9 +34,7 @@ impl JarvilParser {
                 .end()
                 .into(),
         );
-        self.errors
-            .borrow_mut()
-            .push(Diagnostics::InvalidTrailingTokens(err));
+        self.log_error(Diagnostics::InvalidTrailingTokens(err));
     }
 
     pub fn log_incorrectly_indented_block_error(
@@ -47,44 +43,36 @@ impl JarvilParser {
         expected_indent: i64,
         received_indent: i64,
     ) {
-        if self.ignore_all_errors {
+        if self.ignore_all_errors() {
             return;
         }
         // -> TODO - check whether error on same line already exists
         let err = IncorrectlyIndentedBlockError::new(expected_indent, received_indent, range);
-        self.errors
-            .borrow_mut()
-            .push(Diagnostics::IncorrectlyIndentedBlock(err));
+        self.log_error(Diagnostics::IncorrectlyIndentedBlock(err));
     }
 
     pub fn log_no_valid_statement_inside_block_error(&self, range: TextRange) {
-        if self.ignore_all_errors {
+        if self.ignore_all_errors() {
             return;
         }
         let err = NoValidStatementFoundInsideBlockBodyError::new(range);
-        self.errors
-            .borrow_mut()
-            .push(Diagnostics::NoValidStatementFoundInsideBlockBody(err));
+        self.log_error(Diagnostics::NoValidStatementFoundInsideBlockBody(err));
     }
 
     pub fn log_invalid_l_value_error(&self, range: TextRange) {
-        if self.ignore_all_errors {
+        if self.ignore_all_errors() {
             return;
         }
         // -> TODO - check whether error on same line already exists
         let err = InvalidLValueError::new(range);
-        self.errors
-            .borrow_mut()
-            .push(Diagnostics::InvalidLValue(err));
+        self.log_error(Diagnostics::InvalidLValue(err));
     }
 
     pub fn log_single_sub_type_in_tuple_error(&self, range: TextRange) {
-        if self.ignore_all_errors {
+        if self.ignore_all_errors() {
             return;
         }
         let err = SingleSubTypeFoundInTupleError::new(range);
-        self.errors
-            .borrow_mut()
-            .push(Diagnostics::SingleSubTypeFoundInTuple(err));
+        self.log_error(Diagnostics::SingleSubTypeFoundInTuple(err));
     }
 }

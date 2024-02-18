@@ -57,12 +57,12 @@ impl Lambda {
             Lambda::Named(named_lambda) => {
                 let concrete_types = &named_lambda.concrete_types;
                 let ty_data = type_checker
-                    .semantic_db
+                    .semantic_db()
                     .get_ty_symbol_ref(named_lambda.symbol_index);
                 let lambda_data = ty_data.get_lambda_data_ref();
                 let prototype_result = lambda_data.get_concrete_prototype(
                     concrete_types.as_ref(),
-                    &type_checker.semantic_db.namespace,
+                    type_checker.semantic_db().namespace_ref(),
                 );
                 let expected_param_types = &prototype_result.params;
                 let return_type = &prototype_result.return_type;

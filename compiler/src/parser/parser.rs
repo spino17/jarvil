@@ -28,9 +28,9 @@ pub struct JarvilParser {
     lookahead: usize,
     indent_level: i64,
     code_handler: JarvilCodeHandler,
-    pub ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
+    ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
-    pub errors: RefCell<Vec<Diagnostics>>,
+    errors: RefCell<Vec<Diagnostics>>,
 }
 
 impl JarvilParser {
@@ -44,6 +44,14 @@ impl JarvilParser {
             correction_indent: 0,
             errors: RefCell::new(vec![]),
         }
+    }
+
+    pub fn ignore_all_errors(&self) -> bool {
+        self.ignore_all_errors
+    }
+
+    pub fn log_error(&self, err: Diagnostics) {
+        self.errors.borrow_mut().push(err);
     }
 }
 

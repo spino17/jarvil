@@ -312,13 +312,13 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                             Some(type_ranges) => type_ranges,
                             None => unreachable!(),
                         },
-                        &type_checker.semantic_db.interner,
-                        &type_checker.semantic_db.namespace,
+                        type_checker.semantic_db().interner(),
+                        type_checker.semantic_db().namespace_ref(),
                     )?;
                     let concrete_prototype = self.callable_data.prototype.concretize_prototype(
                         self.concrete_types,
                         Some(&local_concrete_types),
-                        &type_checker.semantic_db.namespace,
+                        type_checker.semantic_db().namespace_ref(),
                     );
                     let return_ty = concrete_prototype
                         .is_received_params_valid(type_checker, received_params)?;
@@ -346,7 +346,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                                 self.concrete_types,
                                 Some(&local_concrete_types),
                             ),
-                            &type_checker.semantic_db.namespace,
+                            type_checker.semantic_db().namespace_ref(),
                         )
                     } else {
                         unconcrete_return_ty.clone()
@@ -357,7 +357,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                     let concrete_prototype = self.callable_data.prototype.concretize_prototype(
                         self.concrete_types,
                         None,
-                        &type_checker.semantic_db.namespace,
+                        type_checker.semantic_db().namespace_ref(),
                     );
                     let return_ty = concrete_prototype
                         .is_received_params_valid(type_checker, received_params)?;

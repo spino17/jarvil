@@ -76,14 +76,17 @@ impl PythonCodeGenerator {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        let index = match self.semantic_db.namespace.lookup_in_functions_namespace(
-            ScopeIndex::global(),
-            self.semantic_db.interner.intern("main"),
-        ) {
+        let index = match self
+            .semantic_db
+            .namespace_ref()
+            .lookup_in_functions_namespace(
+                ScopeIndex::global(),
+                self.semantic_db.interner().intern("main"),
+            ) {
             LookupResult::Ok(lookup_data) => match lookup_data
                 .symbol_obj
                 .0
-                .get_index(&self.semantic_db.namespace.functions)
+                .get_index(&self.semantic_db.namespace_ref().functions)
             {
                 Some(index) => index,
                 None => unreachable!(),
@@ -120,14 +123,14 @@ impl PythonCodeGenerator {
         {
             Some(symbol_entry) => match symbol_entry {
                 SymbolDataEntry::Variable(symbol_index) => symbol_index
-                    .get_mangled_name(&self.semantic_db.namespace.variables)
-                    .to_string(VAR_SUFFIX, &self.semantic_db.interner),
+                    .get_mangled_name(&self.semantic_db.namespace_ref().variables)
+                    .to_string(VAR_SUFFIX, self.semantic_db.interner()),
                 SymbolDataEntry::Function(symbol_index) => symbol_index
-                    .get_mangled_name(&self.semantic_db.namespace.functions)
-                    .to_string(FUNC_SUFFIX, &self.semantic_db.interner),
+                    .get_mangled_name(&self.semantic_db.namespace_ref().functions)
+                    .to_string(FUNC_SUFFIX, self.semantic_db.interner()),
                 SymbolDataEntry::Type(symbol_index) => symbol_index
-                    .get_mangled_name(&self.semantic_db.namespace.types)
-                    .to_string(TY_SUFFIX, &self.semantic_db.interner),
+                    .get_mangled_name(&self.semantic_db.namespace_ref().types)
+                    .to_string(TY_SUFFIX, self.semantic_db.interner()),
                 SymbolDataEntry::Interface(_) => unreachable!(),
             },
             None => identifier.token_value_str(&self.code_handler),
@@ -144,16 +147,16 @@ impl PythonCodeGenerator {
         match concrete_symbol_entry {
             ConcreteSymbolDataEntry::Variable(concrete_symbol_index) => concrete_symbol_index
                 .index
-                .get_mangled_name(&self.semantic_db.namespace.variables)
-                .to_string(VAR_SUFFIX, &self.semantic_db.interner),
+                .get_mangled_name(&self.semantic_db.namespace_ref().variables)
+                .to_string(VAR_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Function(concrete_symbol_index) => concrete_symbol_index
                 .index
-                .get_mangled_name(&self.semantic_db.namespace.functions)
-                .to_string(FUNC_SUFFIX, &self.semantic_db.interner),
+                .get_mangled_name(&self.semantic_db.namespace_ref().functions)
+                .to_string(FUNC_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Type(concrete_symbol_index) => concrete_symbol_index
                 .index
-                .get_mangled_name(&self.semantic_db.namespace.types)
-                .to_string(TY_SUFFIX, &self.semantic_db.interner),
+                .get_mangled_name(&self.semantic_db.namespace_ref().types)
+                .to_string(TY_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
         }
     }
@@ -353,8 +356,8 @@ impl PythonCodeGenerator {
             }
             UserDefinedTypeData::Enum(enum_data) => {
                 if let CoreIdentifierInUseNode::Ok(ok_variant_name) = property_name.core_ref() {
-                    let variant_name_str =
-                        ok_variant_name.token_value(&self.code_handler, &self.semantic_db.interner);
+                    let variant_name_str = ok_variant_name
+                        .token_value(&self.code_handler, self.semantic_db.interner());
                     if let Some(index) = enum_data.try_index_for_variant(variant_name_str) {
                         self.print_identifier_in_use(ty_name, is_trivia);
                         self.add_str_to_python_code(&format!("(index={}", index));
@@ -406,7 +409,7 @@ impl PythonCodeGenerator {
             let variant_name = &core_case_branch.variant_name;
             if let CoreIdentifierInDeclNode::Ok(ok_variant_name) = variant_name.core_ref() {
                 let variant_name_str =
-                    ok_variant_name.token_value(&self.code_handler, &mut self.semantic_db.interner);
+                    ok_variant_name.token_value(&self.code_handler, self.semantic_db.interner());
                 let index = match symbol_index {
                     Some(symbol_index) => self
                         .semantic_db
@@ -610,7 +613,7 @@ impl Visitor for PythonCodeGenerator {
                     let variable_non_locals = self.get_non_locals(block);
                     for variable_name in variable_non_locals.iter() {
                         let mangled_variable_name =
-                            variable_name.to_string(VAR_SUFFIX, &self.semantic_db.interner);
+                            variable_name.to_string(VAR_SUFFIX, self.semantic_db.interner());
                         nonlocal_strs.push(format!(
                             "{}nonlocal {}\n",
                             get_whitespaces_from_indent_level(self.indent_level),

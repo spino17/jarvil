@@ -183,12 +183,12 @@ pub struct TypeChecker {
     errors: UnsafeCell<Vec<Diagnostics>>,
     context: Context,
     non_struct_methods_handler: NonStructMethodsHandler,
-    pub semantic_db: SemanticStateDatabase,
+    semantic_db: SemanticStateDatabase,
 }
 
 impl TypeChecker {
     pub fn new(code_handler: JarvilCodeHandler, mut semantic_db: SemanticStateDatabase) -> Self {
-        let non_struct_methods_handler = NonStructMethodsHandler::new(&mut semantic_db.interner);
+        let non_struct_methods_handler = NonStructMethodsHandler::new(semantic_db.interner());
         TypeChecker {
             code_handler,
             errors: UnsafeCell::new(vec![]),
@@ -196,6 +196,10 @@ impl TypeChecker {
             non_struct_methods_handler,
             semantic_db,
         }
+    }
+
+    pub fn semantic_db(&self) -> &SemanticStateDatabase {
+        &self.semantic_db
     }
 
     pub fn log_error(&self, err: Diagnostics) {
@@ -228,7 +232,7 @@ impl TypeChecker {
 
     pub fn is_resolved(&self, node: &OkIdentifierInDeclNode) -> bool {
         self.semantic_db
-            .identifier_in_decl_binding_table
+            .identifier_in_decl_binding_table_ref()
             .get(node)
             .is_some()
     }
@@ -399,7 +403,7 @@ impl TypeChecker {
         r_type: &Type,
         operator_kind: &BinaryOperatorKind,
     ) -> Option<Type> {
-        l_type.check_operator(r_type, operator_kind, &self.semantic_db.namespace)
+        l_type.check_operator(r_type, operator_kind, self.semantic_db.namespace_ref())
     }
 
     pub fn infer_concrete_types_from_arguments(
@@ -438,15 +442,21 @@ impl TypeChecker {
                     global_concrete_types,
                     &mut num_inferred_types,
                     inference_category,
-                    &self.semantic_db.namespace,
+                    self.semantic_db.namespace_ref(),
                 );
                 if let Err(()) = inference_result {
                     return Err(PrototypeEquivalenceCheckError::TypeInferenceFailed);
                 }
-            } else if !param_ty.is_eq(expected_ty, &self.semantic_db.namespace) {
+            } else if !param_ty.is_eq(expected_ty, self.semantic_db.namespace_ref()) {
                 mismatch_types_vec.push((
-                    expected_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
-                    param_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    expected_ty.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
+                    param_ty.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
                     index + 1,
                     received_param.range(),
                 ));
@@ -481,12 +491,17 @@ impl TypeChecker {
         for (index, inferred_ty) in unpacked_inferred_concrete_types.iter().enumerate() {
             let interface_bounds = &generic_type_decls.0[index].1;
             if !inferred_ty
-                .is_type_bounded_by_interfaces(interface_bounds, &self.semantic_db.namespace)
+                .is_type_bounded_by_interfaces(interface_bounds, self.semantic_db.namespace_ref())
             {
                 error_strs.push((
-                    inferred_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
-                    interface_bounds
-                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    inferred_ty.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
+                    interface_bounds.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
                 ));
             }
         }
@@ -530,12 +545,16 @@ impl TypeChecker {
                 ));
             }
             let expected_param_type = &expected_param_data[index];
-            if !param_type_obj.is_eq(expected_param_type, &self.semantic_db.namespace) {
+            if !param_type_obj.is_eq(expected_param_type, self.semantic_db.namespace_ref()) {
                 mismatch_types_vec.push((
-                    expected_param_type
-                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
-                    param_type_obj
-                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    expected_param_type.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
+                    param_type_obj.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
                     index + 1,
                     received_param.range(),
                 ));
@@ -573,7 +592,7 @@ impl TypeChecker {
                 let concrete_prototype = func_data.prototype.concretize_prototype(
                     None,
                     Some(concrete_types),
-                    &self.semantic_db.namespace,
+                    self.semantic_db.namespace_ref(),
                 );
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
@@ -613,7 +632,7 @@ impl TypeChecker {
                 let concrete_return_ty = if unconcrete_return_ty.is_concretization_required() {
                     unconcrete_return_ty.concretize(
                         &ConcretizationContext::new(None, Some(&concrete_types)),
-                        &self.semantic_db.namespace,
+                        self.semantic_db.namespace_ref(),
                     )
                 } else {
                     unconcrete_return_ty.clone()
@@ -639,7 +658,10 @@ impl TypeChecker {
                 Ok(return_ty)
             }
             _ => Err(AtomStartTypeCheckError::IdentifierNotCallable(
-                lambda_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                lambda_type.to_string(
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
+                ),
             )),
         }
     }
@@ -666,7 +688,7 @@ impl TypeChecker {
                 let concrete_prototype = constructor_meta_data.prototype.concretize_prototype(
                     Some(concrete_types),
                     None,
-                    &self.semantic_db.namespace,
+                    self.semantic_db.namespace_ref(),
                 );
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
@@ -749,7 +771,7 @@ impl TypeChecker {
             }
             ConcreteSymbolDataEntry::Type(concrete_symbol_index) => {
                 let name =
-                    ok_identifier.token_value(&self.code_handler, &self.semantic_db.interner);
+                    ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
                 self.check_user_defined_ty_call_expr(name, &concrete_symbol_index, params)
             }
             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
@@ -760,7 +782,7 @@ impl TypeChecker {
                 match err {
                     AtomStartTypeCheckError::ConstructorNotFoundForTypeError(struct_name) => {
                         let err = ConstructorNotFoundForTypeError::new(
-                            self.semantic_db.interner.lookup(struct_name),
+                            self.semantic_db.interner().lookup(struct_name),
                             func_name.range(),
                         );
                         self.log_error(Diagnostics::ConstructorNotFoundForType(err));
@@ -809,7 +831,7 @@ impl TypeChecker {
             }
         };
         let class_method_name =
-            property_name.token_value(&self.code_handler, &self.semantic_db.interner);
+            property_name.token_value(&self.code_handler, self.semantic_db.interner());
         match struct_data.try_class_method(&class_method_name, concrete_types.as_ref()) {
             Some((partial_concrete_callable_data, _)) => {
                 let (concrete_types, ty_ranges, _) =
@@ -849,7 +871,7 @@ impl TypeChecker {
             }
             None => {
                 let err = ClassmethodDoesNotExistError::new(
-                    self.semantic_db.interner.lookup(ty_name),
+                    self.semantic_db.interner().lookup(ty_name),
                     property_name.range(),
                 );
                 self.log_error(Diagnostics::ClassmethodDoesNotExist(err));
@@ -874,7 +896,7 @@ impl TypeChecker {
             return Type::new_with_unknown();
         };
         let variant_name =
-            property_name.token_value(&self.code_handler, &self.semantic_db.interner);
+            property_name.token_value(&self.code_handler, self.semantic_db.interner());
         if property_name.core_ref().generic_type_args.is_some() {
             let err = GenericTypeArgsNotExpectedError::new(
                 IdentifierKind::Variant,
@@ -887,7 +909,7 @@ impl TypeChecker {
         match enum_data.try_type_for_variant(
             variant_name,
             concrete_types.as_ref(),
-            &self.semantic_db.namespace,
+            self.semantic_db.namespace_ref(),
         ) {
             Some(expected_ty) => match params {
                 Some((_, params, rparen)) => match params {
@@ -909,15 +931,15 @@ impl TypeChecker {
                                 return Type::new_with_unknown();
                             }
                             let expr_ty = self.check_expr(expr);
-                            if !expr_ty.is_eq(&expected_ty, &self.semantic_db.namespace) {
+                            if !expr_ty.is_eq(&expected_ty, self.semantic_db.namespace_ref()) {
                                 let err = IncorrectExpressionTypeError::new(
                                     expected_ty.to_string(
-                                        &self.semantic_db.interner,
-                                        &self.semantic_db.namespace,
+                                        self.semantic_db.interner(),
+                                        self.semantic_db.namespace_ref(),
                                     ),
                                     expr_ty.to_string(
-                                        &self.semantic_db.interner,
-                                        &self.semantic_db.namespace,
+                                        self.semantic_db.interner(),
+                                        self.semantic_db.namespace_ref(),
                                     ),
                                     expr.range(),
                                 );
@@ -927,7 +949,7 @@ impl TypeChecker {
                         }
                         None => {
                             let err = UnexpectedValueProvidedToEnumVariantError::new(
-                                self.semantic_db.interner.lookup(variant_name).to_string(),
+                                self.semantic_db.interner().lookup(variant_name).to_string(),
                                 params.range(),
                             );
                             self.log_error(Diagnostics::UnexpectedValueProvidedToEnumVariant(err));
@@ -951,8 +973,10 @@ impl TypeChecker {
                 None => {
                     if let Some(expected_ty) = expected_ty {
                         let err = ExpectedValueForEnumVariantError::new(
-                            expected_ty
-                                .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                            expected_ty.to_string(
+                                self.semantic_db.interner(),
+                                self.semantic_db.namespace_ref(),
+                            ),
                             property_name.range(),
                         );
                         self.log_error(Diagnostics::ExpectedValueForEnumVariant(err));
@@ -962,7 +986,7 @@ impl TypeChecker {
             },
             None => {
                 let err = EnumVariantDoesNotExistError::new(
-                    self.semantic_db.interner.lookup(ty_name).to_string(),
+                    self.semantic_db.interner().lookup(ty_name).to_string(),
                     property_name.range(),
                 );
                 self.log_error(Diagnostics::EnumVariantDoesNotExist(err));
@@ -984,7 +1008,7 @@ impl TypeChecker {
         let CoreIdentifierInUseNode::Ok(ok_identifier) = ty.core_ref() else {
             return Type::new_with_unknown();
         };
-        let ty_name = ok_identifier.token_value(&self.code_handler, &self.semantic_db.interner);
+        let ty_name = ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
         match self
             .semantic_db
             .get_ty_symbol_for_identifier_in_use(ok_identifier)
@@ -1109,7 +1133,7 @@ impl TypeChecker {
             return (Type::new_with_unknown(), Some(atom_type_obj));
         }
         let property_name_str =
-            ok_identifier.token_value(&self.code_handler, &self.semantic_db.interner);
+            ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
         let result = match atom_type_obj.0.as_ref() {
             CoreType::Struct(struct_ty) => {
                 let concrete_types = &struct_ty.concrete_types;
@@ -1118,14 +1142,16 @@ impl TypeChecker {
                 match struct_data.try_field(
                     &property_name_str,
                     concrete_types.as_ref(),
-                    &self.semantic_db.namespace,
+                    self.semantic_db.namespace_ref(),
                 ) {
                     Some((type_obj, _)) => Ok(type_obj),
                     None => Err(Diagnostics::PropertyDoesNotExist(
                         PropertyDoesNotExistError::new(
                             PropertyKind::Field,
-                            atom_type_obj
-                                .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                            atom_type_obj.to_string(
+                                self.semantic_db.interner(),
+                                self.semantic_db.namespace_ref(),
+                            ),
                             property.range(),
                             atom.range(),
                         ),
@@ -1137,8 +1163,8 @@ impl TypeChecker {
                 let generic_data = ty_data.get_generic_data_ref();
                 match generic_data.try_field(
                     &property_name_str,
-                    &self.semantic_db.interner,
-                    &self.semantic_db.namespace,
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
                 ) {
                     GenericTypePropertyQueryResult::Ok((type_obj, _)) => Ok(type_obj),
                     GenericTypePropertyQueryResult::AmbigiousPropertyResolution(
@@ -1153,8 +1179,10 @@ impl TypeChecker {
                     GenericTypePropertyQueryResult::None => Err(Diagnostics::PropertyDoesNotExist(
                         PropertyDoesNotExistError::new(
                             PropertyKind::Field,
-                            atom_type_obj
-                                .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                            atom_type_obj.to_string(
+                                self.semantic_db.interner(),
+                                self.semantic_db.namespace_ref(),
+                            ),
                             property.range(),
                             atom.range(),
                         ),
@@ -1164,8 +1192,10 @@ impl TypeChecker {
             _ => Err(Diagnostics::PropertyDoesNotExist(
                 PropertyDoesNotExistError::new(
                     PropertyKind::Field,
-                    atom_type_obj
-                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    atom_type_obj.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
                     property.range(),
                     atom.range(),
                 ),
@@ -1191,7 +1221,7 @@ impl TypeChecker {
         // This is in sync with what Python does.
 
         let method_name =
-            method_name_ok_identifier.token_value(&self.code_handler, &self.semantic_db.interner);
+            method_name_ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
         let concrete_types = &struct_ty.concrete_types;
         let ty_data = self.semantic_db.get_ty_symbol_ref(struct_ty.symbol_index);
         let struct_data = ty_data.get_struct_data_ref();
@@ -1199,7 +1229,7 @@ impl TypeChecker {
         match struct_data.try_field(
             &method_name,
             concrete_types.as_ref(),
-            &self.semantic_db.namespace,
+            self.semantic_db.namespace_ref(),
         ) {
             Some((propetry_ty, _)) => {
                 if method_name_ok_identifier
@@ -1251,14 +1281,14 @@ impl TypeChecker {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
         let method_name =
-            method_name_ok_identifier.token_value(&self.code_handler, &self.semantic_db.interner);
+            method_name_ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
         let ty_data = self.semantic_db.get_ty_symbol_ref(generic_ty.symbol_index);
         let generic_data = ty_data.get_generic_data_ref();
         let interface_bounds = &generic_data.interface_bounds;
         match generic_data.try_field(
             &method_name,
-            &self.semantic_db.interner,
-            &self.semantic_db.namespace,
+            self.semantic_db.interner(),
+            self.semantic_db.namespace_ref(),
         ) {
             GenericTypePropertyQueryResult::Ok((propetry_ty, _)) => {
                 if method_name_ok_identifier
@@ -1290,8 +1320,8 @@ impl TypeChecker {
                 // if field is not there then check in methods
                 match generic_data.has_method(
                     &method_name,
-                    &self.semantic_db.interner,
-                    &self.semantic_db.namespace,
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
                 ) {
                     GenericTypePropertyQueryResult::Ok(interface_index) => {
                         let interface_obj =
@@ -1342,7 +1372,7 @@ impl TypeChecker {
         let Some(prototype) = self.non_struct_methods_handler.try_method_for_array(
             array_ty,
             &method_name,
-            &self.semantic_db.namespace,
+            self.semantic_db.namespace_ref(),
         ) else {
             return Err(MethodAccessTypeCheckError::MethodNotFound);
         };
@@ -1371,7 +1401,7 @@ impl TypeChecker {
         let Some(prototype) = self.non_struct_methods_handler.try_method_for_hashmap(
             hashmap_ty,
             &method_name,
-            &self.semantic_db.namespace,
+            self.semantic_db.namespace_ref(),
         ) else {
             return Err(MethodAccessTypeCheckError::MethodNotFound);
         };
@@ -1421,8 +1451,10 @@ impl TypeChecker {
                     MethodAccessTypeCheckError::MethodNotFound => {
                         let err = PropertyDoesNotExistError::new(
                             PropertyKind::Method,
-                            atom_type_obj
-                                .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                            atom_type_obj.to_string(
+                                self.semantic_db.interner(),
+                                self.semantic_db.namespace_ref(),
+                            ),
                             method.range(),
                             atom.range(),
                         );
@@ -1430,7 +1462,10 @@ impl TypeChecker {
                     }
                     MethodAccessTypeCheckError::FieldNotCallable(ty) => {
                         let err = FieldNotCallableError::new(
-                            ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                            ty.to_string(
+                                self.semantic_db.interner(),
+                                self.semantic_db.namespace_ref(),
+                            ),
                             ok_identifier.range(),
                         );
                         self.log_error(Diagnostics::FieldNotCallable(err));
@@ -1535,7 +1570,7 @@ impl TypeChecker {
             },
             CoreType::HashMap(hashmap_data) => {
                 // TODO - instead of having `is_hashable` check, replace it with `is_type_bounded_by` `Hash` interface
-                if index_type_obj.is_eq(&hashmap_data.key_type, &self.semantic_db.namespace)
+                if index_type_obj.is_eq(&hashmap_data.key_type, self.semantic_db.namespace_ref())
                     && index_type_obj.is_hashable()
                 {
                     Some(hashmap_data.value_type.clone())
@@ -1557,10 +1592,14 @@ impl TypeChecker {
             Some(ty) => (ty, Some(atom_type_obj)),
             None => {
                 let err = ExpressionIndexingNotValidError::new(
-                    atom_type_obj
-                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
-                    index_type_obj
-                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    atom_type_obj.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
+                    index_type_obj.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
                     atom.range(),
                     index_expr.range(),
                 );
@@ -1633,11 +1672,16 @@ impl TypeChecker {
 
         for expr in initials_iter {
             let ty = self.check_expr(expr);
-            if !ty.is_eq(&first_expr_ty, &self.semantic_db.namespace) {
+            if !ty.is_eq(&first_expr_ty, self.semantic_db.namespace_ref()) {
                 let err = IncorrectExpressionTypeError::new(
-                    first_expr_ty
-                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
-                    ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    first_expr_ty.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
+                    ty.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
                     expr.range(),
                 );
                 self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -1669,19 +1713,30 @@ impl TypeChecker {
             let core_key_value_pair = key_value_pair.core_ref();
             let key_ty = self.check_expr(&core_key_value_pair.key_expr);
             let value_ty = self.check_expr(&core_key_value_pair.value_expr);
-            if !key_ty.is_eq(&first_key_ty, &self.semantic_db.namespace) {
+            if !key_ty.is_eq(&first_key_ty, self.semantic_db.namespace_ref()) {
                 let err = IncorrectExpressionTypeError::new(
-                    first_key_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
-                    key_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    first_key_ty.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
+                    key_ty.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
                     core_key_value_pair.key_expr.range(),
                 );
                 self.log_error(Diagnostics::IncorrectExpressionType(err));
             }
-            if !value_ty.is_eq(&first_value_ty, &self.semantic_db.namespace) {
+            if !value_ty.is_eq(&first_value_ty, self.semantic_db.namespace_ref()) {
                 let err = IncorrectExpressionTypeError::new(
-                    first_value_ty
-                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
-                    value_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    first_value_ty.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
+                    value_ty.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
                     core_key_value_pair.value_expr.range(),
                 );
                 self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -1743,8 +1798,10 @@ impl TypeChecker {
                     operand_type
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
-                        operand_type
-                            .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                        operand_type.to_string(
+                            self.semantic_db.interner(),
+                            self.semantic_db.namespace_ref(),
+                        ),
                         "numeric (`int`, `float`)",
                         "`+` or `-`",
                         unary_expr.range(),
@@ -1759,8 +1816,10 @@ impl TypeChecker {
                     operand_type
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
-                        operand_type
-                            .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                        operand_type.to_string(
+                            self.semantic_db.interner(),
+                            self.semantic_db.namespace_ref(),
+                        ),
                         "boolean",
                         "`not`",
                         unary_expr.range(),
@@ -1794,8 +1853,14 @@ impl TypeChecker {
             Some(type_obj) => type_obj,
             None => {
                 let err = BinaryOperatorInvalidOperandsError::new(
-                    l_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
-                    r_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    l_type.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
+                    r_type.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
                     left_expr.range(),
                     right_expr.range(),
                     operator.range(),
@@ -1834,8 +1899,14 @@ impl TypeChecker {
                 },
                 None => {
                     let err = BinaryOperatorInvalidOperandsError::new(
-                        l_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
-                        r_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                        l_type.to_string(
+                            self.semantic_db.interner(),
+                            self.semantic_db.namespace_ref(),
+                        ),
+                        r_type.to_string(
+                            self.semantic_db.interner(),
+                            self.semantic_db.namespace_ref(),
+                        ),
                         left_expr.range(),
                         right_expr.range(),
                         operator.range(),
@@ -1872,8 +1943,8 @@ impl TypeChecker {
                         if interior_atom_type.is_immutable() {
                             let err = ImmutableTypeNotAssignableError::new(
                                 interior_atom_type.to_string(
-                                    &self.semantic_db.interner,
-                                    &self.semantic_db.namespace,
+                                    self.semantic_db.interner(),
+                                    self.semantic_db.namespace_ref(),
                                 ),
                                 l_index_expr.core_ref().atom.range(),
                             );
@@ -1898,10 +1969,16 @@ impl TypeChecker {
             self.log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
             return;
         }
-        if !l_type.is_eq(&r_type, &self.semantic_db.namespace) {
+        if !l_type.is_eq(&r_type, self.semantic_db.namespace_ref()) {
             let err = MismatchedTypesOnLeftRightError::new(
-                l_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
-                r_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                l_type.to_string(
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
+                ),
+                r_type.to_string(
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
+                ),
                 range,
                 r_assign.range(),
             );
@@ -1937,10 +2014,16 @@ impl TypeChecker {
             self.semantic_db
                 .get_variable_symbol_mut_ref(symbol_index)
                 .set_data_type(&r_type);
-        } else if !variable_ty.is_eq(&r_type, &self.semantic_db.namespace) {
+        } else if !variable_ty.is_eq(&r_type, self.semantic_db.namespace_ref()) {
             let err = RightSideExpressionTypeMismatchedWithTypeFromAnnotationError::new(
-                variable_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
-                r_type.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                variable_ty.to_string(
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
+                ),
+                r_type.to_string(
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
+                ),
                 core_variable_decl.name.range(),
                 r_variable_decl.range(),
             );
@@ -2043,11 +2126,16 @@ impl TypeChecker {
             self.log_error(Diagnostics::ExplicitReturnStatementFoundInConstructorBody(
                 err,
             ));
-        } else if !expr_type_obj.is_eq(expected_type_obj, &self.semantic_db.namespace) {
+        } else if !expr_type_obj.is_eq(expected_type_obj, self.semantic_db.namespace_ref()) {
             let err = MismatchedReturnTypeError::new(
-                expected_type_obj
-                    .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
-                expr_type_obj.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                expected_type_obj.to_string(
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
+                ),
+                expr_type_obj.to_string(
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
+                ),
                 core_return_stmt.return_keyword.range(),
             );
             self.log_error(Diagnostics::MismatchedReturnType(err));
@@ -2086,16 +2174,18 @@ impl TypeChecker {
             if let Err((missing_interface_method_names, errors)) =
                 partial_concrete_interface_methods.is_struct_implements_interface_methods(
                     struct_methods,
-                    &self.semantic_db.namespace,
+                    self.semantic_db.namespace_ref(),
                 )
             {
                 let err = InterfaceMethodsInStructCheckError::new(
                     missing_interface_method_names,
                     errors,
-                    interface_obj
-                        .to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                    interface_obj.to_string(
+                        self.semantic_db.interner(),
+                        self.semantic_db.namespace_ref(),
+                    ),
                     *range,
-                    &self.semantic_db.interner,
+                    self.semantic_db.interner(),
                 );
                 self.log_error(Diagnostics::InterfaceMethodsInStructCheck(err));
             }
@@ -2109,7 +2199,10 @@ impl TypeChecker {
         if !ty.is_bool() {
             let err = IncorrectExpressionTypeError::new(
                 "bool".to_string(),
-                ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                ty.to_string(
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
+                ),
                 condition_expr.range(),
             );
             self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -2137,7 +2230,10 @@ impl TypeChecker {
         let CoreType::Enum(enum_ty) = expr_ty.0.as_ref() else {
             let err = IncorrectExpressionTypeError::new(
                 "<enum>".to_string(),
-                expr_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                expr_ty.to_string(
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
+                ),
                 expr.range(),
             );
             self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -2169,11 +2265,11 @@ impl TypeChecker {
             let enum_name = &core_case_branch.enum_name;
             if let CoreIdentifierInDeclNode::Ok(enum_name) = enum_name.core_ref() {
                 let enum_name_str =
-                    enum_name.token_value(&self.code_handler, &self.semantic_db.interner);
+                    enum_name.token_value(&self.code_handler, self.semantic_db.interner());
                 if expr_enum_name != enum_name_str {
                     let err = IncorrectEnumNameError::new(
-                        self.semantic_db.interner.lookup(expr_enum_name),
-                        self.semantic_db.interner.lookup(enum_name_str),
+                        self.semantic_db.interner().lookup(expr_enum_name),
+                        self.semantic_db.interner().lookup(enum_name_str),
                         enum_name.range(),
                     );
                     self.log_error(Diagnostics::IncorrectEnumName(err));
@@ -2182,11 +2278,11 @@ impl TypeChecker {
                     let variant_name = &core_case_branch.variant_name;
                     if let CoreIdentifierInDeclNode::Ok(variant_name) = variant_name.core_ref() {
                         let variant_name_str = variant_name
-                            .token_value(&self.code_handler, &self.semantic_db.interner);
+                            .token_value(&self.code_handler, self.semantic_db.interner());
                         match enum_data.try_type_for_variant(
                             variant_name_str,
                             concrete_types.as_ref(),
-                            &self.semantic_db.namespace,
+                            self.semantic_db.namespace_ref(),
                         ) {
                             Some(expected_ty) => {
                                 checked_variants.insert(variant_name_str);
@@ -2214,7 +2310,7 @@ impl TypeChecker {
                                                 let err =
                                                     UnexpectedValueProvidedToEnumVariantError::new(
                                                         self.semantic_db
-                                                            .interner
+                                                            .interner()
                                                             .lookup(variant_name_str)
                                                             .to_string(),
                                                         variable_name.range(),
@@ -2227,8 +2323,8 @@ impl TypeChecker {
                                         if let Some(expected_ty) = expected_ty {
                                             let err = ExpectedValueForEnumVariantError::new(
                                                 expected_ty.to_string(
-                                                    &self.semantic_db.interner,
-                                                    &self.semantic_db.namespace,
+                                                    self.semantic_db.interner(),
+                                                    self.semantic_db.namespace_ref(),
                                                 ),
                                                 variant_name.range(),
                                             );
@@ -2241,7 +2337,10 @@ impl TypeChecker {
                             }
                             None => {
                                 let err = EnumVariantDoesNotExistError::new(
-                                    self.semantic_db.interner.lookup(enum_name_str).to_string(),
+                                    self.semantic_db
+                                        .interner()
+                                        .lookup(enum_name_str)
+                                        .to_string(),
                                     variant_name.range(),
                                 );
                                 self.log_error(Diagnostics::EnumVariantDoesNotExist(err));
@@ -2263,10 +2362,13 @@ impl TypeChecker {
         }
         if !missing_variants.is_empty() {
             let err = EnumVariantsMissingFromMatchCaseStatementError::new(
-                self.semantic_db.interner.lookup(expr_enum_name).to_string(),
+                self.semantic_db
+                    .interner()
+                    .lookup(expr_enum_name)
+                    .to_string(),
                 missing_variants,
                 expr.range(),
-                &self.semantic_db.interner,
+                self.semantic_db.interner(),
             );
             self.log_error(Diagnostics::EnumVariantsMissingFromMatchCaseStatement(err));
         }
@@ -2274,7 +2376,7 @@ impl TypeChecker {
         // set the symbol_index to enum_name nodes
         for enum_name in enum_name_decls {
             self.semantic_db
-                .identifier_in_decl_binding_table
+                .identifier_in_decl_binding_table_mut_ref()
                 .insert(enum_name, SymbolDataEntry::Type(enum_ty.symbol_index));
         }
 
@@ -2298,7 +2400,10 @@ impl TypeChecker {
         if !ty.is_bool() {
             let err = IncorrectExpressionTypeError::new(
                 "bool".to_string(),
-                ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                ty.to_string(
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
+                ),
                 condition_expr.range(),
             );
             self.log_error(Diagnostics::IncorrectExpressionType(err));
@@ -2347,7 +2452,10 @@ impl TypeChecker {
             };
         } else {
             let err = NonIterableExpressionError::new(
-                iterable_expr_ty.to_string(&self.semantic_db.interner, &self.semantic_db.namespace),
+                iterable_expr_ty.to_string(
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
+                ),
                 iterable_expr.range(),
             );
             self.log_error(Diagnostics::NonIterableExpression(err));
@@ -2462,8 +2570,8 @@ impl TypeChecker {
                     range,
                     err_strs,
                     concrete_types,
-                    &self.semantic_db.interner,
-                    &self.semantic_db.namespace,
+                    self.semantic_db.interner(),
+                    self.semantic_db.namespace_ref(),
                 );
                 self.log_error(Diagnostics::InferredTypesNotBoundedByInterfaces(err));
             }

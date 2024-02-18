@@ -61,7 +61,7 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
     errors.append(&mut semantic_errors);
 
     // TODO - remove this after testing
-    let ast_str = json_serialize_ast(&ast, &code_handler, &semantic_db.interner).unwrap();
+    let ast_str = json_serialize_ast(&ast, &code_handler, semantic_db.interner()).unwrap();
     fs::write("ast.json", ast_str).unwrap();
 
     // type-checker

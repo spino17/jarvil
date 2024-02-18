@@ -1202,10 +1202,9 @@ impl TypeExpressionNode {
         has_generics: &mut bool,
     ) -> TypeResolveKind {
         match self.core_ref() {
-            CoreTypeExpressionNode::Atomic(atomic) => atomic.type_obj_before_resolved(
-                &resolver.code_handler,
-                &mut resolver.semantic_db.interner,
-            ),
+            CoreTypeExpressionNode::Atomic(atomic) => {
+                atomic.type_obj_before_resolved(resolver.code_handler(), resolver.interner())
+            }
             CoreTypeExpressionNode::Array(array) => {
                 array.type_obj_before_resolved(resolver, scope_index, has_generics)
             }
