@@ -72,7 +72,7 @@ impl InterfaceData {
         self.methods.has_method(method_name)
     }
 
-    pub fn get_partially_concrete_interface_methods<'a>(
+    pub fn partially_concrete_interface_methods<'a>(
         &'a self,
         key: Option<&'a ConcreteTypesTuple>,
     ) -> PartialConcreteInterfaceMethods {
@@ -111,7 +111,7 @@ impl InterfaceObject {
         &self.0.as_ref().1
     }
 
-    pub fn get_core_ref(&self) -> &(StrId, ConcreteSymbolIndex<InterfaceData>) {
+    pub fn core_ref(&self) -> &(StrId, ConcreteSymbolIndex<InterfaceData>) {
         self.0.as_ref()
     }
 
@@ -344,11 +344,11 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
             Option<Vec<(&StrId, PartialConcreteInterfaceMethodsCheckError)>>,
         ),
     > {
-        let struct_methods_map_ref = struct_methods.get_methods_ref();
+        let struct_methods_map_ref = struct_methods.methods_ref();
         let mut missing_interface_method_names: Vec<&StrId> = vec![];
         let mut errors: Vec<(&StrId, PartialConcreteInterfaceMethodsCheckError)> = vec![];
         for (interface_method_name, (interface_method_callable_data, _)) in
-            self.methods.get_methods_ref()
+            self.methods.methods_ref()
         {
             match struct_methods_map_ref.get(interface_method_name) {
                 Some((struct_method_callable_data, range)) => {
@@ -391,7 +391,7 @@ impl AbstractSymbol for InterfaceSymbolData {
         self.0
     }
 
-    fn get_entry(&self) -> SymbolDataEntry {
+    fn entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Interface(self.0)
     }
 
@@ -404,7 +404,7 @@ impl AbstractSymbol for InterfaceSymbolData {
         namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(!is_concrete_types_none_allowed);
-        let interface_data = namespace.interfaces_ref().get_symbol_ref(self.0).data_ref();
+        let interface_data = namespace.interfaces_ref().symbol_ref(self.0).data_ref();
         let generic_type_decls = interface_data.generics();
         check_concrete_types_bounded_by_interfaces(
             generic_type_decls,
@@ -416,7 +416,7 @@ impl AbstractSymbol for InterfaceSymbolData {
         )
     }
 
-    fn get_mangled_name(&self, _namespace: &Namespace) -> MangledIdentifierName<InterfaceData> {
+    fn mangled_name(&self, _namespace: &Namespace) -> MangledIdentifierName<InterfaceData> {
         unreachable!()
     }
 }

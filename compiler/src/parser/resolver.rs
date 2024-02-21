@@ -184,7 +184,7 @@ impl Resolver {
             .get(self.scope_index, self.semantic_db.interner().intern("main"))
         {
             Some(symbol_index) => {
-                let func_meta_data = self.semantic_db.get_function_symbol_ref(symbol_index);
+                let func_meta_data = self.semantic_db.function_symbol_ref(symbol_index);
                 let prototype = func_meta_data.concretized_prototype(
                     None,
                     None,
@@ -247,7 +247,7 @@ impl Resolver {
         self.context.class_context_stack[len - 1].is_containing_self = value;
     }
 
-    pub fn get_curr_class_context_is_containing_self(&self) -> bool {
+    pub fn curr_class_context_is_containing_self(&self) -> bool {
         let len = self.context.class_context_stack.len();
         self.context.class_context_stack[len - 1].is_containing_self
     }
@@ -283,9 +283,7 @@ impl Resolver {
         }
     }
 
-    pub fn get_enclosing_generics_declarative_scope_index(
-        &self,
-    ) -> (ScopeIndex, Option<ScopeIndex>) {
+    pub fn enclosing_generics_declarative_scope_index(&self) -> (ScopeIndex, Option<ScopeIndex>) {
         // (enclosing_scope, enclosing_class_scope `if enclosing scope is method`)
         let mut index = self.context.block_context_stack.len() - 1;
         loop {
@@ -331,7 +329,7 @@ impl Resolver {
             self.semantic_db.namespace_ref(),
         )?;
         let concrete_symbol_entry =
-            ConcreteSymbolDataEntry::new(symbol_obj.get_entry(), concrete_types.clone());
+            ConcreteSymbolDataEntry::new(symbol_obj.entry(), concrete_types.clone());
         self.semantic_db
             .identifier_in_use_binding_table_mut_ref()
             .insert(node.clone(), concrete_symbol_entry);
@@ -509,7 +507,7 @@ impl Resolver {
         );
         match result {
             Ok(symbol_obj) => {
-                self.bind_decl_to_identifier_in_decl(identifier, symbol_obj.get_entry());
+                self.bind_decl_to_identifier_in_decl(identifier, symbol_obj.entry());
                 Ok(symbol_obj)
             }
             Err(err) => Err(err),
@@ -626,7 +624,7 @@ impl Resolver {
             LookupResult::Ok(lookup_data) => {
                 let symbol_obj = lookup_data.symbol_obj;
                 let resolved_scope_index = symbol_obj.0.scope_index();
-                let ty_kind = self.semantic_db.get_ty_symbol_ref(symbol_obj.0).get_kind();
+                let ty_kind = self.semantic_db.ty_symbol_ref(symbol_obj.0).kind();
                 let result = match ty_kind {
                     UserDefineTypeKind::Struct => {
                         match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
@@ -692,7 +690,7 @@ impl Resolver {
                         // NOTE: generic types are only allowed to be resolved inside local scope (of function, method, struct etc.)
                         // This kind of check is similiar to how `Rust` programming language expects generic type resolution.
                         let (expected_scope_index, possible_expected_class_scope_index) =
-                            self.get_enclosing_generics_declarative_scope_index();
+                            self.enclosing_generics_declarative_scope_index();
                         let result = if resolved_scope_index != expected_scope_index {
                             match possible_expected_class_scope_index {
                                 Some(class_scope_index) => {
@@ -937,10 +935,7 @@ impl Resolver {
                     unique_id,
                 ) {
                 Ok(symbol_obj) => {
-                    self.bind_decl_to_identifier_in_decl(
-                        ok_identifier_in_decl,
-                        symbol_obj.get_entry(),
-                    );
+                    self.bind_decl_to_identifier_in_decl(ok_identifier_in_decl, symbol_obj.entry());
                     generic_type_params_vec.push((
                         generic_ty_name,
                         interface_bounds,
@@ -1049,7 +1044,7 @@ impl Resolver {
                     );
                 match result {
                     Ok(symbol_obj) => {
-                        self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_obj.get_entry());
+                        self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_obj.entry());
                         if param_ty_has_generics {
                             generics_containing_params_indexes.push(param_types_vec.len());
                         }
@@ -1111,7 +1106,7 @@ impl Resolver {
             .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
         if let Some(symbol_obj) = symbol_obj {
             self.semantic_db
-                .get_function_symbol_mut_ref(symbol_obj.symbol_index())
+                .function_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_generics(generic_type_decls);
         }
         for stmt in &callable_body.0.as_ref().stmts {
@@ -1257,7 +1252,7 @@ impl Resolver {
                 // enable recursive definitions
                 if let Some(symbol_obj) = &symbol_obj {
                     self.semantic_db
-                        .get_variable_symbol_mut_ref(symbol_obj.symbol_index())
+                        .variable_symbol_mut_ref(symbol_obj.symbol_index())
                         .set_is_init(true);
                 }
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
@@ -1286,7 +1281,7 @@ impl Resolver {
                 };
                 if let Some(symbol_obj) = &symbol_obj {
                     self.semantic_db
-                        .get_variable_symbol_mut_ref(symbol_obj.symbol_index())
+                        .variable_symbol_mut_ref(symbol_obj.symbol_index())
                         .set_data_type(&final_variable_ty);
                 }
             }
@@ -1296,11 +1291,11 @@ impl Resolver {
                     match ty_from_optional_annotation {
                         Some((ty, _)) => self
                             .semantic_db
-                            .get_variable_symbol_mut_ref(symbol_obj.symbol_index())
+                            .variable_symbol_mut_ref(symbol_obj.symbol_index())
                             .set_data_type_from_optional_annotation(ty),
                         None => {
                             self.semantic_db
-                                .get_variable_symbol_mut_ref(symbol_obj.symbol_index())
+                                .variable_symbol_mut_ref(symbol_obj.symbol_index())
                                 .set_is_init(true);
                         }
                     }
@@ -1335,7 +1330,7 @@ impl Resolver {
             self.visit_callable_body(body, optional_ok_identifier_node, &symbol_obj);
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_function_symbol_mut_ref(symbol_obj.symbol_index())
+                .function_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_meta_data(
                     param_types_vec,
                     return_type,
@@ -1439,8 +1434,8 @@ impl Resolver {
         }
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_ty_symbol_mut_ref(symbol_obj.0)
-                .get_struct_data_mut_ref()
+                .ty_symbol_mut_ref(symbol_obj.0)
+                .struct_data_mut_ref()
                 .set_generics_and_interfaces(struct_generic_type_decls, implementing_interfaces);
         }
 
@@ -1594,7 +1589,7 @@ impl Resolver {
                                 }
                                 None => {
                                     let is_containing_self =
-                                        self.get_curr_class_context_is_containing_self();
+                                        self.curr_class_context_is_containing_self();
                                     if is_containing_self {
                                         methods.insert(
                                             method_name_str,
@@ -1651,8 +1646,8 @@ impl Resolver {
             }
             if let Some(symbol_obj) = &symbol_obj {
                 self.semantic_db
-                    .get_ty_symbol_mut_ref(symbol_obj.0)
-                    .get_struct_data_mut_ref()
+                    .ty_symbol_mut_ref(symbol_obj.0)
+                    .struct_data_mut_ref()
                     .set_meta_data(fields_map, constructor, methods, class_methods);
             }
         }
@@ -1694,8 +1689,8 @@ impl Resolver {
         };
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_ty_symbol_mut_ref(symbol_obj.0)
-                .get_enum_data_mut_ref()
+                .ty_symbol_mut_ref(symbol_obj.0)
+                .enum_data_mut_ref()
                 .set_generics(generic_type_decls);
         }
         let mut variants: Vec<(StrId, Option<Type>, TextRange)> = vec![];
@@ -1745,8 +1740,8 @@ impl Resolver {
         self.close_block(Some(enum_body));
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_ty_symbol_mut_ref(symbol_obj.0)
-                .get_enum_data_mut_ref()
+                .ty_symbol_mut_ref(symbol_obj.0)
+                .enum_data_mut_ref()
                 .set_meta_data(variants);
         }
     }
@@ -1825,7 +1820,7 @@ impl Resolver {
             );
         match result {
             Ok(symbol_obj) => {
-                self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_obj.get_entry());
+                self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_obj.entry());
             }
             Err((name, previous_decl_range)) => {
                 let err = IdentifierAlreadyDeclaredError::new(
@@ -1875,7 +1870,7 @@ impl Resolver {
         };
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_interface_symbol_mut_ref(symbol_obj.symbol_index())
+                .interface_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_generics(generic_type_decls);
         }
 
@@ -1957,7 +1952,7 @@ impl Resolver {
         self.close_block(Some(interface_body));
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .get_interface_symbol_mut_ref(symbol_obj.symbol_index())
+                .interface_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_meta_data(fields_map, methods);
         }
     }
@@ -1985,7 +1980,7 @@ impl Resolver {
                     match self.try_declare_and_bind_variable(ok_identifier) {
                         Ok(symbol_obj) => {
                             self.semantic_db
-                                .get_variable_symbol_mut_ref(symbol_obj.symbol_index())
+                                .variable_symbol_mut_ref(symbol_obj.symbol_index())
                                 .set_is_init(true);
                         }
                         Err(_) => unreachable!(),
@@ -2010,7 +2005,7 @@ impl Resolver {
             match self.try_declare_and_bind_variable(ok_loop_variable) {
                 Ok(symbol_obj) => {
                     self.semantic_db
-                        .get_variable_symbol_mut_ref(symbol_obj.symbol_index())
+                        .variable_symbol_mut_ref(symbol_obj.symbol_index())
                         .set_is_init(true);
                 }
                 Err(_) => unreachable!(),
@@ -2033,7 +2028,7 @@ impl Resolver {
                 self.set_to_variable_non_locals(
                     lookup_data
                         .symbol_obj
-                        .get_mangled_name(self.semantic_db.namespace_ref()),
+                        .mangled_name(self.semantic_db.namespace_ref()),
                     lookup_data.enclosing_func_scope_depth,
                 );
             }
@@ -2100,7 +2095,7 @@ impl Resolver {
                                         self.set_to_variable_non_locals(
                                             lookup_data
                                                 .symbol_obj
-                                                .get_mangled_name(self.semantic_db.namespace_ref()),
+                                                .mangled_name(self.semantic_db.namespace_ref()),
                                             lookup_data.enclosing_func_scope_depth,
                                         );
                                     }

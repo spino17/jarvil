@@ -154,7 +154,7 @@ impl OperatorCompatiblity for Array {
 }
 
 impl AbstractNonStructTypes for Array {
-    fn get_concrete_types(&self) -> ConcreteTypesTuple {
+    fn concrete_types(&self) -> ConcreteTypesTuple {
         ConcreteTypesTuple::new(vec![self.element_type.clone()])
     }
 }

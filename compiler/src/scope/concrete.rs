@@ -15,7 +15,7 @@ impl ConcreteTypesTuple {
         ConcreteTypesTuple(concrete_types)
     }
 
-    pub fn get_core_ref(&self) -> &Vec<Type> {
+    pub fn core_ref(&self) -> &Vec<Type> {
         &self.0
     }
 

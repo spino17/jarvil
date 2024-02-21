@@ -38,7 +38,7 @@ impl UserDefinedTypeData {
         UserDefinedTypeData::Enum(EnumTypeData::default())
     }
 
-    pub fn get_kind(&self) -> UserDefineTypeKind {
+    pub fn kind(&self) -> UserDefineTypeKind {
         match self {
             UserDefinedTypeData::Struct(_) => UserDefineTypeKind::Struct,
             UserDefinedTypeData::Lambda(_) => UserDefineTypeKind::Lambda,
@@ -57,56 +57,56 @@ impl UserDefinedTypeData {
 
     // Below methods should only be called if getting the desired variant is guarenteed
     // that's why interally it uses `unreachable!()`
-    pub fn get_struct_data_ref(&self) -> &StructTypeData {
+    pub fn struct_data_ref(&self) -> &StructTypeData {
         match self {
             UserDefinedTypeData::Struct(data) => data,
             _ => unreachable!(),
         }
     }
 
-    pub fn get_struct_data_mut_ref(&mut self) -> &mut StructTypeData {
+    pub fn struct_data_mut_ref(&mut self) -> &mut StructTypeData {
         match self {
             UserDefinedTypeData::Struct(data) => data,
             _ => unreachable!(),
         }
     }
 
-    pub fn get_enum_data_ref(&self) -> &EnumTypeData {
+    pub fn enum_data_ref(&self) -> &EnumTypeData {
         match self {
             UserDefinedTypeData::Enum(data) => data,
             _ => unreachable!(),
         }
     }
 
-    pub fn get_enum_data_mut_ref(&mut self) -> &mut EnumTypeData {
+    pub fn enum_data_mut_ref(&mut self) -> &mut EnumTypeData {
         match self {
             UserDefinedTypeData::Enum(data) => data,
             _ => unreachable!(),
         }
     }
 
-    pub fn get_lambda_data_ref(&self) -> &LambdaTypeData {
+    pub fn lambda_data_ref(&self) -> &LambdaTypeData {
         match self {
             UserDefinedTypeData::Lambda(data) => data,
             _ => unreachable!(),
         }
     }
 
-    pub fn get_lambda_data_mut_ref(&mut self) -> &mut LambdaTypeData {
+    pub fn lambda_data_mut_ref(&mut self) -> &mut LambdaTypeData {
         match self {
             UserDefinedTypeData::Lambda(data) => data,
             _ => unreachable!(),
         }
     }
 
-    pub fn get_generic_data_ref(&self) -> &GenericTypeData {
+    pub fn generic_data_ref(&self) -> &GenericTypeData {
         match self {
             UserDefinedTypeData::Generic(data) => data,
             _ => unreachable!(),
         }
     }
 
-    pub fn get_generic_data_mut_ref(&mut self) -> &mut GenericTypeData {
+    pub fn generic_data_mut_ref(&mut self) -> &mut GenericTypeData {
         match self {
             UserDefinedTypeData::Generic(data) => data,
             _ => unreachable!(),
@@ -137,7 +137,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
         self.0
     }
 
-    fn get_entry(&self) -> SymbolDataEntry {
+    fn entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Type(self.0)
     }
 
@@ -149,7 +149,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
         interner: &Interner,
         namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
-        match namespace.types_ref().get_symbol_ref(self.0).data_ref() {
+        match namespace.types_ref().symbol_ref(self.0).data_ref() {
             UserDefinedTypeData::Struct(struct_data) => {
                 let generic_type_decls = struct_data.generics();
                 check_concrete_types_bounded_by_interfaces(
@@ -162,7 +162,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
                 )
             }
             UserDefinedTypeData::Lambda(lambda_data) => {
-                let generic_type_decls = lambda_data.get_generic_type_decls();
+                let generic_type_decls = lambda_data.generic_type_decls();
                 check_concrete_types_bounded_by_interfaces(
                     generic_type_decls,
                     concrete_types,
@@ -192,8 +192,8 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
         }
     }
 
-    fn get_mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<Self::SymbolTy> {
-        self.0.get_mangled_name(namespace.types_ref())
+    fn mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<Self::SymbolTy> {
+        self.0.mangled_name(namespace.types_ref())
     }
 }
 

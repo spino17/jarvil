@@ -407,7 +407,7 @@ impl AbstractSymbol for FunctionSymbolData {
         self.0
     }
 
-    fn get_entry(&self) -> SymbolDataEntry {
+    fn entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Function(self.0)
     }
 
@@ -420,7 +420,7 @@ impl AbstractSymbol for FunctionSymbolData {
         namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(is_concrete_types_none_allowed);
-        let function_data = namespace.functions_ref().get_symbol_ref(self.0).data_ref();
+        let function_data = namespace.functions_ref().symbol_ref(self.0).data_ref();
         let generic_type_decls = function_data.generics();
         check_concrete_types_bounded_by_interfaces(
             generic_type_decls,
@@ -432,8 +432,8 @@ impl AbstractSymbol for FunctionSymbolData {
         )
     }
 
-    fn get_mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<CallableData> {
-        self.0.get_mangled_name(namespace.functions_ref())
+    fn mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<CallableData> {
+        self.0.mangled_name(namespace.functions_ref())
     }
 }
 

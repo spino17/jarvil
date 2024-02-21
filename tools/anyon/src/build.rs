@@ -30,7 +30,7 @@ impl BuildCommand {
         }
     }
 
-    pub fn get_code_file_name(&self) -> String {
+    pub fn code_file_name(&self) -> String {
         match &self.alternate_code_file_name {
             Some(file_name) => file_name.to_string(),
             None => "main".to_string(),
@@ -56,7 +56,7 @@ impl AbstractCommand for BuildCommand {
 
     fn execute_cmd(&self) -> Result<(), AnyonError> {
         let curr_dir_path = curr_dir_path();
-        let code_file_name = self.get_code_file_name();
+        let code_file_name = self.code_file_name();
         let jarvil_code_file_path = format!("{}/{}.jv", curr_dir_path, code_file_name);
         let transpiled_py_code_file_path = format!(
             "{}/__transpiled_{}_py_code__.py",

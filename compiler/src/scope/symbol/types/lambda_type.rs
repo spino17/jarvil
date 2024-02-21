@@ -33,7 +33,7 @@ impl LambdaTypeData {
         }
     }
 
-    pub fn get_prototype(
+    pub fn prototype(
         &self,
         global_concrete_types: Option<&ConcreteTypesTuple>,
         namespace: &Namespace,
@@ -42,7 +42,7 @@ impl LambdaTypeData {
             .concretized_prototype(None, global_concrete_types, namespace)
     }
 
-    pub fn get_generic_type_decls(&self) -> Option<&GenericTypeParams> {
+    pub fn generic_type_decls(&self) -> Option<&GenericTypeParams> {
         self.meta_data.generics()
     }
 }

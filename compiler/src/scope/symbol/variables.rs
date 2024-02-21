@@ -68,7 +68,7 @@ impl AbstractSymbol for VariableSymbolData {
         self.0
     }
 
-    fn get_entry(&self) -> SymbolDataEntry {
+    fn entry(&self) -> SymbolDataEntry {
         SymbolDataEntry::Variable(self.0)
     }
 
@@ -87,8 +87,8 @@ impl AbstractSymbol for VariableSymbolData {
         Ok(())
     }
 
-    fn get_mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<VariableData> {
-        self.0.get_mangled_name(namespace.variables_ref())
+    fn mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<VariableData> {
+        self.0.mangled_name(namespace.variables_ref())
     }
 }
 

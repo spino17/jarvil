@@ -175,7 +175,7 @@ impl OperatorCompatiblity for HashMap {
 }
 
 impl AbstractNonStructTypes for HashMap {
-    fn get_concrete_types(&self) -> ConcreteTypesTuple {
+    fn concrete_types(&self) -> ConcreteTypesTuple {
         ConcreteTypesTuple::new(vec![self.key_type.clone(), self.value_type.clone()])
     }
 }

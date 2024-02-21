@@ -13,7 +13,7 @@ use rustc_hash::FxHashMap;
 use std::marker::PhantomData;
 
 pub trait AbstractNonStructTypes {
-    fn get_concrete_types(&self) -> ConcreteTypesTuple;
+    fn concrete_types(&self) -> ConcreteTypesTuple;
 }
 
 struct CoreNonStructMethodsHandler<T: AbstractNonStructTypes> {
@@ -31,7 +31,7 @@ impl<T: AbstractNonStructTypes> CoreNonStructMethodsHandler<T> {
         let Some(callable_data) = self.methods.get(method_name) else {
             return None;
         };
-        let concrete_types = ty.get_concrete_types();
+        let concrete_types = ty.concrete_types();
         match callable_data.concretized_prototype(Some(&concrete_types), None, namespace) {
             RefOrOwned::Ref(_) => unreachable!(),
             RefOrOwned::Owned(prototype) => Some(prototype),
@@ -48,11 +48,11 @@ impl NonStructMethodsHandler {
     pub fn new(interner: &Interner) -> Self {
         return NonStructMethodsHandler {
             array_methods: CoreNonStructMethodsHandler {
-                methods: Array::get_builtin_methods(interner),
+                methods: Array::builtin_methods(interner),
                 phanton: PhantomData,
             },
             hashmap_methods: CoreNonStructMethodsHandler {
-                methods: HashMap::get_builtin_methods(interner),
+                methods: HashMap::builtin_methods(interner),
                 phanton: PhantomData,
             },
         };

@@ -36,51 +36,51 @@ impl TypeId {
     }
 
     pub fn is_int(&self, arena: &TypesArena) -> bool {
-        arena.get_core_ty_ref(*self).is_int()
+        arena.core_ty_ref(*self).is_int()
     }
 
     pub fn is_float(&self, arena: &TypesArena) -> bool {
-        arena.get_core_ty_ref(*self).is_float()
+        arena.core_ty_ref(*self).is_float()
     }
 
     pub fn is_bool(&self, arena: &TypesArena) -> bool {
-        arena.get_core_ty_ref(*self).is_bool()
+        arena.core_ty_ref(*self).is_bool()
     }
 
     pub fn is_string(&self, arena: &TypesArena) -> bool {
-        arena.get_core_ty_ref(*self).is_string()
+        arena.core_ty_ref(*self).is_string()
     }
 
     pub fn is_array(&self, arena: &TypesArena) -> bool {
-        arena.get_core_ty_ref(*self).is_array()
+        arena.core_ty_ref(*self).is_array()
     }
 
     pub fn is_tuple(&self, arena: &TypesArena) -> bool {
-        arena.get_core_ty_ref(*self).is_tuple()
+        arena.core_ty_ref(*self).is_tuple()
     }
 
     pub fn is_hashmap(&self, arena: &TypesArena) -> bool {
-        arena.get_core_ty_ref(*self).is_hashmap()
+        arena.core_ty_ref(*self).is_hashmap()
     }
 
     pub fn is_enum(&self, arena: &TypesArena) -> bool {
-        arena.get_core_ty_ref(*self).is_enum()
+        arena.core_ty_ref(*self).is_enum()
     }
 
     pub fn is_lambda(&self, arena: &TypesArena) -> bool {
-        arena.get_core_ty_ref(*self).is_lambda()
+        arena.core_ty_ref(*self).is_lambda()
     }
 
     pub fn is_unknown(&self, arena: &TypesArena) -> bool {
-        arena.get_core_ty_ref(*self).is_unknown()
+        arena.core_ty_ref(*self).is_unknown()
     }
 
     pub fn is_unset(&self, arena: &TypesArena) -> bool {
-        arena.get_core_ty_ref(*self).is_unset()
+        arena.core_ty_ref(*self).is_unset()
     }
 
     pub fn is_void(&self, arena: &TypesArena) -> bool {
-        arena.get_core_ty_ref(*self).is_void()
+        arena.core_ty_ref(*self).is_void()
     }
 
     pub fn is_numeric(&self, arena: &mut TypesArena) -> bool {
@@ -93,7 +93,7 @@ impl TypeId {
 
     pub fn is_hashable(&self, arena: &TypesArena) -> bool {
         // `int`, `float`, `str` and `tuple` with hashable sub_types are only hashable types
-        match arena.get_core_ty_ref(*self) {
+        match arena.core_ty_ref(*self) {
             CoreType::Atomic(atomic) => atomic.is_int() || atomic.is_string() || atomic.is_float(),
             CoreType::Tuple(tuple) => {
                 for ty in &tuple.sub_types {

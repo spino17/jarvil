@@ -11,10 +11,7 @@ use crate::{
     types::core::AbstractType,
 };
 
-pub fn get_unbounded_generic_type_with_declaration_index(
-    index: usize,
-    interner: &Interner,
-) -> Type {
+pub fn unbounded_generic_type_with_declaration_index(index: usize, interner: &Interner) -> Type {
     match index {
         0 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("T"))),
         1 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("U"))),

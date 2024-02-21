@@ -70,9 +70,9 @@ impl Lambda {
                 let concrete_types = &named_lambda.concrete_types;
                 let ty_data = type_checker
                     .semantic_db()
-                    .get_ty_symbol_ref(named_lambda.symbol_index);
-                let lambda_data = ty_data.get_lambda_data_ref();
-                let prototype_result = lambda_data.get_prototype(
+                    .ty_symbol_ref(named_lambda.symbol_index);
+                let lambda_data = ty_data.lambda_data_ref();
+                let prototype_result = lambda_data.prototype(
                     concrete_types.as_ref(),
                     type_checker.semantic_db().namespace_ref(),
                 );
@@ -100,22 +100,22 @@ impl AbstractType for Lambda {
                     Lambda::Named(self_named) => {
                         let self_ty_data = namespace
                             .types_ref()
-                            .get_symbol_ref(self_named.symbol_index)
+                            .symbol_ref(self_named.symbol_index)
                             .data_ref();
-                        let self_data = self_ty_data.get_lambda_data_ref();
+                        let self_data = self_ty_data.lambda_data_ref();
                         let self_concrete_types = &self_named.concrete_types;
                         let self_prototype_result =
-                            self_data.get_prototype(self_concrete_types.as_ref(), namespace);
+                            self_data.prototype(self_concrete_types.as_ref(), namespace);
                         match other_data {
                             Lambda::Named(other_named) => {
                                 let other_ty_data = namespace
                                     .types_ref()
-                                    .get_symbol_ref(other_named.symbol_index)
+                                    .symbol_ref(other_named.symbol_index)
                                     .data_ref();
-                                let other_data = other_ty_data.get_lambda_data_ref();
+                                let other_data = other_ty_data.lambda_data_ref();
                                 let other_concrete_types = &other_named.concrete_types;
-                                let other_prototype_result = other_data
-                                    .get_prototype(other_concrete_types.as_ref(), namespace);
+                                let other_prototype_result =
+                                    other_data.prototype(other_concrete_types.as_ref(), namespace);
                                 other_prototype_result.is_eq(&self_prototype_result, namespace)
                             }
                             Lambda::Unnamed(other_prototype) => {
@@ -127,12 +127,12 @@ impl AbstractType for Lambda {
                         Lambda::Named(other_named) => {
                             let other_ty_data = namespace
                                 .types_ref()
-                                .get_symbol_ref(other_named.symbol_index)
+                                .symbol_ref(other_named.symbol_index)
                                 .data_ref();
-                            let other_data = other_ty_data.get_lambda_data_ref();
+                            let other_data = other_ty_data.lambda_data_ref();
                             let other_concrete_types = &other_named.concrete_types;
                             let other_prototype_result =
-                                other_data.get_prototype(other_concrete_types.as_ref(), namespace);
+                                other_data.prototype(other_concrete_types.as_ref(), namespace);
                             other_prototype_result.is_eq(self_prototype, namespace)
                         }
                         Lambda::Unnamed(other_prototype) => {
@@ -220,22 +220,22 @@ impl AbstractType for Lambda {
                 Lambda::Named(self_named) => {
                     let self_ty_data = namespace
                         .types_ref()
-                        .get_symbol_ref(self_named.symbol_index)
+                        .symbol_ref(self_named.symbol_index)
                         .data_ref();
-                    let self_data = self_ty_data.get_lambda_data_ref();
+                    let self_data = self_ty_data.lambda_data_ref();
                     let self_concrete_types = &self_named.concrete_types;
                     let self_prototype_result =
-                        self_data.get_prototype(self_concrete_types.as_ref(), namespace);
+                        self_data.prototype(self_concrete_types.as_ref(), namespace);
                     match lambda_ty {
                         Lambda::Named(other_named) => {
                             let other_ty_data = namespace
                                 .types_ref()
-                                .get_symbol_ref(other_named.symbol_index)
+                                .symbol_ref(other_named.symbol_index)
                                 .data_ref();
-                            let other_data = other_ty_data.get_lambda_data_ref();
+                            let other_data = other_ty_data.lambda_data_ref();
                             let other_concrete_types = &other_named.concrete_types;
                             let other_prototype_result =
-                                other_data.get_prototype(other_concrete_types.as_ref(), namespace);
+                                other_data.prototype(other_concrete_types.as_ref(), namespace);
                             self_prototype_result.try_infer_type(
                                 &other_prototype_result,
                                 inferred_concrete_types,

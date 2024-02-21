@@ -109,7 +109,7 @@ impl Namespace {
         self.interfaces.add_new_scope(curr_scope_index, scope_kind)
     }
 
-    pub fn get_from_variables_namespace(
+    pub fn from_variables_namespace(
         &self,
         scope_index: ScopeIndex,
         key: StrId,
@@ -117,7 +117,7 @@ impl Namespace {
         self.variables.get(scope_index, key)
     }
 
-    pub fn get_from_functions_namespace(
+    pub fn from_functions_namespace(
         &self,
         scope_index: ScopeIndex,
         key: StrId,
@@ -125,7 +125,7 @@ impl Namespace {
         self.functions.get(scope_index, key)
     }
 
-    pub fn get_from_types_namespace(
+    pub fn from_types_namespace(
         &self,
         scope_index: ScopeIndex,
         key: StrId,
@@ -133,7 +133,7 @@ impl Namespace {
         self.types.get(scope_index, key)
     }
 
-    pub fn get_from_interfaces_namespace(
+    pub fn from_interfaces_namespace(
         &self,
         scope_index: ScopeIndex,
         key: StrId,

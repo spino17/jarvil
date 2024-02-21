@@ -3,7 +3,7 @@ use crate::{scope::concrete::ConcretizationContext, types::core::CoreType};
 
 impl TypeId {
     pub fn concretize(&self, context: &ConcretizationContext, arena: &mut TypesArena) -> TypeId {
-        let ty = arena.get_core_ty_ref(*self);
+        let ty = arena.core_ty_ref(*self);
         match ty {
             CoreType::Struct(struct_ty) => {
                 todo!()

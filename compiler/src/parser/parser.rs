@@ -110,7 +110,7 @@ impl JarvilParser {
 
     pub fn curr_token_precedence_and_name(&self) -> (u8, &'static str) {
         let token = &self.token_vec[self.lookahead];
-        (token.get_precedence(), token.core_token().to_string())
+        (token.precedence(), token.core_token().to_string())
     }
 
     pub fn is_curr_token_on_newline(&self) -> bool {
@@ -352,7 +352,7 @@ impl JarvilParser {
                 _ => {
                     // At this point we are sure that the token index is set to the first token on a newline
                     let indent_spaces = (token.start_index()
-                        - self.code_handler.get_line_start_index(token.line_number()))
+                        - self.code_handler.line_start_index(token.line_number()))
                         as i64;
                     //let alternate_line_index = match &token.trivia {
                     //    Some(trivia) => {

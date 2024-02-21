@@ -39,7 +39,7 @@ impl TypeId {
         arena: &TypesArena,
     ) -> Option<TypeId> {
         let id = *self;
-        let ty = arena.get_core_ty_ref(id);
+        let ty = arena.core_ty_ref(id);
         match op_kind {
             BinaryOperatorKind::Add => {}
             BinaryOperatorKind::Subtract => {}
@@ -105,11 +105,11 @@ impl TypesArena {
         TypeId(id)
     }
 
-    pub fn get_core_ty_ref(&self, id: TypeId) -> &CoreType {
+    pub fn core_ty_ref(&self, id: TypeId) -> &CoreType {
         &self.arena[id.arena_index()].ty
     }
 
-    pub fn get_core_ty_mut_ref(&mut self, id: TypeId) -> &mut CoreType {
+    pub fn core_ty_mut_ref(&mut self, id: TypeId) -> &mut CoreType {
         &mut self.arena[id.arena_index()].ty
     }
 

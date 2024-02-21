@@ -11,7 +11,7 @@ use super::{
         variables::VariableData,
     },
 };
-use crate::builtin::get_builtin_functions;
+use crate::builtin::builtin_functions;
 use crate::scope::mangled::MangledIdentifierName;
 use crate::{
     ast::ast::{
@@ -43,7 +43,7 @@ impl SemanticStateDatabase {
         let mut namespace = Namespace::new(&interner);
 
         // fill the built-in functions inside the global namespace
-        let builtin_functions = get_builtin_functions();
+        let builtin_functions = builtin_functions();
         for (name, callable_data) in builtin_functions {
             namespace.functions_mut_ref().force_insert(
                 ScopeIndex::global(), // index of global namespace
@@ -128,21 +128,21 @@ impl SemanticStateDatabase {
             .insert(ty_expr.clone(), (ty_obj.clone(), has_generics));
     }
 
-    pub fn get_type_obj_from_expr(&self, ty_expr: &TypeExpressionNode) -> (Type, bool) {
+    pub fn type_obj_from_expr(&self, ty_expr: &TypeExpressionNode) -> (Type, bool) {
         match self.type_expr_obj_table.get(ty_expr) {
             Some((ty, has_generics)) => (ty.clone(), *has_generics),
             None => unreachable!(),
         }
     }
 
-    pub fn get_symbol_for_identifier_in_decl(
+    pub fn symbol_for_identifier_in_decl(
         &self,
         identifier: &OkIdentifierInDeclNode,
     ) -> Option<&SymbolDataEntry> {
         self.identifier_in_decl_binding_table.get(identifier)
     }
 
-    pub fn get_symbol_for_identifier_in_use(
+    pub fn symbol_for_identifier_in_use(
         &self,
         identifier: &OkIdentifierInUseNode,
     ) -> Option<ConcreteSymbolDataEntry> {
@@ -151,27 +151,24 @@ impl SemanticStateDatabase {
             .cloned()
     }
 
-    pub fn get_variable_symbol_ref(
-        &self,
-        symbol_index: SymbolIndex<VariableData>,
-    ) -> &VariableData {
+    pub fn variable_symbol_ref(&self, symbol_index: SymbolIndex<VariableData>) -> &VariableData {
         self.namespace
             .variables_ref()
-            .get_symbol_ref(symbol_index)
+            .symbol_ref(symbol_index)
             .data_ref()
     }
 
-    pub fn get_variable_symbol_mut_ref(
+    pub fn variable_symbol_mut_ref(
         &mut self,
         symbol_index: SymbolIndex<VariableData>,
     ) -> &mut VariableData {
         self.namespace
             .variables_mut_ref()
-            .get_symbol_mut_ref(symbol_index)
+            .symbol_mut_ref(symbol_index)
             .data_mut_ref()
     }
 
-    pub fn get_variable_symbol_for_identifier_in_decl(
+    pub fn variable_symbol_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<VariableData>> {
@@ -184,7 +181,7 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_variable_symbol_for_identifier_in_use(
+    pub fn variable_symbol_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
     ) -> Option<&ConcreteSymbolIndex<VariableData>> {
@@ -199,27 +196,24 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_function_symbol_ref(
-        &self,
-        symbol_index: SymbolIndex<CallableData>,
-    ) -> &CallableData {
+    pub fn function_symbol_ref(&self, symbol_index: SymbolIndex<CallableData>) -> &CallableData {
         self.namespace
             .functions_ref()
-            .get_symbol_ref(symbol_index)
+            .symbol_ref(symbol_index)
             .data_ref()
     }
 
-    pub fn get_function_symbol_mut_ref(
+    pub fn function_symbol_mut_ref(
         &mut self,
         symbol_index: SymbolIndex<CallableData>,
     ) -> &mut CallableData {
         self.namespace
             .functions_mut_ref()
-            .get_symbol_mut_ref(symbol_index)
+            .symbol_mut_ref(symbol_index)
             .data_mut_ref()
     }
 
-    pub fn get_function_symbol_for_identifier_in_decl(
+    pub fn function_symbol_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<CallableData>> {
@@ -232,7 +226,7 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_function_symbol_for_identifier_in_use(
+    pub fn function_symbol_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
     ) -> Option<&ConcreteSymbolIndex<CallableData>> {
@@ -247,27 +241,27 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_ty_symbol_ref(
+    pub fn ty_symbol_ref(
         &self,
         symbol_index: SymbolIndex<UserDefinedTypeData>,
     ) -> &UserDefinedTypeData {
         self.namespace
             .types_ref()
-            .get_symbol_ref(symbol_index)
+            .symbol_ref(symbol_index)
             .data_ref()
     }
 
-    pub fn get_ty_symbol_mut_ref(
+    pub fn ty_symbol_mut_ref(
         &mut self,
         symbol_index: SymbolIndex<UserDefinedTypeData>,
     ) -> &mut UserDefinedTypeData {
         self.namespace
             .types_mut_ref()
-            .get_symbol_mut_ref(symbol_index)
+            .symbol_mut_ref(symbol_index)
             .data_mut_ref()
     }
 
-    pub fn get_ty_symbol_for_identifier_in_decl(
+    pub fn ty_symbol_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<UserDefinedTypeData>> {
@@ -280,7 +274,7 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_ty_symbol_for_identifier_in_use(
+    pub fn ty_symbol_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
     ) -> Option<ConcreteSymbolIndex<UserDefinedTypeData>> {
@@ -295,27 +289,24 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_interface_symbol_ref(
-        &self,
-        symbol_index: SymbolIndex<InterfaceData>,
-    ) -> &InterfaceData {
+    pub fn interface_symbol_ref(&self, symbol_index: SymbolIndex<InterfaceData>) -> &InterfaceData {
         self.namespace
             .interfaces_ref()
-            .get_symbol_ref(symbol_index)
+            .symbol_ref(symbol_index)
             .data_ref()
     }
 
-    pub fn get_interface_symbol_mut_ref(
+    pub fn interface_symbol_mut_ref(
         &mut self,
         symbol_index: SymbolIndex<InterfaceData>,
     ) -> &mut InterfaceData {
         self.namespace
             .interfaces_mut_ref()
-            .get_symbol_mut_ref(symbol_index)
+            .symbol_mut_ref(symbol_index)
             .data_mut_ref()
     }
 
-    pub fn get_interface_symbol_for_identifier_in_decl(
+    pub fn interface_symbol_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<InterfaceData>> {
@@ -328,7 +319,7 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_interface_symbol_for_identifier_in_use(
+    pub fn interface_symbol_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
     ) -> Option<&ConcreteSymbolIndex<InterfaceData>> {
@@ -343,7 +334,7 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn get_self_keyword_symbol_ref(
+    pub fn self_keyword_symbol_ref(
         &self,
         node: &OkSelfKeywordNode,
     ) -> Option<SymbolIndex<VariableData>> {
@@ -362,7 +353,7 @@ impl SemanticStateDatabase {
             .insert(block.clone(), variable_non_locals);
     }
 
-    pub fn get_non_locals_ref(
+    pub fn non_locals_ref(
         &self,
         block: &BlockNode,
     ) -> &FxHashSet<MangledIdentifierName<VariableData>> {
@@ -381,7 +372,7 @@ impl SemanticStateDatabase {
             .insert(bounded_method_wrapper.clone(), bounded_kind);
     }
 
-    pub fn get_bounded_kind_ref(
+    pub fn bounded_kind_ref(
         &self,
         bounded_method_wrapper: &BoundedMethodWrapperNode,
     ) -> Option<&BoundedMethodKind> {

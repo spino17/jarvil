@@ -116,7 +116,7 @@ impl Token {
         }
     }
 
-    pub fn get_precedence(&self) -> u8 {
+    pub fn precedence(&self) -> u8 {
         match self.core_token {
             CoreToken::OR => 1,
             CoreToken::AND => 2,

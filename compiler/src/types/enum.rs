@@ -126,8 +126,8 @@ impl AbstractType for Enum {
             unreachable!()
         };
         try_infer_types_from_tuple(
-            base_types_tuple.get_core_ref(),
-            generics_containing_types_tuple.get_core_ref(),
+            base_types_tuple.core_ref(),
+            generics_containing_types_tuple.core_ref(),
             inferred_concrete_types,
             global_concrete_types,
             num_inferred_types,

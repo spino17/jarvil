@@ -27,7 +27,7 @@ fn range_callable_data() -> CallableData {
     )
 }
 
-pub fn get_builtin_functions() -> FxHashMap<&'static str, CallableData> {
+pub fn builtin_functions() -> FxHashMap<&'static str, CallableData> {
     let mut functions = FxHashMap::default();
 
     // all built-in functions

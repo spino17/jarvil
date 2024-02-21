@@ -124,21 +124,21 @@ impl<T: IsInitialized> SymbolIndex<T> {
     }
 
     pub fn declaration_line_number(&self, arena: &ScopeArena<T>) -> TextRange {
-        arena.get_symbol_ref(*self).decl_line_number()
+        arena.symbol_ref(*self).decl_line_number()
     }
 
-    pub fn get_index(&self, arena: &ScopeArena<T>) -> Option<IdentDeclId<T>> {
-        arena.get_symbol_ref(*self).unique_id
+    pub fn index(&self, arena: &ScopeArena<T>) -> Option<IdentDeclId<T>> {
+        arena.symbol_ref(*self).unique_id
     }
 
     pub fn is_suffix_required(&self, arena: &ScopeArena<T>) -> bool {
-        self.get_index(arena).is_some()
+        self.index(arena).is_some()
     }
 
-    pub fn get_mangled_name(&self, arena: &ScopeArena<T>) -> MangledIdentifierName<T> {
+    pub fn mangled_name(&self, arena: &ScopeArena<T>) -> MangledIdentifierName<T> {
         MangledIdentifierName {
             jarvil_identifer_name: self.identifier_name(),
-            unique_id: self.get_index(arena),
+            unique_id: self.index(arena),
         }
     }
 }

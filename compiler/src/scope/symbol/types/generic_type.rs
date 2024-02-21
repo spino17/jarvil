@@ -60,7 +60,7 @@ impl GenericTypeData {
             let concrete_symbol_index = interface_obj.concrete_symbol_index();
             let interface_data = namespace
                 .interfaces_ref()
-                .get_symbol_ref(concrete_symbol_index.symbol_index())
+                .symbol_ref(concrete_symbol_index.symbol_index())
                 .data_ref();
             let concrete_types = concrete_symbol_index.concrete_types();
             match interface_data.try_field(field_name, concrete_types, namespace) {
@@ -97,7 +97,7 @@ impl GenericTypeData {
             let concrete_symbol_index = interface_obj.concrete_symbol_index();
             let interface_data = namespace
                 .interfaces_ref()
-                .get_symbol_ref(concrete_symbol_index.symbol_index())
+                .symbol_ref(concrete_symbol_index.symbol_index())
                 .data_ref();
             if interface_data.has_method(method_name) {
                 property_containing_interface_objs

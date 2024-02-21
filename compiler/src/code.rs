@@ -10,7 +10,7 @@ impl JarvilCodeHandler {
         JarvilCodeHandler { code, code_lines }
     }
 
-    pub fn get_line_start_index(&self, line_number: usize) -> usize {
+    pub fn line_start_index(&self, line_number: usize) -> usize {
         self.code_lines[line_number - 1]
     }
 }

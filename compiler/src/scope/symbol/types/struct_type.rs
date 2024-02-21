@@ -90,7 +90,7 @@ impl StructTypeData {
             .try_method(class_method_name, global_concrete_types)
     }
 
-    pub fn get_methods_ref(&self) -> &MethodsMap {
+    pub fn methods_ref(&self) -> &MethodsMap {
         &self.methods
     }
 }

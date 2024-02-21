@@ -107,7 +107,7 @@ impl<T: IsInitialized> ScopeArena<T> {
         Some(SymbolIndex::new(scope_index, key))
     }
 
-    pub fn get_symbol_ref(&self, index: SymbolIndex<T>) -> &Symbol<T> {
+    pub fn symbol_ref(&self, index: SymbolIndex<T>) -> &Symbol<T> {
         let scope = &self[index.scope_index()];
         let Some(symbol_ref) = scope.get(&index.ident_name()) else {
             unreachable!()
@@ -115,7 +115,7 @@ impl<T: IsInitialized> ScopeArena<T> {
         symbol_ref
     }
 
-    pub fn get_symbol_mut_ref(&mut self, index: SymbolIndex<T>) -> &mut Symbol<T> {
+    pub fn symbol_mut_ref(&mut self, index: SymbolIndex<T>) -> &mut Symbol<T> {
         let scope = &mut self[index.scope_index()];
         let Some(symbol_ref) = scope.get_mut(&index.ident_name()) else {
             unreachable!()
@@ -204,11 +204,7 @@ impl<T: IsInitialized> ScopeArena<T> {
         else {
             return IntermediateLookupResult::Unresolved;
         };
-        if self
-            .get_symbol_ref(symbol_index)
-            .data_ref()
-            .is_initialized()
-        {
+        if self.symbol_ref(symbol_index).data_ref().is_initialized() {
             IntermediateLookupResult::Ok((symbol_index, depth, enclosing_func_scope_depth))
         } else {
             IntermediateLookupResult::NotInitialized(symbol_index.declaration_line_number(self))

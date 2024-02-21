@@ -98,9 +98,9 @@ impl AbstractType for Struct {
     ) -> bool {
         let ty_data = namespace
             .types_ref()
-            .get_symbol_ref(self.symbol_index)
+            .symbol_ref(self.symbol_index)
             .data_ref();
-        match ty_data.get_struct_data_ref().implementing_interfaces() {
+        match ty_data.struct_data_ref().implementing_interfaces() {
             Some(ty_interface_bounds) => interface_bounds.is_subset(ty_interface_bounds, namespace),
             None => false,
         }
@@ -128,8 +128,8 @@ impl AbstractType for Struct {
             unreachable!()
         };
         try_infer_types_from_tuple(
-            base_types_tuple.get_core_ref(),
-            generics_containing_types_tuple.get_core_ref(),
+            base_types_tuple.core_ref(),
+            generics_containing_types_tuple.core_ref(),
             inferred_concrete_types,
             global_concrete_types,
             num_inferred_types,

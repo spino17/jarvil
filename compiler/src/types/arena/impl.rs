@@ -14,7 +14,7 @@ use crate::{
 
 impl TypeLike for TypeId {
     fn is_eq(&self, other_ty: TypeId, arena: &TypesArena) -> bool {
-        match arena.get_core_ty_ref(*self) {
+        match arena.core_ty_ref(*self) {
             CoreType::Atomic(atomic_ty) => todo!(),
             CoreType::Struct(struct_ty) => todo!(),
             CoreType::Lambda(lambda_ty) => todo!(),
@@ -23,7 +23,7 @@ impl TypeLike for TypeId {
             CoreType::HashMap(hashmap_ty) => todo!(),
             CoreType::Generic(generic_ty) => todo!(),
             CoreType::Enum(enum_ty) => todo!(),
-            CoreType::Void => matches!(arena.get_core_ty_ref(other_ty), CoreType::Void),
+            CoreType::Void => matches!(arena.core_ty_ref(other_ty), CoreType::Void),
             CoreType::Unknown => false,
             CoreType::Unset => false,
             CoreType::Any => true,
@@ -36,7 +36,7 @@ impl TypeLike for TypeId {
         context: &ConcretizationContext,
         arena: &TypesArena,
     ) -> bool {
-        match arena.get_core_ty_ref(*self) {
+        match arena.core_ty_ref(*self) {
             CoreType::Atomic(atomic_ty) => todo!(),
             CoreType::Struct(struc_ty) => todo!(),
             CoreType::Enum(enum_ty) => todo!(),
@@ -45,7 +45,7 @@ impl TypeLike for TypeId {
             CoreType::Tuple(tuple_ty) => todo!(),
             CoreType::HashMap(hashmap_ty) => todo!(),
             CoreType::Generic(generic_ty) => todo!(),
-            CoreType::Void => matches!(arena.get_core_ty_ref(other_ty), CoreType::Void),
+            CoreType::Void => matches!(arena.core_ty_ref(other_ty), CoreType::Void),
             CoreType::Unknown | CoreType::Unset | CoreType::Any => unreachable!(),
         }
     }
@@ -59,7 +59,7 @@ impl TypeLike for TypeId {
         inference_category: GenericTypeDeclarationPlaceCategory,
         arena: &TypesArena,
     ) -> Result<(), ()> {
-        match arena.get_core_ty_ref(*self) {
+        match arena.core_ty_ref(*self) {
             CoreType::Struct(struct_ty) => todo!(),
             CoreType::Enum(enum_ty) => todo!(),
             CoreType::Lambda(lambda_ty) => todo!(),
@@ -88,7 +88,7 @@ impl TypeLike for TypeId {
         if interface_bounds.len() == 0 {
             return true;
         }
-        match arena.get_core_ty_ref(*self) {
+        match arena.core_ty_ref(*self) {
             CoreType::Struct(struct_ty) => {
                 todo!()
             }
@@ -111,7 +111,7 @@ impl TypeLike for TypeId {
     }
 
     fn to_string(&self, interner: &Interner, arena: &TypesArena) -> String {
-        match arena.get_core_ty_ref(*self) {
+        match arena.core_ty_ref(*self) {
             CoreType::Atomic(atomic_ty) => todo!(),
             CoreType::Struct(struct_ty) => todo!(),
             CoreType::Enum(enum_ty) => todo!(),

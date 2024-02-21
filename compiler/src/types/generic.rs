@@ -60,9 +60,9 @@ impl AbstractType for Generic {
         };
         let self_ty_data = namespace
             .types_ref()
-            .get_symbol_ref(self.symbol_index)
+            .symbol_ref(self.symbol_index)
             .data_ref();
-        let self_generic_data = self_ty_data.get_generic_data_ref();
+        let self_generic_data = self_ty_data.generic_data_ref();
         let self_index = self_generic_data.index();
         let self_category = self_generic_data.category();
         match self_category {
@@ -70,9 +70,9 @@ impl AbstractType for Generic {
                 Some(generic_data) => {
                     let other_data = namespace
                         .types_ref()
-                        .get_symbol_ref(generic_data.symbol_index)
+                        .symbol_ref(generic_data.symbol_index)
                         .data_ref();
-                    let other_generic_data = other_data.get_generic_data_ref();
+                    let other_generic_data = other_data.generic_data_ref();
                     let other_index = other_generic_data.index();
                     let other_category = other_generic_data.category();
                     match other_category {
@@ -101,9 +101,9 @@ impl AbstractType for Generic {
     fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
         let ty_data = namespace
             .types_ref()
-            .get_symbol_ref(self.symbol_index)
+            .symbol_ref(self.symbol_index)
             .data_ref();
-        let generic_data = ty_data.get_generic_data_ref();
+        let generic_data = ty_data.generic_data_ref();
         let index = generic_data.index();
         let category = generic_data.category();
         match category {
@@ -129,9 +129,9 @@ impl AbstractType for Generic {
     ) -> bool {
         let ty_data = namespace
             .types_ref()
-            .get_symbol_ref(self.symbol_index)
+            .symbol_ref(self.symbol_index)
             .data_ref();
-        let ty_interface_bounds = ty_data.get_generic_data_ref().interface_bounds();
+        let ty_interface_bounds = ty_data.generic_data_ref().interface_bounds();
         interface_bounds.is_subset(ty_interface_bounds, namespace)
     }
 
@@ -146,9 +146,9 @@ impl AbstractType for Generic {
     ) -> Result<(), ()> {
         let ty_data = namespace
             .types_ref()
-            .get_symbol_ref(self.symbol_index)
+            .symbol_ref(self.symbol_index)
             .data_ref();
-        let generic_data_ref = ty_data.get_generic_data_ref();
+        let generic_data_ref = ty_data.generic_data_ref();
         let index = generic_data_ref.index();
         let decl_place = generic_data_ref.category();
         if inference_category == decl_place {
@@ -183,9 +183,9 @@ impl AbstractType for Generic {
     fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
         let ty_data = namespace
             .types_ref()
-            .get_symbol_ref(self.symbol_index)
+            .symbol_ref(self.symbol_index)
             .data_ref();
-        let generic_data = ty_data.get_generic_data_ref();
+        let generic_data = ty_data.generic_data_ref();
         let interface_bounds = generic_data.interface_bounds();
         format!(
             "{}{}",

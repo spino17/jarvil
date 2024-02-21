@@ -15,7 +15,7 @@ pub trait AbstractSymbol {
     fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy>
     where
         <Self as AbstractSymbol>::SymbolTy: IsInitialized;
-    fn get_entry(&self) -> SymbolDataEntry;
+    fn entry(&self) -> SymbolDataEntry;
     fn check_generic_type_args(
         &self,
         concrete_types: Option<&ConcreteTypesTuple>,
@@ -24,5 +24,5 @@ pub trait AbstractSymbol {
         interner: &Interner,
         namespace: &Namespace,
     ) -> Result<(), GenericTypeArgsCheckError>;
-    fn get_mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<Self::SymbolTy>;
+    fn mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<Self::SymbolTy>;
 }
