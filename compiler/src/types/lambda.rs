@@ -1,4 +1,5 @@
 use super::core::OperatorCompatiblity;
+use super::helper::UserDefinedType;
 use crate::ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode};
 use crate::core::string_interner::{Interner, StrId};
 use crate::parser::type_checker::{
@@ -12,11 +13,22 @@ use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{AbstractType, CoreType, Type};
+use crate::types::helper::user_defined_ty_compare_fn;
 
 #[derive(Debug)]
 pub struct NamedLambdaCore {
     symbol_index: SymbolIndex<UserDefinedTypeData>,
     concrete_types: Option<ConcreteTypesTuple>,
+}
+
+impl UserDefinedType for NamedLambdaCore {
+    fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+        self.concrete_types.as_ref()
+    }
+
+    fn name(&self) -> StrId {
+        self.symbol_index.identifier_name()
+    }
 }
 
 #[derive(Debug)]
@@ -146,32 +158,20 @@ impl AbstractType for Lambda {
                     let Lambda::Named(other_named_lambda) = other_data else {
                         unreachable!()
                     };
-                    if self_named_lambda.symbol_index.identifier_name()
-                        != other_named_lambda.symbol_index.identifier_name()
-                    {
-                        return false;
-                    }
-                    let Some(self_concrete_types) = &self_named_lambda.concrete_types else {
-                        return true;
-                    };
-                    let self_len = self_concrete_types.len();
-                    let other_concrete_types = match &other_named_lambda.concrete_types {
-                        Some(concrete_types) => concrete_types,
-                        None => unreachable!(),
-                    };
-                    let other_len = other_concrete_types.len();
-
-                    debug_assert!(self_len == other_len);
-                    for i in 0..self_len {
-                        if !self_concrete_types[i].is_structurally_eq(
-                            &other_concrete_types[i],
-                            context,
-                            namespace,
-                        ) {
-                            return false;
-                        }
-                    }
-                    true
+                    let ty_cmp_func =
+                        |ty1: &Type,
+                         ty2: &Type,
+                         context: &ConcretizationContext,
+                         namespace: &Namespace| {
+                            ty1.is_structurally_eq(ty2, context, namespace)
+                        };
+                    user_defined_ty_compare_fn(
+                        self_named_lambda,
+                        other_named_lambda,
+                        ty_cmp_func,
+                        context,
+                        namespace,
+                    )
                 }
                 Lambda::Unnamed(_) => unreachable!(),
             },

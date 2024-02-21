@@ -1,4 +1,5 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
+use crate::types::helper::UserDefinedType;
 use crate::{
     core::string_interner::{Interner, StrId},
     parser::type_checker::InferredConcreteTypesEntry,
@@ -24,6 +25,16 @@ impl Generic {
     }
 
     pub fn name(&self) -> StrId {
+        self.symbol_index.identifier_name()
+    }
+}
+
+impl UserDefinedType for Generic {
+    fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+        None
+    }
+
+    fn name(&self) -> StrId {
         self.symbol_index.identifier_name()
     }
 }

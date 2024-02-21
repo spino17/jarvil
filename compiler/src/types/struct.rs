@@ -1,5 +1,5 @@
 use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
-use super::helper::{struct_enum_compare_fn, try_infer_types_from_tuple, StructEnumType};
+use super::helper::{try_infer_types_from_tuple, user_defined_ty_compare_fn, UserDefinedType};
 use crate::core::string_interner::{Interner, StrId};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::ConcreteTypesTuple;
@@ -29,12 +29,12 @@ impl Struct {
     }
 }
 
-impl StructEnumType for Struct {
-    fn get_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+impl UserDefinedType for Struct {
+    fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
         self.concrete_types.as_ref()
     }
 
-    fn get_name(&self) -> StrId {
+    fn name(&self) -> StrId {
         self.symbol_index.identifier_name()
     }
 }
@@ -48,7 +48,7 @@ impl AbstractType for Struct {
                      ty2: &Type,
                      _context: &ConcretizationContext,
                      namespace: &Namespace| { ty1.is_eq(ty2, namespace) };
-                struct_enum_compare_fn(
+                user_defined_ty_compare_fn(
                     self,
                     struct_data,
                     ty_cmp_func,
@@ -74,7 +74,7 @@ impl AbstractType for Struct {
             |ty1: &Type, ty2: &Type, context: &ConcretizationContext, namespace: &Namespace| {
                 ty1.is_structurally_eq(ty2, context, namespace)
             };
-        struct_enum_compare_fn(self, struct_data, ty_cmp_func, context, namespace)
+        user_defined_ty_compare_fn(self, struct_data, ty_cmp_func, context, namespace)
     }
 
     fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
@@ -118,7 +118,7 @@ impl AbstractType for Struct {
         let CoreType::Struct(struct_ty) = received_ty.0.as_ref() else {
             return Err(());
         };
-        if self.get_name() != struct_ty.get_name() {
+        if self.name() != struct_ty.name() {
             return Err(());
         }
         let Some(generics_containing_types_tuple) = &self.concrete_types else {
@@ -139,7 +139,7 @@ impl AbstractType for Struct {
     }
 
     fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let mut s = interner.lookup(self.get_name());
+        let mut s = interner.lookup(self.name());
         let Some(concrete_types) = &self.concrete_types else {
             return s;
         };
@@ -157,7 +157,7 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
-        if self.get_name() != other_struct.get_name() {
+        if self.name() != other_struct.name() {
             return None;
         }
         // TODO - This will be replaced with checking whether struct implements `Add` interface
@@ -168,7 +168,7 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
-        if self.get_name() != other_struct.get_name() {
+        if self.name() != other_struct.name() {
             return None;
         }
         // TODO - This will be replaced with checking whether struct implements `Subtract` interface
@@ -179,7 +179,7 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
-        if self.get_name() != other_struct.get_name() {
+        if self.name() != other_struct.name() {
             return None;
         }
         // TODO - This will be replaced with checking whether struct implements `Multiply` interface
@@ -190,7 +190,7 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
-        if self.get_name() != other_struct.get_name() {
+        if self.name() != other_struct.name() {
             return None;
         }
         // TODO - This will be replaced with checking whether struct implements `Divide` interface
@@ -201,7 +201,7 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
-        if self.get_name() != other_struct.get_name() {
+        if self.name() != other_struct.name() {
             return None;
         }
         // TODO - This will be replaced with checking whether struct implements `DoubleEqual` interface
@@ -212,7 +212,7 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
-        if self.get_name() != other_struct.get_name() {
+        if self.name() != other_struct.name() {
             return None;
         }
         // TODO - This will be replaced with checking whether struct implements `Greater` interface
@@ -223,7 +223,7 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
-        if self.get_name() != other_struct.get_name() {
+        if self.name() != other_struct.name() {
             return None;
         }
         // TODO - This will be replaced with checking whether struct implements `Less` interface
@@ -234,7 +234,7 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
-        if self.get_name() != other_struct.get_name() {
+        if self.name() != other_struct.name() {
             return None;
         }
         // TODO - This will be replaced with checking whether struct implements `And` interface
@@ -245,7 +245,7 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.0.as_ref() else {
             return None;
         };
-        if self.get_name() != other_struct.get_name() {
+        if self.name() != other_struct.name() {
             return None;
         }
         // TODO - This will be replaced with checking whether struct implements `Or` interface

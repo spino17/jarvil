@@ -6,7 +6,7 @@ use super::{
 use crate::{core::string_interner::StrId, parser::resolver::BlockKind};
 use rustc_hash::FxHashMap;
 use std::ops::Index;
-use std::{marker::PhantomData, ops::IndexMut};
+use std::ops::IndexMut;
 use text_size::TextRange;
 
 #[derive(Debug)]

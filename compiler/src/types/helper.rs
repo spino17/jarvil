@@ -48,13 +48,13 @@ pub fn try_infer_types_from_tuple(
     Ok(())
 }
 
-pub trait StructEnumType {
-    fn get_concrete_types(&self) -> Option<&ConcreteTypesTuple>;
-    fn get_name(&self) -> StrId;
+pub trait UserDefinedType {
+    fn concrete_types(&self) -> Option<&ConcreteTypesTuple>;
+    fn name(&self) -> StrId;
 }
 
-pub fn struct_enum_compare_fn<
-    T: StructEnumType,
+pub fn user_defined_ty_compare_fn<
+    T: UserDefinedType,
     F: Fn(&Type, &Type, &ConcretizationContext, &Namespace) -> bool,
 >(
     base: &T,
@@ -63,13 +63,13 @@ pub fn struct_enum_compare_fn<
     context: &ConcretizationContext,
     namespace: &Namespace,
 ) -> bool {
-    if base.get_name() != other.get_name() {
+    if base.name() != other.name() {
         return false;
     }
-    let Some(self_concrete_types) = base.get_concrete_types() else {
+    let Some(self_concrete_types) = base.concrete_types() else {
         return true;
     };
-    let Some(other_concrete_types) = other.get_concrete_types() else {
+    let Some(other_concrete_types) = other.concrete_types() else {
         unreachable!()
     };
     let self_len = self_concrete_types.len();

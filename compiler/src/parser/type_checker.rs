@@ -25,7 +25,7 @@ use crate::error::diagnostics::{
     UnexpectedValueProvidedToEnumVariantError,
 };
 use crate::error::helper::IdentifierKind;
-use crate::scope::concrete::{ConcreteSymbolIndex, ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::concrete::{ConcreteSymbolIndex, ConcreteTypesTuple};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::symbol::core::{ConcreteSymbolDataEntry, SymbolDataEntry};
 use crate::scope::symbol::function::{CallableData, PartialCallableDataPrototypeCheckError};

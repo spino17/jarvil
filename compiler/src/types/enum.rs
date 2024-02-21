@@ -1,6 +1,6 @@
 use super::{
     core::{AbstractType, CoreType, OperatorCompatiblity, Type},
-    helper::{struct_enum_compare_fn, try_infer_types_from_tuple, StructEnumType},
+    helper::{try_infer_types_from_tuple, user_defined_ty_compare_fn, UserDefinedType},
 };
 use crate::{
     core::string_interner::{Interner, StrId},
@@ -34,12 +34,12 @@ impl Enum {
     }
 }
 
-impl StructEnumType for Enum {
-    fn get_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+impl UserDefinedType for Enum {
+    fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
         self.concrete_types.as_ref()
     }
 
-    fn get_name(&self) -> StrId {
+    fn name(&self) -> StrId {
         self.symbol_index.identifier_name()
     }
 }
@@ -53,7 +53,7 @@ impl AbstractType for Enum {
                      ty2: &Type,
                      _context: &ConcretizationContext,
                      namespace: &Namespace| ty1.is_eq(ty2, namespace);
-                struct_enum_compare_fn(
+                user_defined_ty_compare_fn(
                     self,
                     enum_data,
                     ty_cmp_func,
@@ -79,7 +79,7 @@ impl AbstractType for Enum {
             |ty1: &Type, ty2: &Type, context: &ConcretizationContext, namespace: &Namespace| {
                 ty1.is_structurally_eq(ty2, context, namespace)
             };
-        struct_enum_compare_fn(self, enum_data, ty_cmp_func, context, namespace)
+        user_defined_ty_compare_fn(self, enum_data, ty_cmp_func, context, namespace)
     }
 
     fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
@@ -116,7 +116,7 @@ impl AbstractType for Enum {
         let CoreType::Enum(enum_ty) = received_ty.0.as_ref() else {
             return Err(());
         };
-        if self.get_name() != enum_ty.get_name() {
+        if self.name() != enum_ty.name() {
             return Err(());
         }
         let Some(generics_containing_types_tuple) = &self.concrete_types else {
@@ -137,7 +137,7 @@ impl AbstractType for Enum {
     }
 
     fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let mut s = interner.lookup(self.get_name());
+        let mut s = interner.lookup(self.name());
         let Some(concrete_types) = &self.concrete_types else {
             return s;
         };
