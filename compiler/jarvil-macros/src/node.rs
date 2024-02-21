@@ -3,7 +3,7 @@ use proc_macro::*;
 use quote::quote;
 use syn::Variant;
 
-fn get_variant_field_name(variant: &Variant) -> &proc_macro2::Ident {
+fn variant_field_name(variant: &Variant) -> &proc_macro2::Ident {
     let syn::Fields::Unnamed(field_name) = &variant.fields else {
         panic!("data of `ASTNode` enum should be named")
     };
@@ -31,7 +31,7 @@ pub fn impl_nodify_macro(ast: &syn::DeriveInput) -> TokenStream {
     let variants = &enum_data.variants;
     let ast_node_new_methods = variants.iter().map(|variant| {
         let variant_name = &variant.ident;
-        let variant_field_name = get_variant_field_name(variant);
+        let variant_field_name = variant_field_name(variant);
         let variant_new_method_name = proc_macro2::Ident::new(
             &format!("new_with_{}", variant_field_name),
             proc_macro2::Span::call_site(),
@@ -43,7 +43,7 @@ pub fn impl_nodify_macro(ast: &syn::DeriveInput) -> TokenStream {
         }
     });
     let serialize_impl_node_methods = variants.iter().map(|variant| {
-        let node_name = get_variant_field_name(variant);
+        let node_name = variant_field_name(variant);
         quote! {
             impl Serialize for #node_name {
                 fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
