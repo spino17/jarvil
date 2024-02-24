@@ -1,4 +1,7 @@
-use super::{core::OperatorCompatiblity, helper::try_infer_types_from_tuple};
+use super::{
+    helper::try_infer_types_from_tuple,
+    traits::{OperatorCompatiblity, TypeLike},
+};
 use crate::{
     constants::common::BOOL,
     core::string_interner::Interner,
@@ -11,13 +14,13 @@ use crate::{
             interfaces::InterfaceBounds, types::generic_type::GenericTypeDeclarationPlaceCategory,
         },
     },
-    types::core::{AbstractType, CoreType, Type},
+    types::core::{CoreType, Type},
 };
 use std::cmp;
 
 #[derive(Debug, Clone)]
 pub struct Tuple {
-    pub sub_types: Vec<Type>,
+    sub_types: Vec<Type>,
 }
 
 impl Tuple {
@@ -27,13 +30,17 @@ impl Tuple {
         }
     }
 
+    pub fn sub_types(&self) -> &Vec<Type> {
+        &self.sub_types
+    }
+
     fn check_operator_for_tuple(
         &self,
         other: &Type,
         operator_kind: &BinaryOperatorKind,
         namespace: &Namespace,
     ) -> Option<Type> {
-        let CoreType::Tuple(other_tuple) = other.0.as_ref() else {
+        let CoreType::Tuple(other_tuple) = other.core_ty() else {
             return None;
         };
         let other_len = other_tuple.sub_types.len();
@@ -50,9 +57,9 @@ impl Tuple {
     }
 }
 
-impl AbstractType for Tuple {
+impl TypeLike for Tuple {
     fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
-        match other_ty.0.as_ref() {
+        match other_ty.core_ty() {
             CoreType::Tuple(tuple_data) => {
                 if tuple_data.sub_types.len() != self.sub_types.len() {
                     return false;
@@ -76,7 +83,7 @@ impl AbstractType for Tuple {
         context: &ConcretizationContext,
         namespace: &Namespace,
     ) -> bool {
-        let CoreType::Tuple(tuple_data) = other_ty.0.as_ref() else {
+        let CoreType::Tuple(tuple_data) = other_ty.core_ty() else {
             return false;
         };
         if tuple_data.sub_types.len() != self.sub_types.len() {
@@ -117,7 +124,7 @@ impl AbstractType for Tuple {
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
     ) -> Result<(), ()> {
-        let CoreType::Tuple(tuple_ty) = received_ty.0.as_ref() else {
+        let CoreType::Tuple(tuple_ty) = received_ty.core_ty() else {
             return Err(());
         };
         let generics_containing_types_tuple = &self.sub_types;
@@ -146,8 +153,8 @@ impl AbstractType for Tuple {
 }
 
 impl OperatorCompatiblity for Tuple {
-    fn check_add(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        let CoreType::Tuple(other_tuple) = other.0.as_ref() else {
+    fn check_add(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
+        let CoreType::Tuple(other_tuple) = other.core_ty() else {
             return None;
         };
         let self_sub_types = &self.sub_types;

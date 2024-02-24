@@ -1,4 +1,4 @@
-use super::core::OperatorCompatiblity;
+use super::traits::{OperatorCompatiblity, TypeLike};
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::core::string_interner::Interner;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
@@ -6,7 +6,7 @@ use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
-use crate::types::core::{AbstractType, CoreType, Type};
+use crate::types::core::{CoreType, Type};
 
 #[derive(Debug, Clone)]
 pub enum Atomic {
@@ -47,9 +47,9 @@ impl Atomic {
     }
 }
 
-impl AbstractType for Atomic {
+impl TypeLike for Atomic {
     fn is_eq(&self, other_ty: &Type, _namespace: &Namespace) -> bool {
-        match other_ty.0.as_ref() {
+        match other_ty.core_ty() {
             CoreType::Atomic(atomic_data) => match atomic_data {
                 Atomic::Int => self.is_int(),
                 Atomic::Float => self.is_float(),
@@ -67,7 +67,7 @@ impl AbstractType for Atomic {
         _context: &ConcretizationContext,
         _namespace: &Namespace,
     ) -> bool {
-        let CoreType::Atomic(atomic_data) = other_ty.0.as_ref() else {
+        let CoreType::Atomic(atomic_data) = other_ty.core_ty() else {
             return false;
         };
         match atomic_data {
@@ -114,7 +114,7 @@ impl AbstractType for Atomic {
 
 impl OperatorCompatiblity for Atomic {
     fn check_add(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
-        let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
+        let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
         match self {
@@ -137,7 +137,7 @@ impl OperatorCompatiblity for Atomic {
     }
 
     fn check_subtract(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
-        let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
+        let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
         match self {
@@ -156,7 +156,7 @@ impl OperatorCompatiblity for Atomic {
     }
 
     fn check_multiply(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
-        let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
+        let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
         match self {
@@ -175,7 +175,7 @@ impl OperatorCompatiblity for Atomic {
     }
 
     fn check_divide(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
-        let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
+        let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
         match self {
@@ -194,7 +194,7 @@ impl OperatorCompatiblity for Atomic {
     }
 
     fn check_double_equal(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
-        let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
+        let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
         match self {
@@ -220,7 +220,7 @@ impl OperatorCompatiblity for Atomic {
     }
 
     fn check_greater(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
-        let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
+        let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
         match self {
@@ -246,7 +246,7 @@ impl OperatorCompatiblity for Atomic {
     }
 
     fn check_less(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
-        let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
+        let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
         match self {
@@ -272,7 +272,7 @@ impl OperatorCompatiblity for Atomic {
     }
 
     fn check_and(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
-        let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
+        let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
         match self {
@@ -285,7 +285,7 @@ impl OperatorCompatiblity for Atomic {
     }
 
     fn check_or(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
-        let CoreType::Atomic(other_atomic) = other.0.as_ref() else {
+        let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
         match self {

@@ -1,27 +1,21 @@
+use super::traits::CollectionType;
 use crate::core::string_interner::Interner;
 use crate::scope::namespace::Namespace;
 use crate::types::array::core::Array;
 use crate::types::hashmap::core::HashMap;
 use crate::{
     core::common::RefOrOwned,
-    scope::{
-        concrete::ConcreteTypesTuple,
-        symbol::function::{CallableData, CallablePrototypeData},
-    },
+    scope::symbol::function::{CallableData, CallablePrototypeData},
 };
 use rustc_hash::FxHashMap;
 use std::marker::PhantomData;
 
-pub trait AbstractNonStructTypes {
-    fn concrete_types(&self) -> ConcreteTypesTuple;
-}
-
-struct CoreNonStructMethodsHandler<T: AbstractNonStructTypes> {
+pub struct CoreNonStructMethodsHandler<T: CollectionType> {
     methods: FxHashMap<&'static str, CallableData>,
     phanton: PhantomData<T>,
 }
 
-impl<T: AbstractNonStructTypes> CoreNonStructMethodsHandler<T> {
+impl<T: CollectionType> CoreNonStructMethodsHandler<T> {
     fn try_method(
         &self,
         ty: &T,
@@ -46,7 +40,7 @@ pub struct NonStructMethodsHandler {
 
 impl NonStructMethodsHandler {
     pub fn new(interner: &Interner) -> Self {
-        return NonStructMethodsHandler {
+        NonStructMethodsHandler {
             array_methods: CoreNonStructMethodsHandler {
                 methods: Array::builtin_methods(interner),
                 phanton: PhantomData,
@@ -55,7 +49,7 @@ impl NonStructMethodsHandler {
                 methods: HashMap::builtin_methods(interner),
                 phanton: PhantomData,
             },
-        };
+        }
     }
 
     pub fn try_method_for_array(

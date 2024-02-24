@@ -2,8 +2,8 @@ use super::namespace::Namespace;
 use super::symbol::core::SymbolIndex;
 use crate::core::string_interner::Interner;
 use crate::scope::traits::IsInitialized;
-use crate::types::core::AbstractType;
 use crate::types::core::Type;
+use crate::types::traits::TypeLike;
 use std::ops::Index;
 use std::slice::Iter;
 

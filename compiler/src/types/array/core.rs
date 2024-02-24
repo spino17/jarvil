@@ -3,23 +3,25 @@ use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::namespace::Namespace;
+use crate::scope::symbol::function::CallablePrototypeData;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
-use crate::types::core::OperatorCompatiblity;
-use crate::types::non_struct::AbstractNonStructTypes;
-use crate::{
-    constants::common::BOOL,
-    types::core::{AbstractType, CoreType, Type},
-};
+use crate::types::core::{CoreType, Type};
+use crate::types::traits::{CollectionType, OperatorCompatiblity};
+use crate::{constants::common::BOOL, types::traits::TypeLike};
 
 #[derive(Debug, Clone)]
 pub struct Array {
-    pub element_type: Type,
+    element_type: Type,
 }
 
 impl Array {
     pub fn new(element_type: Type) -> Array {
         Array { element_type }
+    }
+
+    pub fn element_ty(&self) -> &Type {
+        &self.element_type
     }
 
     fn check_operator_for_array(
@@ -28,7 +30,7 @@ impl Array {
         operator_kind: &BinaryOperatorKind,
         namespace: &Namespace,
     ) -> Option<Type> {
-        let CoreType::Array(other_array) = other.0.as_ref() else {
+        let CoreType::Array(other_array) = other.core_ty() else {
             return None;
         };
         if self
@@ -42,9 +44,9 @@ impl Array {
     }
 }
 
-impl AbstractType for Array {
+impl TypeLike for Array {
     fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
-        match other_ty.0.as_ref() {
+        match other_ty.core_ty() {
             CoreType::Array(array_data) => {
                 self.element_type.is_eq(&array_data.element_type, namespace)
             }
@@ -59,7 +61,7 @@ impl AbstractType for Array {
         context: &ConcretizationContext,
         namespace: &Namespace,
     ) -> bool {
-        let CoreType::Array(array_data) = other_ty.0.as_ref() else {
+        let CoreType::Array(array_data) = other_ty.core_ty() else {
             return false;
         };
         self.element_type
@@ -88,7 +90,7 @@ impl AbstractType for Array {
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
     ) -> Result<(), ()> {
-        let CoreType::Array(array_ty) = received_ty.0.as_ref() else {
+        let CoreType::Array(array_ty) = received_ty.core_ty() else {
             return Err(());
         };
         self.element_type.try_infer_type_or_check_equivalence(
@@ -108,7 +110,7 @@ impl AbstractType for Array {
 
 impl OperatorCompatiblity for Array {
     fn check_add(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        let CoreType::Array(array) = other.0.as_ref() else {
+        let CoreType::Array(array) = other.core_ty() else {
             return None;
         };
         let sub_type = &array.element_type;
@@ -153,7 +155,7 @@ impl OperatorCompatiblity for Array {
     }
 }
 
-impl AbstractNonStructTypes for Array {
+impl CollectionType for Array {
     fn concrete_types(&self) -> ConcreteTypesTuple {
         ConcreteTypesTuple::new(vec![self.element_type.clone()])
     }

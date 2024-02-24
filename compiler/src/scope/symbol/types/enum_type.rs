@@ -1,10 +1,11 @@
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
 use crate::scope::traits::IsInitialized;
+use crate::types::core::Type;
 use crate::{
     core::string_interner::StrId,
     scope::concrete::{ConcreteTypesTuple, ConcretizationContext},
-    types::core::{AbstractType, Type},
+    types::traits::TypeLike,
 };
 use text_size::TextRange;
 

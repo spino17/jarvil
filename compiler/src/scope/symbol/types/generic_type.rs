@@ -1,5 +1,5 @@
 use crate::scope::namespace::Namespace;
-use crate::types::core::AbstractType;
+use crate::types::traits::TypeLike;
 use crate::{
     core::string_interner::{Interner, StrId},
     scope::{

@@ -11,15 +11,15 @@ use crate::{
         },
     },
     types::{
-        core::{AbstractType, CoreType, OperatorCompatiblity, Type},
-        non_struct::AbstractNonStructTypes,
+        core::{CoreType, Type},
+        traits::{CollectionType, OperatorCompatiblity, TypeLike},
     },
 };
 
 #[derive(Debug, Clone)]
 pub struct HashMap {
-    pub key_type: Type,
-    pub value_type: Type,
+    key_type: Type,
+    value_type: Type,
 }
 
 impl HashMap {
@@ -29,11 +29,19 @@ impl HashMap {
             value_type,
         }
     }
+
+    pub fn key_ty(&self) -> &Type {
+        &self.key_type
+    }
+
+    pub fn value_ty(&self) -> &Type {
+        &self.value_type
+    }
 }
 
-impl AbstractType for HashMap {
+impl TypeLike for HashMap {
     fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
-        match other_ty.0.as_ref() {
+        match other_ty.core_ty() {
             CoreType::HashMap(hashmap_data) => {
                 self.key_type.is_eq(&hashmap_data.key_type, namespace)
                     && self.value_type.is_eq(&hashmap_data.value_type, namespace)
@@ -49,7 +57,7 @@ impl AbstractType for HashMap {
         context: &ConcretizationContext,
         namespace: &Namespace,
     ) -> bool {
-        let CoreType::HashMap(hashmap_data) = other_ty.0.as_ref() else {
+        let CoreType::HashMap(hashmap_data) = other_ty.core_ty() else {
             return false;
         };
         self.key_type
@@ -83,7 +91,7 @@ impl AbstractType for HashMap {
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
     ) -> Result<(), ()> {
-        let CoreType::HashMap(hashmap_ty) = received_ty.0.as_ref() else {
+        let CoreType::HashMap(hashmap_ty) = received_ty.core_ty() else {
             return Err(());
         };
         self.key_type.try_infer_type_or_check_equivalence(
@@ -132,7 +140,7 @@ impl OperatorCompatiblity for HashMap {
     }
 
     fn check_double_equal(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        let CoreType::HashMap(other_hashmap) = other.0.as_ref() else {
+        let CoreType::HashMap(other_hashmap) = other.core_ty() else {
             return None;
         };
         if self
@@ -174,7 +182,7 @@ impl OperatorCompatiblity for HashMap {
     }
 }
 
-impl AbstractNonStructTypes for HashMap {
+impl CollectionType for HashMap {
     fn concrete_types(&self) -> ConcreteTypesTuple {
         ConcreteTypesTuple::new(vec![self.key_type.clone(), self.value_type.clone()])
     }

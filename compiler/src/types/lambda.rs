@@ -1,5 +1,6 @@
-use super::core::OperatorCompatiblity;
-use super::helper::UserDefinedType;
+use super::traits::OperatorCompatiblity;
+use super::traits::TypeLike;
+use super::traits::UserDefinedType;
 use crate::ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode};
 use crate::core::string_interner::{Interner, StrId};
 use crate::parser::type_checker::{
@@ -12,7 +13,7 @@ use crate::scope::symbol::function::CallablePrototypeData;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
-use crate::types::core::{AbstractType, CoreType, Type};
+use crate::types::core::{CoreType, Type};
 use crate::types::helper::user_defined_ty_compare_fn;
 
 #[derive(Debug)]
@@ -22,6 +23,10 @@ pub struct NamedLambdaCore {
 }
 
 impl UserDefinedType for NamedLambdaCore {
+    fn symbol_index(&self) -> SymbolIndex<UserDefinedTypeData> {
+        self.symbol_index
+    }
+
     fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
         self.concrete_types.as_ref()
     }
@@ -91,9 +96,9 @@ impl Lambda {
     }
 }
 
-impl AbstractType for Lambda {
+impl TypeLike for Lambda {
     fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
-        match other_ty.0.as_ref() {
+        match other_ty.core_ty() {
             CoreType::Lambda(other_data) => {
                 // Lambda type has structural equivalence unlike struct types which are only compared by it's name.
                 match self {
@@ -152,7 +157,7 @@ impl AbstractType for Lambda {
         context: &ConcretizationContext,
         namespace: &Namespace,
     ) -> bool {
-        match other_ty.0.as_ref() {
+        match other_ty.core_ty() {
             CoreType::Lambda(other_data) => match self {
                 Lambda::Named(self_named_lambda) => {
                     let Lambda::Named(other_named_lambda) = other_data else {
@@ -215,7 +220,7 @@ impl AbstractType for Lambda {
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
     ) -> Result<(), ()> {
-        match received_ty.0.as_ref() {
+        match received_ty.core_ty() {
             CoreType::Lambda(lambda_ty) => match self {
                 Lambda::Named(self_named) => {
                     let self_ty_data = namespace

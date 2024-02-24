@@ -40,7 +40,7 @@ use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCatego
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
 use crate::scope::symbol::variables::VariableSymbolData;
 use crate::scope::traits::{AbstractSymbol, IsInitialized};
-use crate::types::core::AbstractType;
+use crate::types::traits::TypeLike;
 use crate::{
     ast::{
         ast::{

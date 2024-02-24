@@ -41,6 +41,7 @@ use crate::types::generic::Generic;
 use crate::types::hashmap::core::HashMap;
 use crate::types::non_struct::NonStructMethodsHandler;
 use crate::types::r#struct::Struct;
+use crate::types::traits::UserDefinedType;
 use crate::types::tuple::Tuple;
 use crate::{
     ast::{
@@ -81,7 +82,8 @@ use crate::{
     },
     types::{
         atomic::Atomic,
-        core::{AbstractType, CoreType, Type},
+        core::{CoreType, Type},
+        traits::TypeLike,
     },
 };
 use rustc_hash::FxHashSet;
@@ -655,7 +657,7 @@ impl TypeChecker {
             .semantic_db
             .variable_symbol_ref(concrete_symbol_index.symbol_index())
             .ty();
-        match lambda_type.0.as_ref() {
+        match lambda_type.core_ty() {
             CoreType::Lambda(lambda_data) => {
                 let return_ty = lambda_data.is_received_params_valid(self, params)?;
                 Ok(return_ty)
@@ -1103,7 +1105,7 @@ impl TypeChecker {
         let atom = &core_call.atom;
         let params = &core_call.params;
         let (atom_type_obj, _) = self.check_atom(atom);
-        match &atom_type_obj.0.as_ref() {
+        match &atom_type_obj.core_ty() {
             CoreType::Lambda(lambda_data) => {
                 let result = lambda_data.is_received_params_valid(self, params);
                 match result {
@@ -1140,14 +1142,14 @@ impl TypeChecker {
         }
         let property_name_str =
             ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
-        let result = match atom_type_obj.0.as_ref() {
+        let result = match atom_type_obj.core_ty() {
             CoreType::Struct(struct_ty) => {
-                let concrete_types = &struct_ty.concrete_types;
-                let ty_data = self.semantic_db.ty_symbol_ref(struct_ty.symbol_index);
+                let concrete_types = struct_ty.concrete_types();
+                let ty_data = self.semantic_db.ty_symbol_ref(struct_ty.symbol_index());
                 let struct_data = ty_data.struct_data_ref();
                 match struct_data.try_field(
                     &property_name_str,
-                    concrete_types.as_ref(),
+                    concrete_types,
                     self.semantic_db.namespace_ref(),
                 ) {
                     Some((type_obj, _)) => Ok(type_obj),
@@ -1165,7 +1167,7 @@ impl TypeChecker {
                 }
             }
             CoreType::Generic(generic_ty) => {
-                let ty_data = self.semantic_db.ty_symbol_ref(generic_ty.symbol_index);
+                let ty_data = self.semantic_db.ty_symbol_ref(generic_ty.symbol_index());
                 let generic_data = ty_data.generic_data_ref();
                 match generic_data.try_field(
                     &property_name_str,
@@ -1228,13 +1230,13 @@ impl TypeChecker {
 
         let method_name =
             method_name_ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
-        let concrete_types = &struct_ty.concrete_types;
-        let ty_data = self.semantic_db.ty_symbol_ref(struct_ty.symbol_index);
+        let concrete_types = struct_ty.concrete_types();
+        let ty_data = self.semantic_db.ty_symbol_ref(struct_ty.symbol_index());
         let struct_data = ty_data.struct_data_ref();
         // first check if it's a property
         match struct_data.try_field(
             &method_name,
-            concrete_types.as_ref(),
+            concrete_types,
             self.semantic_db.namespace_ref(),
         ) {
             Some((propetry_ty, _)) => {
@@ -1249,7 +1251,7 @@ impl TypeChecker {
                     ))
                 } else {
                     // check if the `property_ty` is callable
-                    match propetry_ty.0.as_ref() {
+                    match propetry_ty.core_ty() {
                         CoreType::Lambda(lambda_ty) => {
                             let return_ty = lambda_ty.is_received_params_valid(self, params)?;
                             Ok(return_ty)
@@ -1260,7 +1262,7 @@ impl TypeChecker {
             }
             None => {
                 // if field is not there then check in methods
-                match struct_data.try_method(&method_name, concrete_types.as_ref()) {
+                match struct_data.try_method(&method_name, concrete_types) {
                     Some((partial_concrete_callable_data, _)) => {
                         let (concrete_types, ty_ranges, _) = self
                             .extract_angle_bracket_content_from_identifier_in_use(
@@ -1288,7 +1290,7 @@ impl TypeChecker {
     ) -> Result<Type, MethodAccessTypeCheckError> {
         let method_name =
             method_name_ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
-        let ty_data = self.semantic_db.ty_symbol_ref(generic_ty.symbol_index);
+        let ty_data = self.semantic_db.ty_symbol_ref(generic_ty.symbol_index());
         let generic_data = ty_data.generic_data_ref();
         let interface_bounds = generic_data.interface_bounds();
         match generic_data.try_field(
@@ -1308,7 +1310,7 @@ impl TypeChecker {
                     ))
                 } else {
                     // check if the `property_ty` is callable
-                    match propetry_ty.0.as_ref() {
+                    match propetry_ty.core_ty() {
                         CoreType::Lambda(lambda_ty) => {
                             let return_ty = lambda_ty.is_received_params_valid(self, params)?;
                             Ok(return_ty)
@@ -1435,7 +1437,7 @@ impl TypeChecker {
         let CoreIdentifierInUseNode::Ok(ok_identifier) = method.core_ref() else {
             return (Type::new_with_unknown(), Some(atom_type_obj));
         };
-        let result = match &atom_type_obj.0.as_ref() {
+        let result = match &atom_type_obj.core_ty() {
             CoreType::Struct(struct_ty) => {
                 self.check_method_access_for_struct_ty(struct_ty, ok_identifier, params)
             }
@@ -1518,7 +1520,7 @@ impl TypeChecker {
         tuple_ty: &Tuple,
         index_expr: &ExpressionNode,
     ) -> Type {
-        let sub_types = &tuple_ty.sub_types;
+        let sub_types = tuple_ty.sub_types();
         let CoreExpressionNode::Unary(index_unary_expr) = index_expr.core_ref() else {
             let err = InvalidIndexExpressionForTupleError::new(index_expr.range());
             self.log_error(Diagnostics::InvalidIndexExpressionForTuple(err));
@@ -1550,7 +1552,7 @@ impl TypeChecker {
         let (atom_type_obj, _) = self.check_atom(atom);
         let index_expr = &core_index_access.index;
         let index_type_obj = self.check_expr(index_expr);
-        let result = match atom_type_obj.0.as_ref() {
+        let result = match atom_type_obj.core_ty() {
             CoreType::Tuple(tuple_data) => {
                 return (
                     self.check_index_access_for_tuple_ty(tuple_data, index_expr),
@@ -1559,7 +1561,7 @@ impl TypeChecker {
             }
             CoreType::Array(array_data) => {
                 if index_type_obj.is_int() {
-                    Some(array_data.element_type.clone())
+                    Some(array_data.element_ty().clone())
                 } else {
                     None
                 }
@@ -1576,10 +1578,10 @@ impl TypeChecker {
             },
             CoreType::HashMap(hashmap_data) => {
                 // TODO - instead of having `is_hashable` check, replace it with `is_type_bounded_by` `Hash` interface
-                if index_type_obj.is_eq(&hashmap_data.key_type, self.semantic_db.namespace_ref())
+                if index_type_obj.is_eq(hashmap_data.key_ty(), self.semantic_db.namespace_ref())
                     && index_type_obj.is_hashable()
                 {
-                    Some(hashmap_data.value_type.clone())
+                    Some(hashmap_data.value_ty().clone())
                 } else {
                     None
                 }
@@ -1898,7 +1900,7 @@ impl TypeChecker {
             );
             let result = self.is_binary_operation_valid(&l_type, &r_type, &operator_kind);
             match result {
-                Some(type_obj) => match type_obj.0.as_ref() {
+                Some(type_obj) => match type_obj.core_ty() {
                     CoreType::Atomic(atomic) => debug_assert!(atomic.is_bool()),
                     CoreType::Unknown => return Type::new_with_unknown(),
                     _ => unreachable!("comparison operator always result into `bool` type"),
@@ -2230,7 +2232,7 @@ impl TypeChecker {
         let match_block = &core_match_case.block;
         let expr_ty = self.check_expr(expr);
 
-        let CoreType::Enum(enum_ty) = expr_ty.0.as_ref() else {
+        let CoreType::Enum(enum_ty) = expr_ty.core_ty() else {
             let err = IncorrectExpressionTypeError::new(
                 "<enum>".to_string(),
                 expr_ty.to_string(
@@ -2244,9 +2246,9 @@ impl TypeChecker {
         };
 
         let mut checked_variants: FxHashSet<StrId> = FxHashSet::default();
-        let expr_enum_name = enum_ty.symbol_index.identifier_name();
-        let concrete_types = &enum_ty.concrete_types;
-        let ty_data = self.semantic_db.ty_symbol_ref(enum_ty.symbol_index);
+        let expr_enum_name = enum_ty.name();
+        let concrete_types = enum_ty.concrete_types();
+        let ty_data = self.semantic_db.ty_symbol_ref(enum_ty.symbol_index());
         let enum_data = ty_data.enum_data_ref();
         let mut symbol_index_ty_vec = vec![];
         let mut case_blocks = vec![];
@@ -2284,7 +2286,7 @@ impl TypeChecker {
                             .token_value(&self.code_handler, self.semantic_db.interner());
                         match enum_data.try_type_for_variant(
                             variant_name_str,
-                            concrete_types.as_ref(),
+                            concrete_types,
                             self.semantic_db.namespace_ref(),
                         ) {
                             Some(expected_ty) => {
@@ -2380,7 +2382,7 @@ impl TypeChecker {
         for enum_name in enum_name_decls {
             self.semantic_db
                 .identifier_in_decl_binding_table_mut_ref()
-                .insert(enum_name, SymbolDataEntry::Type(enum_ty.symbol_index));
+                .insert(enum_name, SymbolDataEntry::Type(enum_ty.symbol_index()));
         }
 
         // set types to the enum variant associated variables
@@ -2418,9 +2420,9 @@ impl TypeChecker {
         let core_for_loop = for_loop_stmt.core_ref();
         let iterable_expr = &core_for_loop.iterable_expr;
         let iterable_expr_ty = self.check_expr(iterable_expr);
-        let element_ty: Option<RefOrOwned<Type>> = match iterable_expr_ty.0.as_ref() {
-            CoreType::Array(array_data) => Some(RefOrOwned::Ref(&array_data.element_type)),
-            CoreType::HashMap(hashmap_data) => Some(RefOrOwned::Ref(&hashmap_data.key_type)),
+        let element_ty: Option<RefOrOwned<Type>> = match iterable_expr_ty.core_ty() {
+            CoreType::Array(array_data) => Some(RefOrOwned::Ref(array_data.element_ty())),
+            CoreType::HashMap(hashmap_data) => Some(RefOrOwned::Ref(hashmap_data.key_ty())),
             CoreType::Atomic(atomic_data) => match atomic_data {
                 Atomic::String => Some(RefOrOwned::Owned(Type::new_with_atomic("str"))),
                 Atomic::Float | Atomic::Int | Atomic::Bool => None,

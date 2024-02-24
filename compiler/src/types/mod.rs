@@ -11,4 +11,5 @@ pub mod helper;
 pub mod lambda;
 pub mod non_struct;
 pub mod r#struct;
+pub mod traits;
 pub mod tuple;

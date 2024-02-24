@@ -1,5 +1,6 @@
-use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
-use crate::types::helper::UserDefinedType;
+use super::core::{CoreType, Type};
+use super::traits::{OperatorCompatiblity, TypeLike};
+use crate::types::traits::UserDefinedType;
 use crate::{
     core::string_interner::{Interner, StrId},
     parser::type_checker::InferredConcreteTypesEntry,
@@ -16,7 +17,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Generic {
-    pub symbol_index: SymbolIndex<UserDefinedTypeData>,
+    symbol_index: SymbolIndex<UserDefinedTypeData>,
 }
 
 impl Generic {
@@ -30,6 +31,10 @@ impl Generic {
 }
 
 impl UserDefinedType for Generic {
+    fn symbol_index(&self) -> SymbolIndex<UserDefinedTypeData> {
+        self.symbol_index
+    }
+
     fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
         None
     }
@@ -39,9 +44,9 @@ impl UserDefinedType for Generic {
     }
 }
 
-impl AbstractType for Generic {
+impl TypeLike for Generic {
     fn is_eq(&self, other_ty: &Type, _namespace: &Namespace) -> bool {
-        match other_ty.0.as_ref() {
+        match other_ty.core_ty() {
             CoreType::Generic(generic_data) => self.name() == generic_data.name(),
             CoreType::Any => true,
             _ => false,
@@ -54,7 +59,7 @@ impl AbstractType for Generic {
         context: &ConcretizationContext,
         namespace: &Namespace,
     ) -> bool {
-        let is_other_ty_generic = match other_ty.0.as_ref() {
+        let is_other_ty_generic = match other_ty.core_ty() {
             CoreType::Generic(generic_data) => Some(generic_data),
             _ => None,
         };

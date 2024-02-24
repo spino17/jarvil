@@ -6,7 +6,7 @@ use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
-use crate::{core::string_interner::StrId, types::core::AbstractType};
+use crate::{core::string_interner::StrId, types::traits::TypeLike};
 use rustc_hash::FxHashMap;
 use std::marker::PhantomData;
 use text_size::TextRange;

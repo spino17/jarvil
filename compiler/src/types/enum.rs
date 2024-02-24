@@ -1,6 +1,7 @@
 use super::{
-    core::{AbstractType, CoreType, OperatorCompatiblity, Type},
-    helper::{try_infer_types_from_tuple, user_defined_ty_compare_fn, UserDefinedType},
+    core::{CoreType, Type},
+    helper::{try_infer_types_from_tuple, user_defined_ty_compare_fn},
+    traits::{OperatorCompatiblity, TypeLike, UserDefinedType},
 };
 use crate::{
     core::string_interner::{Interner, StrId},
@@ -18,8 +19,8 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Enum {
-    pub symbol_index: SymbolIndex<UserDefinedTypeData>,
-    pub concrete_types: Option<ConcreteTypesTuple>,
+    symbol_index: SymbolIndex<UserDefinedTypeData>,
+    concrete_types: Option<ConcreteTypesTuple>,
 }
 
 impl Enum {
@@ -35,6 +36,10 @@ impl Enum {
 }
 
 impl UserDefinedType for Enum {
+    fn symbol_index(&self) -> SymbolIndex<UserDefinedTypeData> {
+        self.symbol_index
+    }
+
     fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
         self.concrete_types.as_ref()
     }
@@ -44,9 +49,9 @@ impl UserDefinedType for Enum {
     }
 }
 
-impl AbstractType for Enum {
+impl TypeLike for Enum {
     fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
-        match other_ty.0.as_ref() {
+        match other_ty.core_ty() {
             CoreType::Enum(enum_data) => {
                 let ty_cmp_func =
                     |ty1: &Type,
@@ -72,7 +77,7 @@ impl AbstractType for Enum {
         context: &ConcretizationContext,
         namespace: &Namespace,
     ) -> bool {
-        let CoreType::Enum(enum_data) = other_ty.0.as_ref() else {
+        let CoreType::Enum(enum_data) = other_ty.core_ty() else {
             return false;
         };
         let ty_cmp_func =
@@ -113,7 +118,7 @@ impl AbstractType for Enum {
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
     ) -> Result<(), ()> {
-        let CoreType::Enum(enum_ty) = received_ty.0.as_ref() else {
+        let CoreType::Enum(enum_ty) = received_ty.core_ty() else {
             return Err(());
         };
         if self.name() != enum_ty.name() {

@@ -14,7 +14,7 @@ use crate::{
     parser::type_checker::{
         InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
     },
-    types::core::AbstractType,
+    types::traits::TypeLike,
 };
 use crate::{core::string_interner::Interner, scope::traits::IsInitialized};
 use std::vec;

@@ -96,7 +96,7 @@ impl TypeId {
         match arena.core_ty_ref(*self) {
             CoreType::Atomic(atomic) => atomic.is_int() || atomic.is_string() || atomic.is_float(),
             CoreType::Tuple(tuple) => {
-                for ty in &tuple.sub_types {
+                for ty in tuple.sub_types() {
                     if !ty.is_hashable() {
                         return false;
                     }

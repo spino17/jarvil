@@ -1,6 +1,5 @@
-use super::core::Type;
 use crate::{
-    core::string_interner::{Interner, StrId},
+    core::string_interner::Interner,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::{ConcreteTypesTuple, ConcretizationContext},
@@ -8,8 +7,10 @@ use crate::{
         scope::ScopeIndex,
         symbol::{core::SymbolIndex, types::generic_type::GenericTypeDeclarationPlaceCategory},
     },
-    types::core::AbstractType,
+    types::traits::TypeLike,
 };
+
+use super::{core::Type, traits::UserDefinedType};
 
 pub fn unbounded_generic_type_with_declaration_index(index: usize, interner: &Interner) -> Type {
     match index {
@@ -43,11 +44,6 @@ pub fn try_infer_types_from_tuple(
         )?;
     }
     Ok(())
-}
-
-pub trait UserDefinedType {
-    fn concrete_types(&self) -> Option<&ConcreteTypesTuple>;
-    fn name(&self) -> StrId;
 }
 
 pub fn user_defined_ty_compare_fn<

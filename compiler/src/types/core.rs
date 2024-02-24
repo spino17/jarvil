@@ -3,8 +3,9 @@ use super::hashmap::core::HashMap;
 use super::lambda::Lambda;
 use super::r#enum::Enum;
 use super::r#struct::Struct;
+use super::traits::TypeLike;
 use super::tuple::Tuple;
-use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
+use crate::constants::common::{ANY, UNKNOWN, UNSET};
 use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
@@ -15,69 +16,10 @@ use crate::scope::symbol::function::CallablePrototypeData;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::types::traits::OperatorCompatiblity;
 use crate::types::{array::core::Array, atomic::Atomic};
 use std::fmt::Debug;
 use std::rc::Rc;
-
-pub trait AbstractType {
-    fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool;
-    fn is_structurally_eq(
-        &self,
-        other_ty: &Type,
-        context: &ConcretizationContext,
-        namespace: &Namespace,
-    ) -> bool;
-    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type;
-    fn try_infer_type_or_check_equivalence(
-        &self,
-        received_ty: &Type,
-        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
-        num_inferred_types: &mut usize,
-        inference_category: GenericTypeDeclarationPlaceCategory,
-        namespace: &Namespace,
-    ) -> Result<(), ()>;
-    fn is_type_bounded_by_interfaces(
-        &self,
-        interface_bounds: &InterfaceBounds,
-        namespace: &Namespace,
-    ) -> bool;
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String;
-}
-
-pub trait OperatorCompatiblity {
-    fn check_add(&self, other: &Type, namespace: &Namespace) -> Option<Type>;
-    fn check_subtract(&self, other: &Type, namespace: &Namespace) -> Option<Type>;
-    fn check_multiply(&self, other: &Type, namespace: &Namespace) -> Option<Type>;
-    fn check_divide(&self, other: &Type, namespace: &Namespace) -> Option<Type>;
-    fn check_double_equal(&self, other: &Type, namespace: &Namespace) -> Option<Type>;
-    fn check_greater(&self, other: &Type, namespace: &Namespace) -> Option<Type>;
-    fn check_less(&self, other: &Type, namespace: &Namespace) -> Option<Type>;
-    fn check_and(&self, other: &Type, namespace: &Namespace) -> Option<Type>;
-    fn check_or(&self, other: &Type, namespace: &Namespace) -> Option<Type>;
-    fn check_not_equal(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        if self.check_double_equal(other, namespace).is_some() {
-            return Some(Type::new_with_atomic(BOOL));
-        }
-        None
-    }
-    fn check_greater_equal(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        if self.check_greater(other, namespace).is_some()
-            && self.check_double_equal(other, namespace).is_some()
-        {
-            return Some(Type::new_with_atomic(BOOL));
-        }
-        None
-    }
-    fn check_less_equal(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        if self.check_less(other, namespace).is_some()
-            && self.check_double_equal(other, namespace).is_some()
-        {
-            return Some(Type::new_with_atomic(BOOL));
-        }
-        None
-    }
-}
 
 #[derive(Debug)]
 pub enum CoreType {
@@ -224,9 +166,13 @@ impl CoreType {
 }
 
 #[derive(Debug, Clone)]
-pub struct Type(pub Rc<CoreType>, bool);
+pub struct Type(Rc<CoreType>, bool);
 
 impl Type {
+    pub fn core_ty(&self) -> &CoreType {
+        self.0.as_ref()
+    }
+
     pub fn new_with_atomic(name: &str) -> Type {
         Type(Rc::new(CoreType::Atomic(Atomic::new(name))), false)
     }
@@ -395,7 +341,7 @@ impl Type {
         match self.0.as_ref() {
             CoreType::Atomic(atomic) => atomic.is_int() || atomic.is_string() || atomic.is_float(),
             CoreType::Tuple(tuple) => {
-                for ty in &tuple.sub_types {
+                for ty in tuple.sub_types() {
                     if !ty.is_hashable() {
                         return false;
                     }
@@ -476,7 +422,7 @@ impl Type {
     }
 }
 
-impl AbstractType for Type {
+impl TypeLike for Type {
     fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
         match self.0.as_ref() {
             CoreType::Atomic(atomic_type) => atomic_type.is_eq(other_ty, namespace),

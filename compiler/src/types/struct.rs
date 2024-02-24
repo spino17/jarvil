@@ -1,5 +1,6 @@
-use super::core::{AbstractType, CoreType, OperatorCompatiblity, Type};
-use super::helper::{try_infer_types_from_tuple, user_defined_ty_compare_fn, UserDefinedType};
+use super::core::{CoreType, Type};
+use super::helper::{try_infer_types_from_tuple, user_defined_ty_compare_fn};
+use super::traits::{OperatorCompatiblity, TypeLike, UserDefinedType};
 use crate::core::string_interner::{Interner, StrId};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::ConcreteTypesTuple;
@@ -13,8 +14,8 @@ use crate::scope::{
 
 #[derive(Debug)]
 pub struct Struct {
-    pub symbol_index: SymbolIndex<UserDefinedTypeData>,
-    pub concrete_types: Option<ConcreteTypesTuple>,
+    symbol_index: SymbolIndex<UserDefinedTypeData>,
+    concrete_types: Option<ConcreteTypesTuple>,
 }
 
 impl Struct {
@@ -30,6 +31,10 @@ impl Struct {
 }
 
 impl UserDefinedType for Struct {
+    fn symbol_index(&self) -> SymbolIndex<UserDefinedTypeData> {
+        self.symbol_index
+    }
+
     fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
         self.concrete_types.as_ref()
     }
@@ -39,9 +44,9 @@ impl UserDefinedType for Struct {
     }
 }
 
-impl AbstractType for Struct {
+impl TypeLike for Struct {
     fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
-        match other_ty.0.as_ref() {
+        match other_ty.core_ty() {
             CoreType::Struct(struct_data) => {
                 let ty_cmp_func =
                     |ty1: &Type,
@@ -67,7 +72,7 @@ impl AbstractType for Struct {
         context: &ConcretizationContext,
         namespace: &Namespace,
     ) -> bool {
-        let CoreType::Struct(struct_data) = other_ty.0.as_ref() else {
+        let CoreType::Struct(struct_data) = other_ty.core_ty() else {
             return false;
         };
         let ty_cmp_func =
@@ -115,7 +120,7 @@ impl AbstractType for Struct {
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
     ) -> Result<(), ()> {
-        let CoreType::Struct(struct_ty) = received_ty.0.as_ref() else {
+        let CoreType::Struct(struct_ty) = received_ty.core_ty() else {
             return Err(());
         };
         if self.name() != struct_ty.name() {
@@ -154,7 +159,7 @@ impl AbstractType for Struct {
 // This is called `operator-overloading`
 impl OperatorCompatiblity for Struct {
     fn check_add(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        let CoreType::Struct(other_struct) = other.0.as_ref() else {
+        let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
         if self.name() != other_struct.name() {
@@ -165,7 +170,7 @@ impl OperatorCompatiblity for Struct {
     }
 
     fn check_subtract(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        let CoreType::Struct(other_struct) = other.0.as_ref() else {
+        let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
         if self.name() != other_struct.name() {
@@ -176,7 +181,7 @@ impl OperatorCompatiblity for Struct {
     }
 
     fn check_multiply(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        let CoreType::Struct(other_struct) = other.0.as_ref() else {
+        let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
         if self.name() != other_struct.name() {
@@ -187,7 +192,7 @@ impl OperatorCompatiblity for Struct {
     }
 
     fn check_divide(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        let CoreType::Struct(other_struct) = other.0.as_ref() else {
+        let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
         if self.name() != other_struct.name() {
@@ -198,7 +203,7 @@ impl OperatorCompatiblity for Struct {
     }
 
     fn check_double_equal(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        let CoreType::Struct(other_struct) = other.0.as_ref() else {
+        let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
         if self.name() != other_struct.name() {
@@ -209,7 +214,7 @@ impl OperatorCompatiblity for Struct {
     }
 
     fn check_greater(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        let CoreType::Struct(other_struct) = other.0.as_ref() else {
+        let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
         if self.name() != other_struct.name() {
@@ -220,7 +225,7 @@ impl OperatorCompatiblity for Struct {
     }
 
     fn check_less(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        let CoreType::Struct(other_struct) = other.0.as_ref() else {
+        let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
         if self.name() != other_struct.name() {
@@ -231,7 +236,7 @@ impl OperatorCompatiblity for Struct {
     }
 
     fn check_and(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        let CoreType::Struct(other_struct) = other.0.as_ref() else {
+        let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
         if self.name() != other_struct.name() {
@@ -242,7 +247,7 @@ impl OperatorCompatiblity for Struct {
     }
 
     fn check_or(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
-        let CoreType::Struct(other_struct) = other.0.as_ref() else {
+        let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
         if self.name() != other_struct.name() {
