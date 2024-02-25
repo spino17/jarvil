@@ -45,13 +45,10 @@ impl Array {
 
 impl TypeLike for Array {
     fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
-        match other_ty.core_ty() {
-            CoreType::Array(array_data) => {
-                self.element_type.is_eq(&array_data.element_type, namespace)
-            }
-            CoreType::Any => true,
-            _ => false,
-        }
+        let CoreType::Array(array_data) = other_ty.core_ty() else {
+            return false;
+        };
+        self.element_type.is_eq(&array_data.element_type, namespace)
     }
 
     fn is_structurally_eq(

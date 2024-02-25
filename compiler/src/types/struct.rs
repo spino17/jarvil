@@ -46,24 +46,20 @@ impl UserDefinedType for Struct {
 
 impl TypeLike for Struct {
     fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
-        match other_ty.core_ty() {
-            CoreType::Struct(struct_data) => {
-                let ty_cmp_func =
-                    |ty1: &Type,
-                     ty2: &Type,
-                     _context: &ConcretizationContext,
-                     namespace: &Namespace| { ty1.is_eq(ty2, namespace) };
-                user_defined_ty_compare_fn(
-                    self,
-                    struct_data,
-                    ty_cmp_func,
-                    &ConcretizationContext::default(),
-                    namespace,
-                )
-            }
-            CoreType::Any => true,
-            _ => false,
-        }
+        let CoreType::Struct(struct_data) = other_ty.core_ty() else {
+            return false;
+        };
+        let ty_cmp_func =
+            |ty1: &Type, ty2: &Type, _context: &ConcretizationContext, namespace: &Namespace| {
+                ty1.is_eq(ty2, namespace)
+            };
+        user_defined_ty_compare_fn(
+            self,
+            struct_data,
+            ty_cmp_func,
+            &ConcretizationContext::default(),
+            namespace,
+        )
     }
 
     fn is_structurally_eq(

@@ -46,11 +46,10 @@ impl UserDefinedType for Generic {
 
 impl TypeLike for Generic {
     fn is_eq(&self, other_ty: &Type, _namespace: &Namespace) -> bool {
-        match other_ty.core_ty() {
-            CoreType::Generic(generic_data) => self.name() == generic_data.name(),
-            CoreType::Any => true,
-            _ => false,
-        }
+        let CoreType::Generic(generic_data) = other_ty.core_ty() else {
+            return false;
+        };
+        self.name() == generic_data.name()
     }
 
     fn is_structurally_eq(

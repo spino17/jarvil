@@ -2438,7 +2438,6 @@ impl TypeChecker {
             CoreType::Enum(_)
             | CoreType::Lambda(_)
             | CoreType::Tuple(_)
-            | CoreType::Any
             | CoreType::Unknown
             | CoreType::Unset
             | CoreType::Void => None,

@@ -5,7 +5,7 @@ use super::r#enum::Enum;
 use super::r#struct::Struct;
 use super::traits::TypeLike;
 use super::tuple::Tuple;
-use crate::constants::common::{ANY, UNKNOWN, UNSET};
+use crate::constants::common::{UNKNOWN, UNSET};
 use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
@@ -34,7 +34,6 @@ pub enum CoreType {
     Unknown,
     Void,
     Unset,
-    Any,
 }
 
 impl CoreType {
@@ -159,10 +158,6 @@ impl CoreType {
     pub fn is_unset(&self) -> bool {
         matches!(self, CoreType::Unset)
     }
-
-    pub fn is_any(&self) -> bool {
-        matches!(self, CoreType::Any)
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -252,10 +247,6 @@ impl Type {
 
     pub fn new_with_void() -> Type {
         Type(Rc::new(CoreType::Void), false)
-    }
-
-    pub fn new_with_any() -> Type {
-        Type(Rc::new(CoreType::Any), false)
     }
 
     pub fn is_void(&self) -> bool {
@@ -439,7 +430,6 @@ impl TypeLike for Type {
             },
             CoreType::Unknown => false,
             CoreType::Unset => false,
-            CoreType::Any => true,
         }
     }
 
@@ -476,7 +466,7 @@ impl TypeLike for Type {
                 CoreType::Void => true,
                 _ => false,
             },
-            CoreType::Unknown | CoreType::Unset | CoreType::Any => unreachable!(),
+            CoreType::Unknown | CoreType::Unset => unreachable!(),
         }
     }
 
@@ -489,11 +479,9 @@ impl TypeLike for Type {
             CoreType::Tuple(tuple_type) => tuple_type.concretize(context, namespace),
             CoreType::HashMap(hashmap_type) => hashmap_type.concretize(context, namespace),
             CoreType::Generic(generic_type) => generic_type.concretize(context, namespace),
-            CoreType::Atomic(_)
-            | CoreType::Unknown
-            | CoreType::Void
-            | CoreType::Unset
-            | CoreType::Any => self.clone(),
+            CoreType::Atomic(_) | CoreType::Unknown | CoreType::Void | CoreType::Unset => {
+                self.clone()
+            }
         }
     }
 
@@ -521,7 +509,7 @@ impl TypeLike for Type {
             CoreType::Tuple(tuple_ty) => {
                 tuple_ty.is_type_bounded_by_interfaces(interface_bounds, namespace)
             }
-            CoreType::Lambda(_) | CoreType::Atomic(_) | CoreType::Enum(_) | CoreType::Any => false,
+            CoreType::Lambda(_) | CoreType::Atomic(_) | CoreType::Enum(_) => false,
             CoreType::Unknown | CoreType::Unset | CoreType::Void => false,
         }
     }
@@ -592,11 +580,7 @@ impl TypeLike for Type {
                 inference_category,
                 namespace,
             ),
-            CoreType::Atomic(_)
-            | CoreType::Unknown
-            | CoreType::Void
-            | CoreType::Unset
-            | CoreType::Any => {
+            CoreType::Atomic(_) | CoreType::Unknown | CoreType::Void | CoreType::Unset => {
                 if !self.is_eq(received_ty, namespace) {
                     return Err(());
                 }
@@ -618,7 +602,6 @@ impl TypeLike for Type {
             CoreType::Unknown => UNKNOWN.to_string(),
             CoreType::Void => "()".to_string(),
             CoreType::Unset => UNSET.to_string(),
-            CoreType::Any => ANY.to_string(),
         }
     }
 }

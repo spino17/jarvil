@@ -98,56 +98,53 @@ impl Lambda {
 
 impl TypeLike for Lambda {
     fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
-        match other_ty.core_ty() {
-            CoreType::Lambda(other_data) => {
-                // Lambda type has structural equivalence unlike struct types which are only compared by it's name.
-                match self {
-                    Lambda::Named(self_named) => {
-                        let self_ty_data = namespace
+        let CoreType::Lambda(other_data) = other_ty.core_ty() else {
+            return false;
+        };
+        // Lambda type has structural equivalence unlike struct types which are only compared by it's name.
+        match self {
+            Lambda::Named(self_named) => {
+                let self_ty_data = namespace
+                    .types_ref()
+                    .symbol_ref(self_named.symbol_index)
+                    .data_ref();
+                let self_data = self_ty_data.lambda_data_ref();
+                let self_concrete_types = &self_named.concrete_types;
+                let self_prototype_result =
+                    self_data.prototype(self_concrete_types.as_ref(), namespace);
+                match other_data {
+                    Lambda::Named(other_named) => {
+                        let other_ty_data = namespace
                             .types_ref()
-                            .symbol_ref(self_named.symbol_index)
+                            .symbol_ref(other_named.symbol_index)
                             .data_ref();
-                        let self_data = self_ty_data.lambda_data_ref();
-                        let self_concrete_types = &self_named.concrete_types;
-                        let self_prototype_result =
-                            self_data.prototype(self_concrete_types.as_ref(), namespace);
-                        match other_data {
-                            Lambda::Named(other_named) => {
-                                let other_ty_data = namespace
-                                    .types_ref()
-                                    .symbol_ref(other_named.symbol_index)
-                                    .data_ref();
-                                let other_data = other_ty_data.lambda_data_ref();
-                                let other_concrete_types = &other_named.concrete_types;
-                                let other_prototype_result =
-                                    other_data.prototype(other_concrete_types.as_ref(), namespace);
-                                other_prototype_result.is_eq(&self_prototype_result, namespace)
-                            }
-                            Lambda::Unnamed(other_prototype) => {
-                                self_prototype_result.is_eq(other_prototype, namespace)
-                            }
-                        }
+                        let other_data = other_ty_data.lambda_data_ref();
+                        let other_concrete_types = &other_named.concrete_types;
+                        let other_prototype_result =
+                            other_data.prototype(other_concrete_types.as_ref(), namespace);
+                        other_prototype_result.is_eq(&self_prototype_result, namespace)
                     }
-                    Lambda::Unnamed(self_prototype) => match other_data {
-                        Lambda::Named(other_named) => {
-                            let other_ty_data = namespace
-                                .types_ref()
-                                .symbol_ref(other_named.symbol_index)
-                                .data_ref();
-                            let other_data = other_ty_data.lambda_data_ref();
-                            let other_concrete_types = &other_named.concrete_types;
-                            let other_prototype_result =
-                                other_data.prototype(other_concrete_types.as_ref(), namespace);
-                            other_prototype_result.is_eq(self_prototype, namespace)
-                        }
-                        Lambda::Unnamed(other_prototype) => {
-                            self_prototype.is_eq(other_prototype, namespace)
-                        }
-                    },
+                    Lambda::Unnamed(other_prototype) => {
+                        self_prototype_result.is_eq(other_prototype, namespace)
+                    }
                 }
             }
-            CoreType::Any => true,
-            _ => false,
+            Lambda::Unnamed(self_prototype) => match other_data {
+                Lambda::Named(other_named) => {
+                    let other_ty_data = namespace
+                        .types_ref()
+                        .symbol_ref(other_named.symbol_index)
+                        .data_ref();
+                    let other_data = other_ty_data.lambda_data_ref();
+                    let other_concrete_types = &other_named.concrete_types;
+                    let other_prototype_result =
+                        other_data.prototype(other_concrete_types.as_ref(), namespace);
+                    other_prototype_result.is_eq(self_prototype, namespace)
+                }
+                Lambda::Unnamed(other_prototype) => {
+                    self_prototype.is_eq(other_prototype, namespace)
+                }
+            },
         }
     }
 

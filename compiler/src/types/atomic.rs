@@ -49,15 +49,14 @@ impl Atomic {
 
 impl TypeLike for Atomic {
     fn is_eq(&self, other_ty: &Type, _namespace: &Namespace) -> bool {
-        match other_ty.core_ty() {
-            CoreType::Atomic(atomic_data) => match atomic_data {
-                Atomic::Int => self.is_int(),
-                Atomic::Float => self.is_float(),
-                Atomic::String => self.is_string(),
-                Atomic::Bool => self.is_bool(),
-            },
-            CoreType::Any => true,
-            _ => false,
+        let CoreType::Atomic(atomic_data) = other_ty.core_ty() else {
+            return false;
+        };
+        match atomic_data {
+            Atomic::Int => self.is_int(),
+            Atomic::Float => self.is_float(),
+            Atomic::String => self.is_string(),
+            Atomic::Bool => self.is_bool(),
         }
     }
 

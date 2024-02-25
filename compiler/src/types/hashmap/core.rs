@@ -41,14 +41,11 @@ impl HashMap {
 
 impl TypeLike for HashMap {
     fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
-        match other_ty.core_ty() {
-            CoreType::HashMap(hashmap_data) => {
-                self.key_type.is_eq(&hashmap_data.key_type, namespace)
-                    && self.value_type.is_eq(&hashmap_data.value_type, namespace)
-            }
-            CoreType::Any => true,
-            _ => false,
-        }
+        let CoreType::HashMap(hashmap_data) = other_ty.core_ty() else {
+            return false;
+        };
+        self.key_type.is_eq(&hashmap_data.key_type, namespace)
+            && self.value_type.is_eq(&hashmap_data.value_type, namespace)
     }
 
     fn is_structurally_eq(

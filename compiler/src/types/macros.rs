@@ -12,7 +12,6 @@ macro_rules! impl_op_compatiblity {
             CoreType::Unknown => None,
             CoreType::Void => None,
             CoreType::Unset => None,
-            CoreType::Any => None,
         }
     };
 }

@@ -57,22 +57,19 @@ impl Tuple {
 
 impl TypeLike for Tuple {
     fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
-        match other_ty.core_ty() {
-            CoreType::Tuple(tuple_data) => {
-                if tuple_data.sub_types.len() != self.sub_types.len() {
-                    return false;
-                }
-                let len = self.sub_types.len();
-                for i in 0..len {
-                    if !self.sub_types[i].is_eq(&tuple_data.sub_types[i], namespace) {
-                        return false;
-                    }
-                }
-                true
-            }
-            CoreType::Any => true,
-            _ => false,
+        let CoreType::Tuple(tuple_data) = other_ty.core_ty() else {
+            return false;
+        };
+        if tuple_data.sub_types.len() != self.sub_types.len() {
+            return false;
         }
+        let len = self.sub_types.len();
+        for i in 0..len {
+            if !self.sub_types[i].is_eq(&tuple_data.sub_types[i], namespace) {
+                return false;
+            }
+        }
+        true
     }
 
     fn is_structurally_eq(
