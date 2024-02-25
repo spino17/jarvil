@@ -1,4 +1,5 @@
 use super::{
+    helper::fill_side_scope_with_generic_types,
     scope::{ScopeArena, ScopeIndex},
     symbol::{
         core::{IdentDeclId, SymbolIndex},
@@ -36,29 +37,7 @@ impl Namespace {
             functions: ScopeArena::new(),
             interfaces: ScopeArena::new(),
         };
-
-        // filling side scope for types with generic types with indexes 0 and 1
-        namespace.types[ScopeIndex::side()].set(
-            interner.intern("T"),
-            UserDefinedTypeData::Generic(GenericTypeData::new(
-                0,
-                GenericTypeDeclarationPlaceCategory::InStruct,
-                InterfaceBounds::default(),
-            )),
-            TextRange::default(),
-            None,
-        );
-        namespace.types[ScopeIndex::side()].set(
-            interner.intern("U"),
-            UserDefinedTypeData::Generic(GenericTypeData::new(
-                1,
-                GenericTypeDeclarationPlaceCategory::InStruct,
-                InterfaceBounds::default(),
-            )),
-            TextRange::default(),
-            None,
-        );
-
+        fill_side_scope_with_generic_types(&mut namespace, interner);
         namespace
     }
 

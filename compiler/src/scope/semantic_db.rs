@@ -11,8 +11,6 @@ use super::{
         variables::VariableData,
     },
 };
-use crate::builtin::builtin_functions;
-use crate::scope::mangled::MangledIdentifierName;
 use crate::{
     ast::ast::{
         BlockNode, BoundedMethodKind, BoundedMethodWrapperNode, OkIdentifierInDeclNode,
@@ -21,6 +19,7 @@ use crate::{
     core::string_interner::Interner,
     types::core::Type,
 };
+use crate::{builtin::builtin_functions, scope::mangled::MangledIdentifierName};
 use rustc_hash::{FxHashMap, FxHashSet};
 use text_size::TextRange;
 
@@ -43,7 +42,7 @@ impl SemanticStateDatabase {
         let mut namespace = Namespace::new(&interner);
 
         // fill the built-in functions inside the global namespace
-        let builtin_functions = builtin_functions();
+        let builtin_functions = builtin_functions(&interner);
         for (name, callable_data) in builtin_functions {
             namespace.functions_mut_ref().force_insert(
                 ScopeIndex::global(), // index of global namespace

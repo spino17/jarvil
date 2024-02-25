@@ -1,7 +1,15 @@
 use super::namespace::Namespace;
+use super::scope::ScopeIndex;
+use super::symbol::{
+    interfaces::InterfaceBounds,
+    types::{
+        core::UserDefinedTypeData,
+        generic_type::{GenericTypeData, GenericTypeParams},
+    },
+};
 use super::{concrete::ConcreteTypesTuple, errors::GenericTypeArgsCheckError};
 use crate::core::string_interner::Interner;
-use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use text_size::TextRange;
 
 pub fn check_concrete_types_bounded_by_interfaces(
@@ -36,4 +44,40 @@ pub fn check_concrete_types_bounded_by_interfaces(
             None => Ok(()),
         },
     }
+}
+
+pub fn fill_side_scope_with_generic_types(namespace: &mut Namespace, interner: &Interner) {
+    // InStruct generic types
+    namespace.types_mut_ref()[ScopeIndex::side()].set(
+        interner.intern("T"),
+        UserDefinedTypeData::Generic(GenericTypeData::new(
+            0,
+            GenericTypeDeclarationPlaceCategory::InStruct,
+            InterfaceBounds::default(),
+        )),
+        TextRange::default(),
+        None,
+    );
+    namespace.types_mut_ref()[ScopeIndex::side()].set(
+        interner.intern("U"),
+        UserDefinedTypeData::Generic(GenericTypeData::new(
+            1,
+            GenericTypeDeclarationPlaceCategory::InStruct,
+            InterfaceBounds::default(),
+        )),
+        TextRange::default(),
+        None,
+    );
+
+    // InCallable generic types
+    namespace.types_mut_ref()[ScopeIndex::side()].set(
+        interner.intern("V"),
+        UserDefinedTypeData::Generic(GenericTypeData::new(
+            0,
+            GenericTypeDeclarationPlaceCategory::InCallable,
+            InterfaceBounds::default(),
+        )),
+        TextRange::default(),
+        None,
+    );
 }
