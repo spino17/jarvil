@@ -17,7 +17,7 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 pub struct Symbol<T> {
-    data: T,
+    data: Box<T>,
     decl_line_number: TextRange,
     unique_id: Option<IdentDeclId<T>>,
 }
@@ -25,7 +25,7 @@ pub struct Symbol<T> {
 impl<T> Symbol<T> {
     pub fn new(data: T, decl_line_number: TextRange, unique_id: Option<IdentDeclId<T>>) -> Self {
         Symbol {
-            data,
+            data: Box::new(data),
             decl_line_number,
             unique_id,
         }
