@@ -6,6 +6,7 @@ use super::r#struct::Struct;
 use super::traits::TypeLike;
 use super::tuple::Tuple;
 use crate::constants::common::{UNKNOWN, UNSET};
+use crate::core::common::RefOrOwned;
 use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
@@ -605,3 +606,5 @@ impl TypeLike for Type {
         }
     }
 }
+
+type TypeRef<'a> = RefOrOwned<'a, Type>;
