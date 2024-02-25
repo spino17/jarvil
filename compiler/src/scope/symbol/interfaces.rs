@@ -18,7 +18,6 @@ use crate::scope::traits::IsInitialized;
 use crate::types::core::Type;
 use crate::types::traits::TypeLike;
 use rustc_hash::FxHashMap;
-use std::rc::Rc;
 use std::slice::Iter;
 use std::vec;
 use text_size::TextRange;
@@ -93,53 +92,52 @@ impl IsInitialized for InterfaceData {
 }
 
 #[derive(Debug, Clone)]
-pub struct InterfaceObject(Rc<(StrId, ConcreteSymbolIndex<InterfaceData>)>); // (name, semantic data)
+pub struct InterfaceObject(ConcreteSymbolIndex<InterfaceData>);
 
 impl InterfaceObject {
     pub fn new(
-        name: StrId,
         symbol_index: SymbolIndex<InterfaceData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> Self {
-        InterfaceObject(Rc::new((
-            name,
-            ConcreteSymbolIndex::new(symbol_index, concrete_types),
-        )))
+        InterfaceObject(ConcreteSymbolIndex::new(symbol_index, concrete_types))
     }
 
-    pub fn concrete_symbol_index(&self) -> &ConcreteSymbolIndex<InterfaceData> {
-        &self.0.as_ref().1
+    pub fn name(&self) -> StrId {
+        self.0.symbol_index().ident_name()
     }
 
-    pub fn core_ref(&self) -> &(StrId, ConcreteSymbolIndex<InterfaceData>) {
-        self.0.as_ref()
+    pub fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+        self.0.concrete_types()
+    }
+
+    pub fn core_symbol(&self) -> &ConcreteSymbolIndex<InterfaceData> {
+        &self.0
     }
 
     pub fn is_eq(&self, other: &InterfaceObject, namespace: &Namespace) -> bool {
-        if self.0.as_ref().0.eq(&other.0.as_ref().0) {
-            // names of interfaces should be same
-            let Some(self_concrete_types) = self.0.as_ref().1.concrete_types() else {
-                return true;
-            };
-            let Some(other_concrete_types) = other.0.as_ref().1.concrete_types() else {
-                unreachable!()
-            };
-            let self_len = self_concrete_types.len();
-            let other_len = other_concrete_types.len();
-            debug_assert!(self_len == other_len);
-            for i in 0..self_len {
-                if !self_concrete_types[i].is_eq(&other_concrete_types[i], namespace) {
-                    return false;
-                }
-            }
-            return true;
+        if self.name() != other.name() {
+            return false;
         }
-        false
+        let Some(self_concrete_types) = self.concrete_types() else {
+            return true;
+        };
+        let Some(other_concrete_types) = other.concrete_types() else {
+            unreachable!()
+        };
+        let self_len = self_concrete_types.len();
+        let other_len = other_concrete_types.len();
+        debug_assert!(self_len == other_len);
+        for i in 0..self_len {
+            if !self_concrete_types[i].is_eq(&other_concrete_types[i], namespace) {
+                return false;
+            }
+        }
+        true
     }
 
     pub fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let mut s = interner.lookup(self.0.as_ref().0);
-        match self.0.as_ref().1.concrete_types() {
+        let mut s = interner.lookup(self.name());
+        match self.concrete_types() {
             Some(concrete_types) => {
                 s.push('<');
                 s.push_str(&concrete_types.to_string(interner, namespace));

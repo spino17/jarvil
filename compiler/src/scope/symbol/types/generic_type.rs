@@ -57,7 +57,7 @@ impl GenericTypeData {
         let mut property_containing_interface_objs: Vec<String> = vec![];
         let mut result: Option<(Type, TextRange)> = None;
         for (interface_obj, _) in self.interface_bounds.iter() {
-            let concrete_symbol_index = interface_obj.concrete_symbol_index();
+            let concrete_symbol_index = interface_obj.core_symbol();
             let interface_data = namespace
                 .interfaces_ref()
                 .symbol_ref(concrete_symbol_index.symbol_index())
@@ -94,7 +94,7 @@ impl GenericTypeData {
         let mut property_containing_interface_objs: Vec<String> = vec![];
         let mut result: Option<usize> = None;
         for (index, (interface_obj, _)) in self.interface_bounds.iter().enumerate() {
-            let concrete_symbol_index = interface_obj.concrete_symbol_index();
+            let concrete_symbol_index = interface_obj.core_symbol();
             let interface_data = namespace
                 .interfaces_ref()
                 .symbol_ref(concrete_symbol_index.symbol_index())

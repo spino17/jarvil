@@ -1334,7 +1334,7 @@ impl TypeChecker {
                     GenericTypePropertyQueryResult::Ok(interface_index) => {
                         let interface_obj =
                             interface_bounds.interface_obj_at_index(interface_index);
-                        let concrete_symbol_index = interface_obj.concrete_symbol_index();
+                        let concrete_symbol_index = interface_obj.core_symbol();
                         let interface_data = self
                             .semantic_db
                             .interface_symbol_ref(concrete_symbol_index.symbol_index());
@@ -2169,7 +2169,7 @@ impl TypeChecker {
         let struct_methods = struct_data.methods_ref();
 
         for (interface_obj, range) in implementing_interfaces.iter() {
-            let (_, interface_concrete_symbol_index) = interface_obj.core_ref();
+            let interface_concrete_symbol_index = interface_obj.core_symbol();
             let concrete_types = interface_concrete_symbol_index.concrete_types();
             let interface_data = self
                 .semantic_db

@@ -61,7 +61,7 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 pub enum ResolveResult<T: AbstractSymbol> {
-    Ok(LookupData<T>, Option<ConcreteTypesTuple>, StrId),
+    Ok(LookupData<T>, Option<ConcreteTypesTuple>),
     InvalidGenericTypeArgsProvided(GenericTypeArgsCheckError),
     NotInitialized(TextRange, StrId),
     Unresolved,
@@ -365,7 +365,7 @@ impl Resolver {
                     &lookup_data.symbol_obj,
                     is_concrete_types_none_allowed,
                 ) {
-                    Ok((concrete_types, _)) => ResolveResult::Ok(lookup_data, concrete_types, name),
+                    Ok((concrete_types, _)) => ResolveResult::Ok(lookup_data, concrete_types),
                     Err(err) => {
                         if log_error {
                             let err = err_for_generic_type_args(
@@ -830,8 +830,7 @@ impl Resolver {
         interface_expr: &OkIdentifierInUseNode,
     ) -> Option<InterfaceObject> {
         match self.try_resolving_interface(interface_expr, true) {
-            ResolveResult::Ok(lookup_data, concrete_types, name) => Some(InterfaceObject::new(
-                name,
+            ResolveResult::Ok(lookup_data, concrete_types) => Some(InterfaceObject::new(
                 lookup_data.symbol_obj.symbol_index(),
                 concrete_types,
             )),
@@ -2021,8 +2020,7 @@ impl Resolver {
         let CoreIdentifierInUseNode::Ok(ok_identifier) = identifier.core_ref() else {
             return;
         };
-        if let ResolveResult::Ok(lookup_data, _, _) =
-            self.try_resolving_variable(ok_identifier, true)
+        if let ResolveResult::Ok(lookup_data, _) = self.try_resolving_variable(ok_identifier, true)
         {
             if lookup_data.depth > 0 {
                 self.set_to_variable_non_locals(
@@ -2056,7 +2054,7 @@ impl Resolver {
         {
             // order of namespace search: function => type => variable
             match self.try_resolving_function(ok_identifier, false) {
-                ResolveResult::Ok(_, _, _) => {}
+                ResolveResult::Ok(_, _) => {}
                 ResolveResult::NotInitialized(_, _) => unreachable!(),
                 ResolveResult::InvalidGenericTypeArgsProvided(err) => {
                     let err = err_for_generic_type_args(
@@ -2068,7 +2066,7 @@ impl Resolver {
                 }
                 ResolveResult::Unresolved => {
                     match self.try_resolving_user_defined_type(ok_identifier, false, true) {
-                        ResolveResult::Ok(_, _, _) => {}
+                        ResolveResult::Ok(_, _) => {}
                         ResolveResult::NotInitialized(decl_range, name) => {
                             let err = IdentifierUsedBeforeInitializedError::new(
                                 self.semantic_db.interner().lookup(name),
@@ -2089,7 +2087,7 @@ impl Resolver {
                         }
                         ResolveResult::Unresolved => {
                             match self.try_resolving_variable(ok_identifier, false) {
-                                ResolveResult::Ok(lookup_data, _, _) => {
+                                ResolveResult::Ok(lookup_data, _) => {
                                     let depth = lookup_data.depth;
                                     if depth > 0 {
                                         self.set_to_variable_non_locals(
