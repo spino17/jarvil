@@ -104,7 +104,7 @@ impl TypeLike for Enum {
     fn is_type_bounded_by_interfaces(
         &self,
         _interface_bounds: &InterfaceBounds,
-        namespace: &Namespace,
+        _namespace: &Namespace,
     ) -> bool {
         unreachable!()
     }

@@ -3,7 +3,6 @@ use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::namespace::Namespace;
-use crate::scope::symbol::function::CallablePrototypeData;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::types::core::{CoreType, Type};
@@ -75,7 +74,7 @@ impl TypeLike for Array {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        namespace: &Namespace,
+        _namespace: &Namespace,
     ) -> bool {
         // TODO - add checks for interfaces which `Array` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0

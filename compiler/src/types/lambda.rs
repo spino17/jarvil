@@ -206,7 +206,7 @@ impl TypeLike for Lambda {
     fn is_type_bounded_by_interfaces(
         &self,
         _interface_bounds: &InterfaceBounds,
-        namespace: &Namespace,
+        _namespace: &Namespace,
     ) -> bool {
         unreachable!()
     }

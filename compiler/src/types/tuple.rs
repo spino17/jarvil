@@ -25,9 +25,7 @@ pub struct Tuple {
 
 impl Tuple {
     pub fn new(sub_types: Vec<Type>) -> Tuple {
-        Tuple {
-            sub_types: sub_types.clone(),
-        }
+        Tuple { sub_types }
     }
 
     pub fn sub_types(&self) -> &Vec<Type> {
@@ -109,7 +107,7 @@ impl TypeLike for Tuple {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        namespace: &Namespace,
+        _namespace: &Namespace,
     ) -> bool {
         // TODO - add checks for interfaces which `Tuple` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0

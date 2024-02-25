@@ -76,7 +76,7 @@ impl TypeLike for HashMap {
     fn is_type_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
-        namespace: &Namespace,
+        _namespace: &Namespace,
     ) -> bool {
         // TODO - add checks for interfaces which `HashMap` would implement like `Iterator`, `Index`
         interface_bounds.len() == 0

@@ -158,7 +158,7 @@ impl TypeLike for Struct {
 // TODO: operator compatiblity for struct types can be defined using interfaces
 // This is called `operator-overloading`
 impl OperatorCompatiblity for Struct {
-    fn check_add(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
+    fn check_add(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
@@ -169,7 +169,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_subtract(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
+    fn check_subtract(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
@@ -180,7 +180,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_multiply(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
+    fn check_multiply(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
@@ -191,7 +191,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_divide(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
+    fn check_divide(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
@@ -202,7 +202,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_double_equal(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
+    fn check_double_equal(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
@@ -213,7 +213,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_greater(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
+    fn check_greater(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
@@ -224,7 +224,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_less(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
+    fn check_less(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
@@ -235,7 +235,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_and(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
+    fn check_and(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
@@ -246,7 +246,7 @@ impl OperatorCompatiblity for Struct {
         None
     }
 
-    fn check_or(&self, other: &Type, namespace: &Namespace) -> Option<Type> {
+    fn check_or(&self, other: &Type, _namespace: &Namespace) -> Option<Type> {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };

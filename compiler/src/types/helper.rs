@@ -1,3 +1,4 @@
+use super::{core::Type, traits::UserDefinedType};
 use crate::{
     core::string_interner::Interner,
     parser::type_checker::InferredConcreteTypesEntry,
@@ -9,8 +10,6 @@ use crate::{
     },
     types::traits::TypeLike,
 };
-
-use super::{core::Type, traits::UserDefinedType};
 
 pub fn unbounded_generic_type_with_declaration_index(index: usize, interner: &Interner) -> Type {
     match index {
