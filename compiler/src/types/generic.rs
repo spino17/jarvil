@@ -92,7 +92,7 @@ impl TypeLike for Generic {
             GenericTypeDeclarationPlaceCategory::InStruct => match is_other_ty_generic {
                 Some(_) => false,
                 None => {
-                    let concrete_types = match context.struct_concrete_types() {
+                    let concrete_types = match context.bounding_ty_concrete_types() {
                         Some(concrete_types) => concrete_types,
                         None => unreachable!(),
                     };
@@ -113,13 +113,13 @@ impl TypeLike for Generic {
         let category = generic_data.category();
         match category {
             GenericTypeDeclarationPlaceCategory::InStruct => {
-                match context.struct_concrete_types() {
+                match context.bounding_ty_concrete_types() {
                     Some(concrete_types) => concrete_types[index].clone(),
                     None => unreachable!(),
                 }
             }
             GenericTypeDeclarationPlaceCategory::InCallable => {
-                match context.function_local_concrete_types() {
+                match context.func_local_concrete_types() {
                     Some(concrete_types) => concrete_types[index].clone(),
                     None => unreachable!(),
                 }

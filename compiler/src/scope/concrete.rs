@@ -83,26 +83,26 @@ impl<T: IsInitialized> ConcreteSymbolIndex<T> {
 
 #[derive(Debug, Default)]
 pub struct ConcretizationContext<'a> {
-    struct_concrete_types: Option<&'a ConcreteTypesTuple>,
-    function_local_concrete_types: Option<&'a ConcreteTypesTuple>,
+    bounding_ty_concrete_types: Option<&'a ConcreteTypesTuple>,
+    func_local_concrete_types: Option<&'a ConcreteTypesTuple>,
 }
 
 impl<'a> ConcretizationContext<'a> {
     pub fn new(
-        struct_concrete_types: Option<&'a ConcreteTypesTuple>,
+        bounding_ty_concrete_types: Option<&'a ConcreteTypesTuple>,
         function_local_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Self {
         ConcretizationContext {
-            struct_concrete_types,
-            function_local_concrete_types,
+            bounding_ty_concrete_types,
+            func_local_concrete_types: function_local_concrete_types,
         }
     }
 
-    pub fn struct_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
-        self.struct_concrete_types
+    pub fn bounding_ty_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+        self.bounding_ty_concrete_types
     }
 
-    pub fn function_local_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
-        self.function_local_concrete_types
+    pub fn func_local_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+        self.func_local_concrete_types
     }
 }
