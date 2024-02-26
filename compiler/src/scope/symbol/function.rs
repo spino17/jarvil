@@ -8,7 +8,7 @@ use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
 use crate::scope::traits::AbstractSymbol;
-use crate::types::core::{Type, TypeLongShortRef, TypeRef};
+use crate::types::core::{Type, TypeLongShortRef};
 use crate::{
     ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode},
     core::common::RefOrOwned,
