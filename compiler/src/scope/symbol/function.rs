@@ -1,4 +1,5 @@
 use super::core::{SymbolDataEntry, SymbolIndex};
+use crate::core::common::LongShortRef;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
@@ -7,7 +8,7 @@ use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
 use crate::scope::traits::AbstractSymbol;
-use crate::types::core::Type;
+use crate::types::core::{Type, TypeLongShortRef, TypeRef};
 use crate::{
     ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode},
     core::common::RefOrOwned,
@@ -167,6 +168,52 @@ impl Default for CallablePrototypeData {
             params: vec![],
             return_type: Type::new_with_unset(),
             is_concretization_required: None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct CallablePrototypeRef<'a>(RefOrOwned<'a, CallablePrototypeData>);
+
+impl<'a> From<CallablePrototypeRef<'a>> for RefOrOwned<'a, CallablePrototypeData> {
+    fn from(value: CallablePrototypeRef<'a>) -> Self {
+        value.0
+    }
+}
+
+impl<'a> CallablePrototypeRef<'a> {
+    pub fn return_ty<'b>(&'b self) -> TypeLongShortRef<'a, 'b> {
+        match &self.0 {
+            RefOrOwned::Ref(prototype) => TypeLongShortRef::Long(&prototype.return_type),
+            RefOrOwned::Owned(prototype) => TypeLongShortRef::Short(&prototype.return_type),
+        }
+    }
+
+    pub fn params<'b>(&'b self) -> LongShortRef<'a, 'b, Vec<Type>> {
+        match &self.0 {
+            RefOrOwned::Ref(prototype) => LongShortRef::Long(&prototype.params),
+            RefOrOwned::Owned(prototype) => LongShortRef::Short(&prototype.params),
+        }
+    }
+
+    pub fn is_received_params_valid(
+        &self,
+        type_checker: &TypeChecker,
+        received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Result<TypeRef<'a>, PrototypeEquivalenceCheckError> {
+        match &self.0 {
+            RefOrOwned::Ref(prototype) => {
+                let expected_params = &prototype.params;
+                let return_type = &prototype.return_type;
+                type_checker.check_params_type_and_count(expected_params, received_params)?;
+                Ok(RefOrOwned::Ref(return_type))
+            }
+            RefOrOwned::Owned(prototype) => {
+                let expected_params = &prototype.params;
+                let return_type = &prototype.return_type;
+                type_checker.check_params_type_and_count(expected_params, received_params)?;
+                Ok(RefOrOwned::Owned(return_type.clone()))
+            }
         }
     }
 }

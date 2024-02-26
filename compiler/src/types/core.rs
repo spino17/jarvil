@@ -6,7 +6,7 @@ use super::r#struct::Struct;
 use super::traits::TypeLike;
 use super::tuple::Tuple;
 use crate::constants::common::{UNKNOWN, UNSET};
-use crate::core::common::RefOrOwned;
+use crate::core::common::{LongShortRef, RefOrOwned};
 use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
@@ -20,6 +20,7 @@ use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCatego
 use crate::types::traits::OperatorCompatiblity;
 use crate::types::{array::core::Array, atomic::Atomic};
 use std::fmt::Debug;
+use std::ops::Deref;
 use std::rc::Rc;
 
 #[derive(Debug)]
@@ -607,4 +608,5 @@ impl TypeLike for Type {
     }
 }
 
-type TypeRef<'a> = RefOrOwned<'a, Type>;
+pub type TypeRef<'a> = RefOrOwned<'a, Type>;
+pub type TypeLongShortRef<'a, 'b> = LongShortRef<'a, 'b, Type>;
