@@ -196,25 +196,28 @@ impl<'a> CallablePrototypeRef<'a> {
         }
     }
 
-    pub fn is_received_params_valid(
-        &self,
+    pub fn is_received_params_valid<'b>(
+        &'b self,
         type_checker: &TypeChecker,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
-    ) -> Result<TypeRef<'a>, PrototypeEquivalenceCheckError> {
+    ) -> Result<TypeLongShortRef<'a, 'b>, PrototypeEquivalenceCheckError> {
+        type_checker.check_params_type_and_count(&self.params(), received_params)?;
+        Ok(self.return_ty())
+        /*
         match &self.0 {
             RefOrOwned::Ref(prototype) => {
                 let expected_params = &prototype.params;
                 let return_type = &prototype.return_type;
                 type_checker.check_params_type_and_count(expected_params, received_params)?;
-                Ok(RefOrOwned::Ref(return_type))
+                Ok(TypeLongShortRef::Long(return_type))
             }
             RefOrOwned::Owned(prototype) => {
                 let expected_params = &prototype.params;
                 let return_type = &prototype.return_type;
                 type_checker.check_params_type_and_count(expected_params, received_params)?;
-                Ok(RefOrOwned::Owned(return_type.clone()))
+                Ok(TypeLongShortRef::Short(return_type))
             }
-        }
+        }*/
     }
 }
 

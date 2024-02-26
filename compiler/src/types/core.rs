@@ -20,7 +20,6 @@ use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCatego
 use crate::types::traits::OperatorCompatiblity;
 use crate::types::{array::core::Array, atomic::Atomic};
 use std::fmt::Debug;
-use std::ops::Deref;
 use std::rc::Rc;
 
 #[derive(Debug)]
