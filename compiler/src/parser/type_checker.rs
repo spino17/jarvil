@@ -653,7 +653,7 @@ impl TypeChecker {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
         debug_assert!(concrete_symbol_index.concrete_types().is_none());
-        let lambda_type = &self
+        let lambda_type = self
             .semantic_db
             .variable_symbol_ref(concrete_symbol_index.symbol_index())
             .ty();

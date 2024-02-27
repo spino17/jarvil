@@ -368,6 +368,10 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
         }
     }
 
+    fn callable_data(&self) -> &'a CallableData {
+        self.callable_data
+    }
+
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
@@ -389,7 +393,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         type_checker.semantic_db().interner(),
                         type_checker.semantic_db().namespace_ref(),
                     )?;
-                    let concrete_prototype = self.callable_data.concretized_prototype(
+                    let concrete_prototype = self.callable_data().concretized_prototype(
                         self.concrete_types,
                         Some(&local_concrete_types),
                         type_checker.semantic_db().namespace_ref(),
@@ -413,7 +417,8 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         received_params,
                         GenericTypeDeclarationPlaceCategory::InCallable,
                     )?;
-                    let unconcrete_return_ty = &self.callable_data.prototype.return_type;
+                    /*
+                    let unconcrete_return_ty = &self.callable_data().prototype.return_type;
                     let concrete_return_ty = if unconcrete_return_ty.is_concretization_required() {
                         unconcrete_return_ty.concretize(
                             &ConcretizationContext::new(
@@ -424,11 +429,16 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         )
                     } else {
                         unconcrete_return_ty.clone()
-                    };
-                    Ok(concrete_return_ty)
+                    };*/
+                    let concrete_return_ty = self.callable_data().concretized_return_ty(
+                        self.concrete_types,
+                        Some(&local_concrete_types),
+                        type_checker.semantic_db().namespace_ref(),
+                    );
+                    Ok(concrete_return_ty.cloned())
                 }
                 None => {
-                    let concrete_prototype = self.callable_data.concretized_prototype(
+                    let concrete_prototype = self.callable_data().concretized_prototype(
                         self.concrete_types,
                         None,
                         type_checker.semantic_db().namespace_ref(),

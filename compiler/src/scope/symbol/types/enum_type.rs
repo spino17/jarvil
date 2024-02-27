@@ -38,10 +38,10 @@ impl EnumTypeData {
         self.generics.as_ref()
     }
 
-    pub fn try_type_for_variant<'a>(
-        &'a self,
+    pub fn try_type_for_variant(
+        &self,
         variant_name: StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
         namespace: &Namespace,
     ) -> Option<Option<Type>> {
         for (curr_variant_name, ty, _) in &self.variants {
@@ -52,9 +52,8 @@ impl EnumTypeData {
                         &ConcretizationContext::new(global_concrete_types, None),
                         namespace,
                     )));
-                } else {
-                    return Some(Some(ty.clone()));
                 }
+                return Some(Some(ty.clone()));
             }
         }
         None

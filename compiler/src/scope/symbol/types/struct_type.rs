@@ -63,10 +63,10 @@ impl StructTypeData {
         self.generics.as_ref()
     }
 
-    pub fn try_field<'a>(
-        &'a self,
+    pub fn try_field(
+        &self,
         field_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
         namespace: &Namespace,
     ) -> Option<(Type, TextRange)> {
         self.fields
