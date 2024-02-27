@@ -175,12 +175,6 @@ impl Default for CallablePrototypeData {
 #[derive(Debug)]
 pub struct CallablePrototypeRef<'a>(RefOrOwned<'a, CallablePrototypeData>);
 
-impl<'a> From<CallablePrototypeRef<'a>> for RefOrOwned<'a, CallablePrototypeData> {
-    fn from(value: CallablePrototypeRef<'a>) -> Self {
-        value.0
-    }
-}
-
 impl<'a> CallablePrototypeRef<'a> {
     pub fn return_ty<'b>(&'b self) -> TypeLongShortRef<'a, 'b> {
         match &self.0 {
@@ -194,6 +188,10 @@ impl<'a> CallablePrototypeRef<'a> {
             RefOrOwned::Ref(prototype) => LongShortRef::Long(&prototype.params),
             RefOrOwned::Owned(prototype) => LongShortRef::Short(&prototype.params),
         }
+    }
+
+    pub fn core_prototype(&self) -> &RefOrOwned<'a, CallablePrototypeData> {
+        &self.0
     }
 
     pub fn is_received_params_valid<'b>(
