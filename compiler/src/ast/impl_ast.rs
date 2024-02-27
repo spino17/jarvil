@@ -909,13 +909,8 @@ impl Hash for BoundedMethodWrapperNode {
 }
 
 impl LambdaDeclarationNode {
-    pub fn new(
-        name: IdentifierInDeclNode,
-        lambda_keyword: TokenNode,
-        body: CallableBodyNode,
-    ) -> Self {
+    pub fn new(lambda_keyword: TokenNode, body: CallableBodyNode) -> Self {
         let node = Rc::new(CoreLambdaDeclarationNode {
-            name,
             lambda_keyword,
             body,
         });

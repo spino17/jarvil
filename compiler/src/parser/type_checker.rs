@@ -318,36 +318,6 @@ impl TypeChecker {
         (params_vec, return_type, is_concretization_required)
     }
 
-    pub fn type_of_lambda(&self, lambda_decl: &LambdaDeclarationNode) -> Type {
-        let core_lambda_decl = lambda_decl.0.as_ref();
-        let lambda_name = &core_lambda_decl.name;
-        let core_callable_body = core_lambda_decl.body.core_ref();
-        let prototype = core_callable_body.prototype.core_ref();
-        let params = &prototype.params;
-        let return_type = &prototype.return_type;
-        let (params_vec, return_type, is_concretization_required) = match lambda_name.core_ref() {
-            CoreIdentifierInDeclNode::Ok(ok_identifier) => match self
-                .semantic_db
-                .variable_symbol_for_identifier_in_decl(ok_identifier)
-            {
-                Some(symbol_index) => {
-                    return self
-                        .semantic_db
-                        .variable_symbol_ref(symbol_index)
-                        .ty()
-                        .clone()
-                }
-                None => self.params_and_return_type_obj_from_expr(return_type, params),
-            },
-            _ => self.params_and_return_type_obj_from_expr(return_type, params),
-        };
-        Type::new_with_lambda_unnamed(CallablePrototypeData::new(
-            params_vec,
-            return_type,
-            is_concretization_required,
-        ))
-    }
-
     pub fn is_unary_expr_int_valued(&self, unary: &UnaryExpressionNode) -> Option<i32> {
         match unary.core_ref() {
             CoreUnaryExpressionNode::Unary(unary) => {
@@ -1635,23 +1605,6 @@ impl TypeChecker {
         self.check_expr(&core_r_assign.expr.core_ref().expr)
     }
 
-    pub fn check_r_variable_declaration(
-        &mut self,
-        r_variable_decl: &RVariableDeclarationNode,
-    ) -> Type {
-        let core_r_variable_decl = r_variable_decl.core_ref();
-        match core_r_variable_decl {
-            CoreRVariableDeclarationNode::Expression(expr_stmt) => {
-                self.check_expr(&expr_stmt.core_ref().expr)
-            }
-            CoreRVariableDeclarationNode::Lambda(lambda) => {
-                let body = &lambda.core_ref().body.core_ref();
-                self.check_callable_body(&body.prototype, &body.block, false);
-                self.type_of_lambda(lambda)
-            }
-        }
-    }
-
     pub fn check_token(&self, token: &TokenNode, kind: AtomicTokenExprKind) -> Type {
         match token.core_ref() {
             CoreTokenNode::Ok(_) => match kind {
@@ -1997,7 +1950,19 @@ impl TypeChecker {
     pub fn check_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
         let r_variable_decl = &core_variable_decl.r_node;
-        let r_type = self.check_r_variable_declaration(r_variable_decl);
+        let core_r_variable_decl = r_variable_decl.core_ref();
+        let r_type = match core_r_variable_decl {
+            CoreRVariableDeclarationNode::Expression(expr_stmt) => {
+                self.check_expr(&expr_stmt.core_ref().expr)
+            }
+            CoreRVariableDeclarationNode::Lambda(lambda) => {
+                let body = &lambda.core_ref().body.core_ref();
+                self.check_callable_body(&body.prototype, &body.block, false);
+                // type is already set to variable
+                return;
+            }
+        };
+        // let r_type = self.check_r_variable_declaration(r_variable_decl);
         if r_type.is_void() {
             let err = RightSideWithVoidTypeNotAllowedError::new(r_variable_decl.range());
             self.log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
