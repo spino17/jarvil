@@ -294,9 +294,8 @@ impl Resolver {
                         block_context.scope_index,
                         Some(self.context.block_context_stack[index - 1].scope_index),
                     );
-                } else {
-                    return (block_context.scope_index, None);
                 }
+                return (block_context.scope_index, None);
             }
             index -= 1;
         }
