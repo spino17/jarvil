@@ -52,10 +52,9 @@ use crate::{
             CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
             CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreStatementIndentWrapperNode,
             CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreUnaryExpressionNode,
-            ExpressionNode, LambdaDeclarationNode, NameTypeSpecNode, Node, OnlyUnaryExpressionNode,
-            RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, StatementNode,
-            SymbolSeparatedSequenceNode, TokenNode, TypeExpressionNode, UnaryExpressionNode,
-            VariableDeclarationNode,
+            ExpressionNode, NameTypeSpecNode, Node, OnlyUnaryExpressionNode, RAssignmentNode,
+            ReturnStatementNode, StatementNode, SymbolSeparatedSequenceNode, TokenNode,
+            TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
         },
         walk::Visitor,
     },
@@ -267,55 +266,6 @@ impl TypeChecker {
             Some(ty_ranges),
             has_generics,
         )
-    }
-
-    pub fn params_and_return_type_obj_from_expr(
-        &self,
-        return_type: &Option<(TokenNode, TypeExpressionNode)>,
-        params: &Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
-    ) -> (Vec<Type>, Type, Option<(Vec<usize>, bool)>) {
-        let mut params_vec: Vec<Type> = vec![];
-        let mut generics_containing_params_indexes = vec![];
-        let mut is_concretization_required_for_return_type = false;
-        let return_type: Type = match return_type {
-            Some((_, return_type_expr)) => {
-                let (type_obj, ty_has_generics) = self.type_obj_from_expression(return_type_expr);
-                if ty_has_generics {
-                    is_concretization_required_for_return_type = true;
-                }
-                type_obj
-            }
-            None => Type::new_with_void(),
-        };
-
-        if let Some(params) = params {
-            let params_iter = params.iter();
-            for param in params_iter {
-                let core_param = param.core_ref();
-                let name = &core_param.name;
-                if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
-                    if self.is_resolved(ok_identifier) {
-                        let (param_ty, param_ty_has_generics) =
-                            self.type_obj_from_expression(&core_param.data_type);
-                        if param_ty_has_generics {
-                            generics_containing_params_indexes.push(params_vec.len());
-                        }
-                        params_vec.push(param_ty);
-                    }
-                }
-            }
-        }
-        let is_concretization_required = if generics_containing_params_indexes.is_empty()
-            && !is_concretization_required_for_return_type
-        {
-            None
-        } else {
-            Some((
-                generics_containing_params_indexes,
-                is_concretization_required_for_return_type,
-            ))
-        };
-        (params_vec, return_type, is_concretization_required)
     }
 
     pub fn is_unary_expr_int_valued(&self, unary: &UnaryExpressionNode) -> Option<i32> {
