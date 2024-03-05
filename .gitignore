@@ -15,7 +15,7 @@ Makefile.am
 *.ts
 __*
 macro_output.rs
-scratch.ipynb
+scratch-*.ipynb
 Makefile
 scratch*.jv
 constants.txt
