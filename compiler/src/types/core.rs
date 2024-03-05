@@ -36,130 +36,6 @@ pub enum CoreType {
     Unset,
 }
 
-impl CoreType {
-    pub fn try_atomic(&self) -> Option<&Atomic> {
-        let CoreType::Atomic(atomic) = self else {
-            return None;
-        };
-        Some(atomic)
-    }
-
-    pub fn try_array(&self) -> Option<&Array> {
-        let CoreType::Array(array) = self else {
-            return None;
-        };
-        Some(array)
-    }
-
-    pub fn try_tuple(&self) -> Option<&Tuple> {
-        let CoreType::Tuple(tuple) = self else {
-            return None;
-        };
-        Some(tuple)
-    }
-
-    pub fn try_hashmap(&self) -> Option<&HashMap> {
-        let CoreType::HashMap(hashmap) = self else {
-            return None;
-        };
-        Some(hashmap)
-    }
-
-    pub fn try_struct(&self) -> Option<&Struct> {
-        let CoreType::Struct(s) = self else {
-            return None;
-        };
-        Some(s)
-    }
-
-    pub fn try_enum(&self) -> Option<&Enum> {
-        let CoreType::Enum(e) = self else { return None };
-        Some(e)
-    }
-
-    pub fn try_lambda(&self) -> Option<&Lambda> {
-        let CoreType::Lambda(lambda) = self else {
-            return None;
-        };
-        Some(lambda)
-    }
-
-    pub fn try_generic(&self) -> Option<&Generic> {
-        let CoreType::Generic(generic) = self else {
-            return None;
-        };
-        Some(generic)
-    }
-
-    pub fn is_int(&self) -> bool {
-        match self {
-            CoreType::Atomic(val) => val.is_int(),
-            _ => false,
-        }
-    }
-
-    pub fn is_float(&self) -> bool {
-        match self {
-            CoreType::Atomic(val) => val.is_float(),
-            _ => false,
-        }
-    }
-
-    pub fn is_bool(&self) -> bool {
-        match self {
-            CoreType::Atomic(val) => val.is_bool(),
-            _ => false,
-        }
-    }
-
-    pub fn is_string(&self) -> bool {
-        match self {
-            CoreType::Atomic(val) => val.is_string(),
-            _ => false,
-        }
-    }
-
-    pub fn is_array(&self) -> bool {
-        matches!(self, CoreType::Array(_))
-    }
-
-    pub fn is_tuple(&self) -> bool {
-        matches!(self, CoreType::Tuple(_))
-    }
-
-    pub fn is_hashmap(&self) -> bool {
-        matches!(self, CoreType::HashMap(_))
-    }
-
-    pub fn is_struct(&self) -> bool {
-        matches!(self, CoreType::Struct(_))
-    }
-
-    pub fn is_enum(&self) -> bool {
-        matches!(self, CoreType::Enum(_))
-    }
-
-    pub fn is_lambda(&self) -> bool {
-        matches!(self, CoreType::Lambda(_))
-    }
-
-    pub fn is_generic(&self) -> bool {
-        matches!(self, CoreType::Generic(_))
-    }
-
-    pub fn is_unknown(&self) -> bool {
-        matches!(self, CoreType::Unknown)
-    }
-
-    pub fn is_void(&self) -> bool {
-        matches!(self, CoreType::Void)
-    }
-
-    pub fn is_unset(&self) -> bool {
-        matches!(self, CoreType::Unset)
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct Type(Rc<CoreType>, bool);
 
@@ -249,34 +125,6 @@ impl Type {
         Type(Rc::new(CoreType::Void), false)
     }
 
-    pub fn is_void(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Void => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_string(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Atomic(atomic) => atomic.is_string(),
-            _ => false,
-        }
-    }
-
-    pub fn is_array(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Array(_) => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_bool(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Atomic(atomic) => atomic.is_bool(),
-            _ => false,
-        }
-    }
-
     pub fn is_int(&self) -> bool {
         match self.0.as_ref() {
             CoreType::Atomic(atomic) => atomic.is_int(),
@@ -291,40 +139,58 @@ impl Type {
         }
     }
 
-    pub fn is_enum(&self) -> bool {
+    pub fn is_bool(&self) -> bool {
         match self.0.as_ref() {
-            CoreType::Enum(_) => true,
+            CoreType::Atomic(atomic) => atomic.is_bool(),
             _ => false,
         }
+    }
+
+    pub fn is_string(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::Atomic(atomic) => atomic.is_string(),
+            _ => false,
+        }
+    }
+
+    pub fn is_array(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Array(_))
+    }
+
+    pub fn is_hashmap(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::HashMap(_))
+    }
+
+    pub fn is_tuple(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Tuple(_))
+    }
+
+    pub fn is_enum(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Enum(_))
+    }
+
+    pub fn is_lambda(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Lambda(_))
+    }
+
+    pub fn is_unknown(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Unknown)
+    }
+
+    pub fn is_unset(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Unset)
+    }
+
+    pub fn is_void(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Void)
     }
 
     pub fn is_numeric(&self) -> bool {
         self.is_int() || self.is_float()
     }
 
-    pub fn is_lambda(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Lambda(_) => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_hashmap(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::HashMap(_) => true,
-            _ => false,
-        }
-    }
-
     pub fn is_immutable(&self) -> bool {
         self.is_string() || self.is_tuple()
-    }
-
-    pub fn is_tuple(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Tuple(_) => true,
-            _ => false,
-        }
     }
 
     pub fn is_hashable(&self) -> bool {
@@ -339,20 +205,6 @@ impl Type {
                 }
                 true
             }
-            _ => false,
-        }
-    }
-
-    pub fn is_unknown(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Unknown => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_unset(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Unset => true,
             _ => false,
         }
     }
