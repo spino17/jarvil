@@ -25,7 +25,7 @@ pub fn expr(parser: &mut JarvilParser) -> ExpressionNode {
 }
 
 pub fn is_unary_expression_starting_with(token: &Token) -> bool {
-    match token.core_token {
+    match token.core_token() {
         CoreToken::PLUS => true,
         CoreToken::DASH => true,
         CoreToken::NOT => true,
@@ -35,8 +35,7 @@ pub fn is_unary_expression_starting_with(token: &Token) -> bool {
 
 pub fn unary_expr(parser: &mut JarvilParser) -> UnaryExpressionNode {
     let token = parser.curr_token();
-
-    match token.core_token {
+    match token.core_token() {
         CoreToken::PLUS => {
             let plus_node = parser.expect("+");
             let unary_expr_node = parser.unary_expr();
@@ -64,7 +63,7 @@ pub fn unary_expr(parser: &mut JarvilParser) -> UnaryExpressionNode {
 }
 
 pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
-    match token.core_token {
+    match token.core_token() {
         CoreToken::INTEGER => true,
         CoreToken::FLOATING_POINT_NUMBER => true,
         CoreToken::LITERAL => true,
@@ -101,7 +100,7 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
             token.clone(),
         );
     }
-    let atomic_expr_node = match token.core_token {
+    let atomic_expr_node = match token.core_token() {
         CoreToken::TRUE                         => {
             let true_node = parser.expect(TRUE);
             AtomicExpressionNode::new_with_bool(true_node)

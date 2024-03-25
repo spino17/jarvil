@@ -1,20 +1,22 @@
 use super::ast::SymbolSeparatedSequenceNode;
+use crate::ast::ast::Node;
+use serde::Serialize;
 
-pub struct SymbolSeparatedSequenceIterator<'a, T: Clone> {
+pub struct SymbolSeparatedSequenceIterator<'a, T: Node + Serialize + Clone> {
     node: Option<&'a SymbolSeparatedSequenceNode<T>>,
 }
 
-impl<'a, T: Clone> SymbolSeparatedSequenceIterator<'a, T> {
+impl<'a, T: Node + Serialize + Clone> SymbolSeparatedSequenceIterator<'a, T> {
     pub fn new(node: &'a SymbolSeparatedSequenceNode<T>) -> Self {
         SymbolSeparatedSequenceIterator { node: Some(node) }
     }
 }
 
-impl<'a, T: Clone> Iterator for SymbolSeparatedSequenceIterator<'a, T> {
+impl<'a, T: Node + Serialize + Clone> Iterator for SymbolSeparatedSequenceIterator<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
-        let ok_entity = match &self.node {
-            Some(node) => node.clone(),
+        let ok_entity = match self.node {
+            Some(node) => node,
             None => return None,
         };
         self.node = match &ok_entity.core_ref().remaining_entities {

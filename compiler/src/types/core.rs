@@ -3,110 +3,47 @@ use super::hashmap::core::HashMap;
 use super::lambda::Lambda;
 use super::r#enum::Enum;
 use super::r#struct::Struct;
+use super::traits::TypeLike;
 use super::tuple::Tuple;
-use crate::constants::common::{ANY, BOOL, UNKNOWN, UNSET};
-use crate::core::common::RefOrOwned;
+use crate::constants::common::{UNKNOWN, UNSET};
 use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
-use crate::scope::core::SymbolData;
-use crate::scope::function::{CallableData, CallablePrototypeData};
-use crate::scope::interfaces::InterfaceBounds;
-use crate::scope::types::core::UserDefinedTypeData;
-use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::namespace::Namespace;
+use crate::scope::symbol::core::SymbolIndex;
+use crate::scope::symbol::function::CallablePrototypeData;
+use crate::scope::symbol::interfaces::InterfaceBounds;
+use crate::scope::symbol::types::core::UserDefinedTypeData;
+use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::types::traits::OperatorCompatiblity;
 use crate::types::{array::core::Array, atomic::Atomic};
-use std::collections::HashMap as StdHashMap;
 use std::fmt::Debug;
 use std::rc::Rc;
-
-pub trait AbstractType {
-    fn is_eq(&self, other_ty: &Type) -> bool;
-    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool;
-    fn concretize(&self, context: &ConcretizationContext) -> Type;
-    fn try_infer_type_or_check_equivalence(
-        &self,
-        received_ty: &Type,
-        inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
-        num_inferred_types: &mut usize,
-        inference_category: GenericTypeDeclarationPlaceCategory,
-    ) -> Result<(), ()>;
-    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool;
-    fn to_string(&self, interner: &Interner) -> String;
-}
-
-pub trait AbstractNonStructTypes {
-    fn get_concrete_types(&self) -> ConcreteTypesTuple;
-    fn get_builtin_methods(&self) -> Rc<StdHashMap<&'static str, CallableData>>;
-    fn try_method(&self, method_name: &str) -> Option<CallablePrototypeData> {
-        let builtin_methods = self.get_builtin_methods();
-        match builtin_methods.get(method_name) {
-            Some(callable_data) => {
-                let concrete_types = self.get_concrete_types();
-                match callable_data
-                    .prototype
-                    .concretize_prototype(Some(&concrete_types), None)
-                {
-                    RefOrOwned::Ref(_) => unreachable!(),
-                    RefOrOwned::Owned(prototype) => Some(prototype),
-                }
-            }
-            None => None,
-        }
-    }
-}
-
-pub trait OperatorCompatiblity {
-    fn check_add(&self, other: &Type) -> Option<Type>;
-    fn check_subtract(&self, other: &Type) -> Option<Type>;
-    fn check_multiply(&self, other: &Type) -> Option<Type>;
-    fn check_divide(&self, other: &Type) -> Option<Type>;
-    fn check_double_equal(&self, other: &Type) -> Option<Type>;
-    fn check_greater(&self, other: &Type) -> Option<Type>;
-    fn check_less(&self, other: &Type) -> Option<Type>;
-    fn check_and(&self, other: &Type) -> Option<Type>;
-    fn check_or(&self, other: &Type) -> Option<Type>;
-    fn check_not_equal(&self, other: &Type) -> Option<Type> {
-        if self.check_double_equal(other).is_some() {
-            return Some(Type::new_with_atomic(BOOL));
-        }
-        None
-    }
-    fn check_greater_equal(&self, other: &Type) -> Option<Type> {
-        if self.check_greater(other).is_some() && self.check_double_equal(other).is_some() {
-            return Some(Type::new_with_atomic(BOOL));
-        }
-        None
-    }
-    fn check_less_equal(&self, other: &Type) -> Option<Type> {
-        if self.check_less(other).is_some() && self.check_double_equal(other).is_some() {
-            return Some(Type::new_with_atomic(BOOL));
-        }
-        None
-    }
-}
 
 #[derive(Debug)]
 pub enum CoreType {
     Atomic(Atomic),
-    Struct(Struct),
-    Lambda(Lambda),
     Array(Array),
     Tuple(Tuple),
     HashMap(HashMap),
-    Generic(Generic),
+    Struct(Struct),
     Enum(Enum),
+    Lambda(Lambda),
+    Generic(Generic),
     Unknown,
     Void,
     Unset,
-    Any,
 }
 
 #[derive(Debug, Clone)]
-pub struct Type(pub Rc<CoreType>, bool);
+pub struct Type(Rc<CoreType>, bool);
 
 impl Type {
+    pub fn core_ty(&self) -> &CoreType {
+        self.0.as_ref()
+    }
+
     pub fn new_with_atomic(name: &str) -> Type {
         Type(Rc::new(CoreType::Atomic(Atomic::new(name))), false)
     }
@@ -128,32 +65,32 @@ impl Type {
 
     // user-defined-types
     pub fn new_with_struct(
-        symbol_data: &SymbolData<UserDefinedTypeData>,
+        symbol_index: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> Type {
         Type(
-            Rc::new(CoreType::Struct(Struct::new(symbol_data, concrete_types))),
+            Rc::new(CoreType::Struct(Struct::new(symbol_index, concrete_types))),
             false,
         )
     }
 
     pub fn new_with_enum(
-        symbol_data: &SymbolData<UserDefinedTypeData>,
+        symbol_index: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> Type {
         Type(
-            Rc::new(CoreType::Enum(Enum::new(symbol_data, concrete_types))),
+            Rc::new(CoreType::Enum(Enum::new(symbol_index, concrete_types))),
             false,
         )
     }
 
     pub fn new_with_lambda_named(
-        symbol_data: &SymbolData<UserDefinedTypeData>,
+        symbol_index: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<ConcreteTypesTuple>,
     ) -> Type {
         Type(
             Rc::new(CoreType::Lambda(Lambda::new_with_named(
-                symbol_data,
+                symbol_index,
                 concrete_types,
             ))),
             false,
@@ -169,8 +106,11 @@ impl Type {
         )
     }
 
-    pub fn new_with_generic(symbol_data: &SymbolData<UserDefinedTypeData>) -> Type {
-        Type(Rc::new(CoreType::Generic(Generic::new(symbol_data))), false)
+    pub fn new_with_generic(symbol_index: SymbolIndex<UserDefinedTypeData>) -> Type {
+        Type(
+            Rc::new(CoreType::Generic(Generic::new(symbol_index))),
+            false,
+        )
     }
 
     pub fn new_with_unknown() -> Type {
@@ -183,38 +123,6 @@ impl Type {
 
     pub fn new_with_void() -> Type {
         Type(Rc::new(CoreType::Void), false)
-    }
-
-    pub fn new_with_any() -> Type {
-        Type(Rc::new(CoreType::Any), false)
-    }
-
-    pub fn is_void(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Void => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_string(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Atomic(atomic) => atomic.is_string(),
-            _ => false,
-        }
-    }
-
-    pub fn is_array(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Array(_) => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_bool(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Atomic(atomic) => atomic.is_bool(),
-            _ => false,
-        }
     }
 
     pub fn is_int(&self) -> bool {
@@ -231,40 +139,58 @@ impl Type {
         }
     }
 
-    pub fn is_enum(&self) -> bool {
+    pub fn is_bool(&self) -> bool {
         match self.0.as_ref() {
-            CoreType::Enum(_) => true,
+            CoreType::Atomic(atomic) => atomic.is_bool(),
             _ => false,
         }
+    }
+
+    pub fn is_string(&self) -> bool {
+        match self.0.as_ref() {
+            CoreType::Atomic(atomic) => atomic.is_string(),
+            _ => false,
+        }
+    }
+
+    pub fn is_array(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Array(_))
+    }
+
+    pub fn is_hashmap(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::HashMap(_))
+    }
+
+    pub fn is_tuple(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Tuple(_))
+    }
+
+    pub fn is_enum(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Enum(_))
+    }
+
+    pub fn is_lambda(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Lambda(_))
+    }
+
+    pub fn is_unknown(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Unknown)
+    }
+
+    pub fn is_unset(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Unset)
+    }
+
+    pub fn is_void(&self) -> bool {
+        matches!(self.0.as_ref(), CoreType::Void)
     }
 
     pub fn is_numeric(&self) -> bool {
         self.is_int() || self.is_float()
     }
 
-    pub fn is_lambda(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Lambda(_) => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_hashmap(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::HashMap(_) => true,
-            _ => false,
-        }
-    }
-
     pub fn is_immutable(&self) -> bool {
         self.is_string() || self.is_tuple()
-    }
-
-    pub fn is_tuple(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Tuple(_) => true,
-            _ => false,
-        }
     }
 
     pub fn is_hashable(&self) -> bool {
@@ -272,27 +198,13 @@ impl Type {
         match self.0.as_ref() {
             CoreType::Atomic(atomic) => atomic.is_int() || atomic.is_string() || atomic.is_float(),
             CoreType::Tuple(tuple) => {
-                for ty in &tuple.sub_types {
+                for ty in tuple.sub_types() {
                     if !ty.is_hashable() {
                         return false;
                     }
                 }
                 true
             }
-            _ => false,
-        }
-    }
-
-    pub fn is_unknown(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Unknown => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_unset(&self) -> bool {
-        match self.0.as_ref() {
-            CoreType::Unset => true,
             _ => false,
         }
     }
@@ -306,121 +218,150 @@ impl Type {
     }
 
     // This function returns Some if operation is possible and None otherwise
-    pub fn check_operator(&self, other: &Type, op_kind: &BinaryOperatorKind) -> Option<Type> {
+    pub fn check_operator(
+        &self,
+        other: &Type,
+        op_kind: &BinaryOperatorKind,
+        namespace: &Namespace,
+    ) -> Option<Type> {
         match op_kind {
             BinaryOperatorKind::Add => {
-                impl_op_compatiblity!(check_add, self, other)
+                impl_op_compatiblity!(namespace, check_add, self, other)
             }
             BinaryOperatorKind::Subtract => {
-                impl_op_compatiblity!(check_subtract, self, other)
+                impl_op_compatiblity!(namespace, check_subtract, self, other)
             }
             BinaryOperatorKind::Multiply => {
-                impl_op_compatiblity!(check_multiply, self, other)
+                impl_op_compatiblity!(namespace, check_multiply, self, other)
             }
             BinaryOperatorKind::Divide => {
-                impl_op_compatiblity!(check_divide, self, other)
+                impl_op_compatiblity!(namespace, check_divide, self, other)
             }
             BinaryOperatorKind::Less => {
-                impl_op_compatiblity!(check_less, self, other)
+                impl_op_compatiblity!(namespace, check_less, self, other)
             }
             BinaryOperatorKind::LessEqual => {
-                impl_op_compatiblity!(check_less_equal, self, other)
+                impl_op_compatiblity!(namespace, check_less_equal, self, other)
             }
             BinaryOperatorKind::Greater => {
-                impl_op_compatiblity!(check_greater, self, other)
+                impl_op_compatiblity!(namespace, check_greater, self, other)
             }
             BinaryOperatorKind::GreaterEqual => {
-                impl_op_compatiblity!(check_greater_equal, self, other)
+                impl_op_compatiblity!(namespace, check_greater_equal, self, other)
             }
             BinaryOperatorKind::DoubleEqual => {
-                impl_op_compatiblity!(check_double_equal, self, other)
+                impl_op_compatiblity!(namespace, check_double_equal, self, other)
             }
             BinaryOperatorKind::NotEqual => {
-                impl_op_compatiblity!(check_not_equal, self, other)
+                impl_op_compatiblity!(namespace, check_not_equal, self, other)
             }
             BinaryOperatorKind::And => {
-                impl_op_compatiblity!(check_and, self, other)
+                impl_op_compatiblity!(namespace, check_and, self, other)
             }
             BinaryOperatorKind::Or => {
-                impl_op_compatiblity!(check_or, self, other)
+                impl_op_compatiblity!(namespace, check_or, self, other)
             }
         }
     }
 }
 
-impl AbstractType for Type {
-    fn is_eq(&self, other_ty: &Type) -> bool {
+impl TypeLike for Type {
+    fn is_eq(&self, other_ty: &Type, namespace: &Namespace) -> bool {
         match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => atomic_type.is_eq(other_ty),
-            CoreType::Struct(struct_type) => struct_type.is_eq(other_ty),
-            CoreType::Lambda(lambda_type) => lambda_type.is_eq(other_ty),
-            CoreType::Array(array_type) => array_type.is_eq(other_ty),
-            CoreType::Tuple(tuple_type) => tuple_type.is_eq(other_ty),
-            CoreType::HashMap(hashmap_type) => hashmap_type.is_eq(other_ty),
-            CoreType::Generic(generic_type) => generic_type.is_eq(other_ty),
-            CoreType::Enum(enum_type) => enum_type.is_eq(other_ty),
+            CoreType::Atomic(atomic_type) => atomic_type.is_eq(other_ty, namespace),
+            CoreType::Struct(struct_type) => struct_type.is_eq(other_ty, namespace),
+            CoreType::Lambda(lambda_type) => lambda_type.is_eq(other_ty, namespace),
+            CoreType::Array(array_type) => array_type.is_eq(other_ty, namespace),
+            CoreType::Tuple(tuple_type) => tuple_type.is_eq(other_ty, namespace),
+            CoreType::HashMap(hashmap_type) => hashmap_type.is_eq(other_ty, namespace),
+            CoreType::Generic(generic_type) => generic_type.is_eq(other_ty, namespace),
+            CoreType::Enum(enum_type) => enum_type.is_eq(other_ty, namespace),
             CoreType::Void => match other_ty.0.as_ref() {
                 CoreType::Void => true,
                 _ => false,
             },
             CoreType::Unknown => false,
             CoreType::Unset => false,
-            CoreType::Any => true,
         }
     }
 
-    fn is_structurally_eq(&self, other_ty: &Type, context: &ConcretizationContext) -> bool {
+    fn is_structurally_eq(
+        &self,
+        other_ty: &Type,
+        context: &ConcretizationContext,
+        namespace: &Namespace,
+    ) -> bool {
         match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => atomic_type.is_structurally_eq(other_ty, context),
-            CoreType::Struct(struct_type) => struct_type.is_structurally_eq(other_ty, context),
-            CoreType::Enum(enum_type) => enum_type.is_structurally_eq(other_ty, context),
-            CoreType::Lambda(lambda_type) => lambda_type.is_structurally_eq(other_ty, context),
-            CoreType::Array(array_type) => array_type.is_structurally_eq(other_ty, context),
-            CoreType::Tuple(tuple_type) => tuple_type.is_structurally_eq(other_ty, context),
-            CoreType::HashMap(hashmap_type) => hashmap_type.is_structurally_eq(other_ty, context),
-            CoreType::Generic(generic_type) => generic_type.is_structurally_eq(other_ty, context),
+            CoreType::Atomic(atomic_type) => {
+                atomic_type.is_structurally_eq(other_ty, context, namespace)
+            }
+            CoreType::Struct(struct_type) => {
+                struct_type.is_structurally_eq(other_ty, context, namespace)
+            }
+            CoreType::Enum(enum_type) => enum_type.is_structurally_eq(other_ty, context, namespace),
+            CoreType::Lambda(lambda_type) => {
+                lambda_type.is_structurally_eq(other_ty, context, namespace)
+            }
+            CoreType::Array(array_type) => {
+                array_type.is_structurally_eq(other_ty, context, namespace)
+            }
+            CoreType::Tuple(tuple_type) => {
+                tuple_type.is_structurally_eq(other_ty, context, namespace)
+            }
+            CoreType::HashMap(hashmap_type) => {
+                hashmap_type.is_structurally_eq(other_ty, context, namespace)
+            }
+            CoreType::Generic(generic_type) => {
+                generic_type.is_structurally_eq(other_ty, context, namespace)
+            }
             CoreType::Void => match other_ty.0.as_ref() {
                 CoreType::Void => true,
                 _ => false,
             },
-            CoreType::Unknown | CoreType::Unset | CoreType::Any => unreachable!(),
+            CoreType::Unknown | CoreType::Unset => unreachable!(),
         }
     }
 
-    fn concretize(&self, context: &ConcretizationContext) -> Type {
+    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
         match self.0.as_ref() {
-            CoreType::Struct(struct_type) => struct_type.concretize(context),
-            CoreType::Enum(enum_type) => enum_type.concretize(context),
-            CoreType::Lambda(lambda_type) => lambda_type.concretize(context),
-            CoreType::Array(array_type) => array_type.concretize(context),
-            CoreType::Tuple(tuple_type) => tuple_type.concretize(context),
-            CoreType::HashMap(hashmap_type) => hashmap_type.concretize(context),
-            CoreType::Generic(generic_type) => generic_type.concretize(context),
-            CoreType::Atomic(_)
-            | CoreType::Unknown
-            | CoreType::Void
-            | CoreType::Unset
-            | CoreType::Any => self.clone(),
+            CoreType::Struct(struct_type) => struct_type.concretize(context, namespace),
+            CoreType::Enum(enum_type) => enum_type.concretize(context, namespace),
+            CoreType::Lambda(lambda_type) => lambda_type.concretize(context, namespace),
+            CoreType::Array(array_type) => array_type.concretize(context, namespace),
+            CoreType::Tuple(tuple_type) => tuple_type.concretize(context, namespace),
+            CoreType::HashMap(hashmap_type) => hashmap_type.concretize(context, namespace),
+            CoreType::Generic(generic_type) => generic_type.concretize(context, namespace),
+            CoreType::Atomic(_) | CoreType::Unknown | CoreType::Void | CoreType::Unset => {
+                self.clone()
+            }
         }
     }
 
-    fn is_type_bounded_by_interfaces(&self, interface_bounds: &InterfaceBounds) -> bool {
+    fn is_type_bounded_by_interfaces(
+        &self,
+        interface_bounds: &InterfaceBounds,
+        namespace: &Namespace,
+    ) -> bool {
         if interface_bounds.len() == 0 {
             return true;
         }
         match self.0.as_ref() {
             CoreType::Struct(struct_ty) => {
-                struct_ty.is_type_bounded_by_interfaces(interface_bounds)
+                struct_ty.is_type_bounded_by_interfaces(interface_bounds, namespace)
             }
             CoreType::Generic(generic_ty) => {
-                generic_ty.is_type_bounded_by_interfaces(interface_bounds)
+                generic_ty.is_type_bounded_by_interfaces(interface_bounds, namespace)
             }
-            CoreType::Array(array_ty) => array_ty.is_type_bounded_by_interfaces(interface_bounds),
+            CoreType::Array(array_ty) => {
+                array_ty.is_type_bounded_by_interfaces(interface_bounds, namespace)
+            }
             CoreType::HashMap(hashmap_ty) => {
-                hashmap_ty.is_type_bounded_by_interfaces(interface_bounds)
+                hashmap_ty.is_type_bounded_by_interfaces(interface_bounds, namespace)
             }
-            CoreType::Tuple(tuple_ty) => tuple_ty.is_type_bounded_by_interfaces(interface_bounds),
-            CoreType::Lambda(_) | CoreType::Atomic(_) | CoreType::Enum(_) | CoreType::Any => false,
+            CoreType::Tuple(tuple_ty) => {
+                tuple_ty.is_type_bounded_by_interfaces(interface_bounds, namespace)
+            }
+            CoreType::Lambda(_) | CoreType::Atomic(_) | CoreType::Enum(_) => false,
             CoreType::Unknown | CoreType::Unset | CoreType::Void => false,
         }
     }
@@ -432,6 +373,7 @@ impl AbstractType for Type {
         global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
+        namespace: &Namespace,
     ) -> Result<(), ()> {
         match self.0.as_ref() {
             CoreType::Struct(struct_ty) => struct_ty.try_infer_type_or_check_equivalence(
@@ -440,6 +382,7 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                namespace,
             ),
             CoreType::Enum(enum_ty) => enum_ty.try_infer_type_or_check_equivalence(
                 received_ty,
@@ -447,6 +390,7 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                namespace,
             ),
             CoreType::Lambda(lambda_ty) => lambda_ty.try_infer_type_or_check_equivalence(
                 received_ty,
@@ -454,6 +398,7 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                namespace,
             ),
             CoreType::Array(array_ty) => array_ty.try_infer_type_or_check_equivalence(
                 received_ty,
@@ -461,6 +406,7 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                namespace,
             ),
             CoreType::Tuple(tuple_ty) => tuple_ty.try_infer_type_or_check_equivalence(
                 received_ty,
@@ -468,6 +414,7 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                namespace,
             ),
             CoreType::HashMap(hashmap_ty) => hashmap_ty.try_infer_type_or_check_equivalence(
                 received_ty,
@@ -475,6 +422,7 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                namespace,
             ),
             CoreType::Generic(generic_ty) => generic_ty.try_infer_type_or_check_equivalence(
                 received_ty,
@@ -482,13 +430,10 @@ impl AbstractType for Type {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                namespace,
             ),
-            CoreType::Atomic(_)
-            | CoreType::Unknown
-            | CoreType::Void
-            | CoreType::Unset
-            | CoreType::Any => {
-                if !self.is_eq(received_ty) {
+            CoreType::Atomic(_) | CoreType::Unknown | CoreType::Void | CoreType::Unset => {
+                if !self.is_eq(received_ty, namespace) {
                     return Err(());
                 }
                 Ok(())
@@ -496,20 +441,19 @@ impl AbstractType for Type {
         }
     }
 
-    fn to_string(&self, interner: &Interner) -> String {
+    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
         match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => atomic_type.to_string(interner),
-            CoreType::Struct(struct_type) => struct_type.to_string(interner),
-            CoreType::Enum(enum_type) => enum_type.to_string(interner),
-            CoreType::Lambda(lambda_type) => lambda_type.to_string(interner),
-            CoreType::Array(array_type) => array_type.to_string(interner),
-            CoreType::Tuple(tuple_type) => tuple_type.to_string(interner),
-            CoreType::HashMap(hashmap_type) => hashmap_type.to_string(interner),
-            CoreType::Generic(generic_type) => generic_type.to_string(interner),
-            CoreType::Unknown => format!("{}", UNKNOWN),
+            CoreType::Atomic(atomic_type) => atomic_type.to_string(interner, namespace),
+            CoreType::Struct(struct_type) => struct_type.to_string(interner, namespace),
+            CoreType::Enum(enum_type) => enum_type.to_string(interner, namespace),
+            CoreType::Lambda(lambda_type) => lambda_type.to_string(interner, namespace),
+            CoreType::Array(array_type) => array_type.to_string(interner, namespace),
+            CoreType::Tuple(tuple_type) => tuple_type.to_string(interner, namespace),
+            CoreType::HashMap(hashmap_type) => hashmap_type.to_string(interner, namespace),
+            CoreType::Generic(generic_type) => generic_type.to_string(interner, namespace),
+            CoreType::Unknown => UNKNOWN.to_string(),
             CoreType::Void => "()".to_string(),
-            CoreType::Unset => format!("{}", UNSET),
-            CoreType::Any => format!("{}", ANY),
+            CoreType::Unset => UNSET.to_string(),
         }
     }
 }

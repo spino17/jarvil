@@ -14,46 +14,12 @@ macro_rules! default_errornous_node_impl {
     };
 }
 
-macro_rules! impl_ast_node {
-    ($(($t: ident, $u: ident, $v: ident)),*) => {
-        $(
-            pub fn $v(x: &$u) -> Self {
-                ASTNode::$t(x.clone())
-            }
-        )*
-    };
-}
-
 macro_rules! impl_range {
     ($t: expr, $u: expr) => {
         TextRange::new(
             TextSize::from($t.range().start()),
             TextSize::from($u.range().end()),
         )
-    };
-}
-
-macro_rules! impl_enum_variant {
-    ($v: expr, $s: ident, $(($t: ident, $u: ident)),*) => {
-        match $v {
-            $(
-                $t::$u(x) => {
-                    x.$s()
-                }
-            )*,
-        }
-    };
-}
-
-macro_rules! impl_node_variant_for_range {
-    ($v: expr, $(($t: ident, $u: ident)),*) => {
-        match $v {
-            $(
-                $t::$u(x) => {
-                    impl_range!(x, x)
-                }
-            )*,
-        }
     };
 }
 

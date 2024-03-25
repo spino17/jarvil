@@ -1,4 +1,5 @@
 use super::resolver::BlockKind;
+use crate::ast::ast::Node;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ConditionalBlockNode, ConditionalStatementNode,
@@ -8,47 +9,56 @@ use crate::ast::ast::{
     StatementNode, SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
     UnaryExpressionNode, VariableDeclarationNode, WhileLoopStatementNode,
 };
-use crate::code::JarvilCode;
+use crate::code::JarvilCodeHandler;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
 use crate::error::diagnostics::Diagnostics;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
+use serde::Serialize;
 use std::cell::RefCell;
 
 pub trait Parser {
-    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCode);
+    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCodeHandler);
 }
 
 pub struct JarvilParser {
     token_vec: Vec<Token>,
     lookahead: usize,
     indent_level: i64,
-    code: JarvilCode,
-    pub ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
+    code_handler: JarvilCodeHandler,
+    ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
-    pub errors: RefCell<Vec<Diagnostics>>,
+    errors: RefCell<Vec<Diagnostics>>,
 }
 
 impl JarvilParser {
-    pub fn new(code: JarvilCode) -> Self {
+    pub fn new(code_handler: JarvilCodeHandler) -> Self {
         JarvilParser {
             token_vec: Vec::new(),
             lookahead: 0,
             indent_level: -1,
-            code,
+            code_handler,
             ignore_all_errors: false,
             correction_indent: 0,
             errors: RefCell::new(vec![]),
         }
     }
+
+    pub fn ignore_all_errors(&self) -> bool {
+        self.ignore_all_errors
+    }
+
+    pub fn log_error(&self, err: Diagnostics) {
+        self.errors.borrow_mut().push(err);
+    }
 }
 
 impl Parser for JarvilParser {
-    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCode) {
+    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCodeHandler) {
         let code_node = self.code(token_vec);
-        (code_node, self.errors.into_inner(), self.code)
+        (code_node, self.errors.into_inner(), self.code_handler)
     }
 }
 
@@ -100,7 +110,7 @@ impl JarvilParser {
 
     pub fn curr_token_precedence_and_name(&self) -> (u8, &'static str) {
         let token = &self.token_vec[self.lookahead];
-        (token.get_precedence(), token.core_token.to_string())
+        (token.precedence(), token.core_token().to_string())
     }
 
     pub fn is_curr_token_on_newline(&self) -> bool {
@@ -145,7 +155,10 @@ impl JarvilParser {
         }
     }
 
-    pub fn expect_symbol_separated_sequence<T: Clone, U: Fn(&mut JarvilParser) -> T>(
+    pub fn expect_symbol_separated_sequence<
+        T: Node + Serialize + Clone,
+        U: Fn(&mut JarvilParser) -> T,
+    >(
         &mut self,
         entity_parsing_fn: U,
         separator: &'static str,
@@ -175,7 +188,7 @@ impl JarvilParser {
         let parsing_fn = |parser: &mut JarvilParser| {
             let identifier_in_decl_node = parser.expect_identifier();
             let token = parser.curr_token();
-            match token.core_token {
+            match token.core_token() {
                 CoreToken::COLON => {
                     let colon_node = parser.expect(":");
                     let interface_bounds_node = parser.expect_symbol_separated_sequence(
@@ -195,7 +208,7 @@ impl JarvilParser {
 
     pub fn expect_identifier_in<
         T,
-        U: Clone,
+        U: Node + Serialize + Clone,
         F: Fn(&mut JarvilParser) -> SymbolSeparatedSequenceNode<U>,
         V: Fn(OkTokenNode, Option<(TokenNode, SymbolSeparatedSequenceNode<U>, TokenNode)>) -> T,
         W: Fn(Vec<&'static str>, Token) -> T,
@@ -211,7 +224,7 @@ impl JarvilParser {
             let ok_token_node = OkTokenNode::new(token.clone());
             self.scan_next_token();
             let next_token = self.curr_token();
-            match next_token.core_token {
+            match next_token.core_token() {
                 CoreToken::LBRACKET => {
                     let langle_node = self.expect("<");
                     let angle_bracketed_content_node = angle_bracketed_content_parsing_fn(self);
@@ -323,13 +336,11 @@ impl JarvilParser {
             skipped_tokens = self.skip_to_newline();
         }
         let mut expected_indent_spaces = context::indent_spaces() as i64 * self.indent_level;
-        let mut indent_spaces = 0;
         loop {
             let token = &self.token_vec[self.lookahead];
-            match &token.core_token {
+            match &token.core_token() {
                 CoreToken::NEWLINE => {
                     extra_newlines.push(SkippedTokenNode::new(token.clone()));
-                    indent_spaces = 0;
                 }
                 CoreToken::ENDMARKER => {
                     return IndentResult {
@@ -340,8 +351,8 @@ impl JarvilParser {
                 }
                 _ => {
                     // At this point we are sure that the token index is set to the first token on a newline
-                    indent_spaces = (token.start_index()
-                        - self.code.get_line_start_index(token.line_number))
+                    let indent_spaces = (token.start_index()
+                        - self.code_handler.line_start_index(token.line_number()))
                         as i64;
                     //let alternate_line_index = match &token.trivia {
                     //    Some(trivia) => {
@@ -358,7 +369,8 @@ impl JarvilParser {
                             skipped_tokens,
                             extra_newlines,
                         };
-                    } else if indent_spaces > expected_indent_spaces {
+                    }
+                    if indent_spaces > expected_indent_spaces {
                         return IndentResult {
                             kind: IndentResultKind::IncorrectIndentation((
                                 expected_indent_spaces,
@@ -367,13 +379,12 @@ impl JarvilParser {
                             skipped_tokens,
                             extra_newlines,
                         };
-                    } else {
-                        return IndentResult {
-                            kind: IndentResultKind::BlockOver,
-                            skipped_tokens,
-                            extra_newlines,
-                        };
                     }
+                    return IndentResult {
+                        kind: IndentResultKind::BlockOver,
+                        skipped_tokens,
+                        extra_newlines,
+                    };
                 }
             }
             self.scan_next_token();

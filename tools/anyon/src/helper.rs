@@ -9,7 +9,7 @@ use crate::{
 use compiler::curr_dir_path;
 use std::path::Path;
 
-pub fn get_cmd_from_command_line_args(args: Vec<String>) -> Result<AnyonCommand, AnyonError> {
+pub fn cmd_from_command_line_args(args: Vec<String>) -> Result<AnyonCommand, AnyonError> {
     if args.len() < 2 {
         Ok(AnyonCommand::Help(HelpCommand::new(args)))
     } else {

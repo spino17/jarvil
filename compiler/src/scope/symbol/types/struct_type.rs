@@ -1,25 +1,24 @@
 use crate::core::string_interner::StrId;
-use crate::scope::common::{FieldsMap, MethodsMap};
 use crate::scope::concrete::ConcreteTypesTuple;
-use crate::scope::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
-use crate::scope::interfaces::InterfaceBounds;
-
-use crate::{
-    scope::core::{AbstractConcreteTypesHandler, GenericTypeParams},
-    types::core::Type,
-};
+use crate::scope::namespace::Namespace;
+use crate::scope::symbol::common::{FieldsMap, MethodsMap};
+use crate::scope::symbol::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
+use crate::scope::symbol::interfaces::InterfaceBounds;
+use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::traits::IsInitialized;
+use crate::types::core::Type;
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
 
 #[derive(Debug)]
 pub struct StructTypeData {
     fields: FieldsMap,
-    pub constructor: CallableData,
+    constructor: CallableData,
     methods: MethodsMap,
     class_methods: MethodsMap,
-    pub generics: Option<GenericTypeParams>,
-    pub implementing_interfaces: Option<InterfaceBounds>,
-    pub is_init: bool,
+    generics: Option<GenericTypeParams>,
+    implementing_interfaces: Option<InterfaceBounds>,
+    is_init: bool,
 }
 
 impl StructTypeData {
@@ -48,12 +47,30 @@ impl StructTypeData {
         self.is_init = true;
     }
 
+    pub fn is_init(&self) -> bool {
+        self.is_init
+    }
+
+    pub fn constructor(&self) -> &CallableData {
+        &self.constructor
+    }
+
+    pub fn implementing_interfaces(&self) -> Option<&InterfaceBounds> {
+        self.implementing_interfaces.as_ref()
+    }
+
+    pub fn generics(&self) -> Option<&GenericTypeParams> {
+        self.generics.as_ref()
+    }
+
     pub fn try_field<'a>(
         &'a self,
         field_name: &StrId,
         global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        namespace: &Namespace,
     ) -> Option<(Type, TextRange)> {
-        self.fields.try_field(field_name, global_concrete_types)
+        self.fields
+            .try_field(field_name, global_concrete_types, namespace)
     }
 
     pub fn try_method<'a>(
@@ -73,12 +90,12 @@ impl StructTypeData {
             .try_method(class_method_name, global_concrete_types)
     }
 
-    pub fn get_methods_ref(&self) -> &MethodsMap {
+    pub fn methods_ref(&self) -> &MethodsMap {
         &self.methods
     }
 }
 
-impl AbstractConcreteTypesHandler for StructTypeData {
+impl IsInitialized for StructTypeData {
     fn is_initialized(&self) -> bool {
         self.is_init
     }

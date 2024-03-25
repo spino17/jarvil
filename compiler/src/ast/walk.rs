@@ -408,16 +408,14 @@ pub trait Visitor {
     }
 
     fn walk(&mut self, node: &ASTNode) {
-        match self.visit(node) {
-            None => return,
-            _ => {}
+        if self.visit(node).is_none() {
+            return;
         }
-
         match node {
             ASTNode::Block(block_node) => {
                 let core_block_node = &block_node.0.as_ref();
                 self.walk_token(&core_block_node.newline);
-                for stmt in core_block_node.stmts.as_ref() {
+                for stmt in &core_block_node.stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
             }
@@ -569,7 +567,7 @@ pub trait Visitor {
                 let core_conditional_stmt = conditional_stmt.core_ref();
                 self.walk_conditional_block(&core_conditional_stmt.if_block);
                 for elif_block in &core_conditional_stmt.elifs {
-                    self.walk_conditional_block(&elif_block);
+                    self.walk_conditional_block(elif_block);
                 }
                 if let Some((else_keyword, colon, else_block)) = &core_conditional_stmt.else_block {
                     self.walk_token(else_keyword);

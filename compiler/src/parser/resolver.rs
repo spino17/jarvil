@@ -1,13 +1,15 @@
 use super::helper::err_for_generic_type_args;
 use crate::ast::ast::{
-    BoundedMethodKind, CallableBodyNode, CallablePrototypeNode, CoreAssignmentNode, CoreAtomNode,
-    CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreRVariableDeclarationNode,
-    CoreSelfKeywordNode, EnumDeclarationNode, ForLoopStatementNode, FunctionWrapperNode,
-    InterfaceDeclarationNode, LambdaTypeDeclarationNode, MatchCaseStatementNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode, UnresolvedIdentifier,
-    UserDefinedTypeNode,
+    AtomStartNode, BoundedMethodKind, CallExpressionNode, CallableBodyNode, CallablePrototypeNode,
+    CoreAssignmentNode, CoreAtomNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
+    CoreRVariableDeclarationNode, CoreSelfKeywordNode, EnumDeclarationNode,
+    EnumVariantExprOrClassMethodCallNode, ForLoopStatementNode, FunctionWrapperNode,
+    IdentifierInUseNode, InterfaceDeclarationNode, LambdaTypeDeclarationNode,
+    MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
+    SelfKeywordNode, UnresolvedIdentifier, UserDefinedTypeNode,
 };
-use crate::core::string_interner::StrId;
+use crate::code::JarvilCodeHandler;
+use crate::core::string_interner::{Interner, StrId};
 use crate::error::diagnostics::{
     ConstructorNotFoundInsideStructDeclarationError, FieldsNotInitializedInConstructorError,
     GenericTypeResolvedToOutsideScopeError, GenericTypesDeclarationInsideConstructorFoundError,
@@ -18,19 +20,27 @@ use crate::error::diagnostics::{
     MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
-use crate::scope::builtin::{print_meta_data, range_meta_data};
 use crate::scope::concrete::ConcreteTypesTuple;
-use crate::scope::core::{
-    AbstractSymbolData, FunctionSymbolData, GenericTypeParams, InterfaceSymbolData, LookupData,
-    LookupResult, MangledIdentifierName, UserDefinedTypeSymbolData, VariableSymbolData,
-};
 use crate::scope::errors::GenericTypeArgsCheckError;
-use crate::scope::function::{CallableKind, CallablePrototypeData};
-use crate::scope::handler::{ConcreteSymbolDataEntry, SemanticStateDatabase, SymbolDataEntry};
-use crate::scope::interfaces::{InterfaceBounds, InterfaceObject};
-use crate::scope::types::core::UserDefineTypeKind;
-use crate::scope::types::generic_type::GenericTypeDeclarationPlaceCategory;
-use crate::types::core::AbstractType;
+use crate::scope::lookup::{LookupData, LookupResult};
+use crate::scope::mangled::MangledIdentifierName;
+use crate::scope::namespace::Namespace;
+use crate::scope::scope::ScopeIndex;
+use crate::scope::semantic_db::SemanticStateDatabase;
+use crate::scope::symbol::core::{
+    ConcreteSymbolDataEntry, IdentDeclId, SymbolDataEntry, SymbolIndex,
+};
+use crate::scope::symbol::function::FunctionSymbolData;
+use crate::scope::symbol::function::{CallableKind, CallablePrototypeData};
+use crate::scope::symbol::interfaces::{InterfaceBounds, InterfaceObject};
+use crate::scope::symbol::interfaces::{InterfaceData, InterfaceSymbolData};
+use crate::scope::symbol::types::core::UserDefinedTypeSymbolData;
+use crate::scope::symbol::types::core::{UserDefineTypeKind, UserDefinedTypeData};
+use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::symbol::variables::VariableSymbolData;
+use crate::scope::traits::{AbstractSymbol, IsInitialized};
+use crate::types::traits::TypeLike;
 use crate::{
     ast::{
         ast::{
@@ -40,28 +50,24 @@ use crate::{
         },
         walk::Visitor,
     },
-    code::JarvilCode,
     error::diagnostics::{Diagnostics, IdentifierAlreadyDeclaredError, IdentifierNotDeclaredError},
-    scope::{
-        core::{Namespace, SymbolData},
-        function::CallableData,
-        variables::VariableData,
-    },
+    scope::{symbol::function::CallableData, symbol::variables::VariableData},
     types::core::Type,
 };
 use rustc_hash::{FxHashMap, FxHashSet};
+use serde::Serialize;
 use std::vec;
 use text_size::TextRange;
 
 #[derive(Debug)]
-pub enum ResolveResult<T: AbstractSymbolData> {
-    Ok(LookupData<T>, Option<ConcreteTypesTuple>, StrId),
+pub enum ResolveResult<T: AbstractSymbol> {
+    Ok(LookupData<T>, Option<ConcreteTypesTuple>),
     InvalidGenericTypeArgsProvided(GenericTypeArgsCheckError),
     NotInitialized(TextRange, StrId),
     Unresolved,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum BlockKind {
     Function,
     Lambda,
@@ -117,9 +123,9 @@ pub struct ClassContext {
 }
 
 pub struct BlockContext {
-    inner_non_locals: FxHashSet<MangledIdentifierName>,
+    inner_non_locals: FxHashSet<MangledIdentifierName<VariableData>>,
     block_kind: BlockKind,
-    scope_index: usize,
+    scope_index: ScopeIndex,
 }
 
 pub struct Context {
@@ -128,65 +134,67 @@ pub struct Context {
 }
 
 pub struct Resolver {
-    scope_index: usize,
-    pub code: JarvilCode,
+    scope_index: ScopeIndex,
+    code_handler: JarvilCodeHandler,
     errors: Vec<Diagnostics>,
     context: Context,
     indent_level: usize,
-    pub semantic_state_db: SemanticStateDatabase,
+    semantic_db: SemanticStateDatabase,
 }
 
 impl Resolver {
-    pub fn new(code: JarvilCode) -> Self {
+    pub fn new(code_handler: JarvilCodeHandler) -> Self {
         Resolver {
-            scope_index: 0,
-            code,
+            scope_index: ScopeIndex::global(),
+            code_handler,
             errors: vec![],
             context: Context {
                 class_context_stack: vec![],
                 block_context_stack: vec![BlockContext {
                     inner_non_locals: FxHashSet::default(),
                     block_kind: BlockKind::Function,
-                    scope_index: 0,
+                    scope_index: ScopeIndex::global(),
                 }],
             },
             indent_level: 0,
-            semantic_state_db: SemanticStateDatabase::new(),
+            semantic_db: SemanticStateDatabase::new(),
         }
+    }
+
+    pub fn code_handler(&self) -> &JarvilCodeHandler {
+        &self.code_handler
+    }
+
+    pub fn interner(&self) -> &Interner {
+        self.semantic_db.interner()
     }
 
     pub fn resolve_ast(
         mut self,
         ast: &BlockNode,
-    ) -> (SemanticStateDatabase, Vec<Diagnostics>, JarvilCode) {
+    ) -> (SemanticStateDatabase, Vec<Diagnostics>, JarvilCodeHandler) {
         let code_block = ast.0.as_ref();
-        // setting builtin functions to global scope
-        // TODO - shift them to standard library
-        self.semantic_state_db.namespace.functions.force_insert(
-            self.scope_index,
-            self.semantic_state_db.interner.intern("print"),
-            print_meta_data(),
-            TextRange::default(),
-        );
-        self.semantic_state_db.namespace.functions.force_insert(
-            self.scope_index,
-            self.semantic_state_db.interner.intern("range"),
-            range_meta_data(),
-            TextRange::default(),
-        );
-        for stmt in code_block.stmts.as_ref() {
+        for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        match self.semantic_state_db.namespace.functions.get(
-            self.scope_index,
-            &self.semantic_state_db.interner.intern("main"),
-        ) {
-            Some(symbol_data) => {
-                let func_meta_data = &*symbol_data.get_core_ref();
-                let params = &func_meta_data.prototype.params;
-                let return_type = &func_meta_data.prototype.return_type;
+        match self
+            .semantic_db
+            .namespace_ref()
+            .functions_ref()
+            .get(self.scope_index, self.semantic_db.interner().intern("main"))
+        {
+            Some(symbol_index) => {
+                let func_meta_data = self.semantic_db.function_symbol_ref(symbol_index);
+                let prototype = func_meta_data.concretized_prototype(
+                    None,
+                    None,
+                    self.semantic_db.namespace_ref(),
+                );
+                let params = prototype.params();
+                let return_type = prototype.return_ty();
                 if !params.is_empty() || !return_type.is_void() {
-                    let span = symbol_data.declaration_line_number();
+                    let span = symbol_index
+                        .declaration_line_number(self.semantic_db.namespace_ref().functions_ref());
                     let err = MainFunctionWrongTypeError::new(span);
                     self.errors.push(Diagnostics::MainFunctionWrongType(err));
                 }
@@ -196,13 +204,13 @@ impl Resolver {
                 self.errors.push(Diagnostics::MainFunctionNotFound(err));
             }
         }
-        (self.semantic_state_db, self.errors, self.code)
+        (self.semantic_db, self.errors, self.code_handler)
     }
 
     pub fn open_block(&mut self, block_kind: BlockKind) {
         let new_scope_index = self
-            .semantic_state_db
-            .namespace
+            .semantic_db
+            .namespace_mut_ref()
             .open_scope(self.scope_index, block_kind);
         self.scope_index = new_scope_index;
         self.indent_level += 1;
@@ -215,8 +223,8 @@ impl Resolver {
 
     pub fn close_block(&mut self, block: Option<&BlockNode>) {
         let parent_scope_index = match self
-            .semantic_state_db
-            .namespace
+            .semantic_db
+            .namespace_ref()
             .parent_scope_index(self.scope_index)
         {
             Some(parent_scope_index) => parent_scope_index,
@@ -224,12 +232,12 @@ impl Resolver {
         };
         self.scope_index = parent_scope_index;
         self.indent_level -= 1;
-        let mut non_locals = match self.context.block_context_stack.pop() {
+        let non_locals = match self.context.block_context_stack.pop() {
             Some(block_context) => block_context,
             None => unreachable!(),
         };
         if let Some(block) = block {
-            self.semantic_state_db
+            self.semantic_db
                 .set_non_locals(block, non_locals.inner_non_locals);
         }
     }
@@ -239,21 +247,21 @@ impl Resolver {
         self.context.class_context_stack[len - 1].is_containing_self = value;
     }
 
-    pub fn get_curr_class_context_is_containing_self(&self) -> bool {
+    pub fn curr_class_context_is_containing_self(&self) -> bool {
         let len = self.context.class_context_stack.len();
         self.context.class_context_stack[len - 1].is_containing_self
     }
 
     pub fn set_to_variable_non_locals(
         &mut self,
-        name: MangledIdentifierName,
+        name: MangledIdentifierName<VariableData>,
         enclosing_func_scope_depth: Option<usize>,
     ) {
         let len = self.context.block_context_stack.len();
         if let Some(enclosing_func_scope_depth) = enclosing_func_scope_depth {
             self.context.block_context_stack[len - 1 - (enclosing_func_scope_depth - 1)]
                 .inner_non_locals
-                .insert(name.clone());
+                .insert(name);
         }
     }
 
@@ -275,7 +283,7 @@ impl Resolver {
         }
     }
 
-    pub fn get_enclosing_generics_declarative_scope_index(&self) -> (usize, Option<usize>) {
+    pub fn enclosing_generics_declarative_scope_index(&self) -> (ScopeIndex, Option<ScopeIndex>) {
         // (enclosing_scope, enclosing_class_scope `if enclosing scope is method`)
         let mut index = self.context.block_context_stack.len() - 1;
         loop {
@@ -297,49 +305,50 @@ impl Resolver {
     pub fn bind_decl_to_identifier_in_decl(
         &mut self,
         node: &OkIdentifierInDeclNode,
-        symbol_data: SymbolDataEntry,
+        symbol_entry: SymbolDataEntry,
     ) {
-        self.semantic_state_db
-            .identifier_in_decl_binding_table
-            .insert(node.clone(), symbol_data);
+        self.semantic_db
+            .identifier_in_decl_binding_table_mut_ref()
+            .insert(node.clone(), symbol_entry);
     }
 
-    pub fn bind_decl_to_identifier_in_use<T: AbstractSymbolData>(
+    pub fn bind_decl_to_identifier_in_use<T: AbstractSymbol>(
         &mut self,
         node: &OkIdentifierInUseNode,
-        symbol_data: &T,
+        symbol_obj: &T,
         is_concrete_types_none_allowed: bool,
     ) -> Result<(Option<ConcreteTypesTuple>, bool), GenericTypeArgsCheckError> {
         // (index to the registry, has_generics)
         let (concrete_types, ty_ranges, has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
-        symbol_data.check_generic_type_args(
-            &concrete_types,
-            &ty_ranges,
+        symbol_obj.check_generic_type_args(
+            concrete_types.as_ref(),
+            ty_ranges.as_ref(),
             is_concrete_types_none_allowed,
-            &self.semantic_state_db.interner,
+            self.semantic_db.interner(),
+            self.semantic_db.namespace_ref(),
         )?;
-        let concrete_symbol_data =
-            ConcreteSymbolDataEntry::new(symbol_data.get_entry(), concrete_types.clone());
-        self.semantic_state_db
-            .identifier_in_use_binding_table
-            .insert(node.clone(), concrete_symbol_data);
+        let concrete_symbol_entry =
+            ConcreteSymbolDataEntry::new(symbol_obj.entry(), concrete_types.clone());
+        self.semantic_db
+            .identifier_in_use_binding_table_mut_ref()
+            .insert(node.clone(), concrete_symbol_entry);
         Ok((concrete_types, has_generics))
     }
 
     pub fn bind_decl_to_self_keyword(
         &mut self,
         node: &OkSelfKeywordNode,
-        symbol_data: SymbolData<VariableData>,
+        symbol_index: SymbolIndex<VariableData>,
     ) {
-        self.semantic_state_db
-            .self_keyword_binding_table
-            .insert(node.clone(), symbol_data);
+        self.semantic_db
+            .self_keyword_binding_table_mut_ref()
+            .insert(node.clone(), symbol_index);
     }
 
     pub fn try_resolving<
-        T: AbstractSymbolData,
-        U: Fn(&Namespace, usize, &StrId) -> LookupResult<T>,
+        T: AbstractSymbol,
+        U: Fn(&Namespace, ScopeIndex, StrId) -> LookupResult<T>,
     >(
         &mut self,
         identifier: &OkIdentifierInUseNode,
@@ -348,15 +357,15 @@ impl Resolver {
         log_error: bool,
         is_concrete_types_none_allowed: bool,
     ) -> ResolveResult<T> {
-        let name = identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
-        match lookup_fn(&self.semantic_state_db.namespace, self.scope_index, &name) {
+        let name = identifier.token_value(&self.code_handler, self.semantic_db.interner());
+        match lookup_fn(self.semantic_db.namespace_ref(), self.scope_index, name) {
             LookupResult::Ok(lookup_data) => {
                 match self.bind_decl_to_identifier_in_use(
                     identifier,
-                    &lookup_data.symbol_data,
+                    &lookup_data.symbol_obj,
                     is_concrete_types_none_allowed,
                 ) {
-                    Ok((concrete_types, _)) => ResolveResult::Ok(lookup_data, concrete_types, name),
+                    Ok((concrete_types, _)) => ResolveResult::Ok(lookup_data, concrete_types),
                     Err(err) => {
                         if log_error {
                             let err = err_for_generic_type_args(
@@ -373,7 +382,7 @@ impl Resolver {
             LookupResult::NotInitialized(decl_range) => {
                 if log_error {
                     let err = IdentifierUsedBeforeInitializedError::new(
-                        self.semantic_state_db.interner.lookup(name),
+                        self.semantic_db.interner().lookup(name),
                         ident_kind,
                         decl_range,
                         identifier.range(),
@@ -398,7 +407,7 @@ impl Resolver {
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
     ) -> ResolveResult<VariableSymbolData> {
-        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &StrId| {
+        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: StrId| {
             namespace.lookup_in_variables_namespace(scope_index, key)
         };
         self.try_resolving(identifier, lookup_fn, IdentKind::Variable, log_error, false)
@@ -409,7 +418,7 @@ impl Resolver {
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
     ) -> ResolveResult<FunctionSymbolData> {
-        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &StrId| {
+        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: StrId| {
             namespace.lookup_in_functions_namespace(scope_index, key)
         };
         self.try_resolving(identifier, lookup_fn, IdentKind::Function, log_error, true)
@@ -421,7 +430,7 @@ impl Resolver {
         log_error: bool,
         is_concrete_types_none_allowed: bool,
     ) -> ResolveResult<UserDefinedTypeSymbolData> {
-        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &StrId| {
+        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: StrId| {
             namespace.lookup_in_types_namespace(scope_index, key)
         };
         self.try_resolving(
@@ -438,7 +447,7 @@ impl Resolver {
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
     ) -> ResolveResult<InterfaceSymbolData> {
-        let lookup_fn = |namespace: &Namespace, scope_index: usize, key: &StrId| {
+        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: StrId| {
             namespace.lookup_in_interfaces_namespace(scope_index, key)
         };
         self.try_resolving(
@@ -453,19 +462,19 @@ impl Resolver {
     pub fn try_resolving_self_keyword(
         &mut self,
         self_keyword: &OkSelfKeywordNode,
-    ) -> Option<(SymbolData<VariableData>, usize)> {
-        let name = self_keyword.token_value(&self.code, &mut self.semantic_state_db.interner);
-        debug_assert!(self.semantic_state_db.interner.lookup(name) == &*"self");
+    ) -> Option<(SymbolIndex<VariableData>, usize)> {
+        let name = self_keyword.token_value(&self.code_handler, self.semantic_db.interner());
+        debug_assert!(self.semantic_db.interner().lookup(name) == "self");
         match self
-            .semantic_state_db
-            .namespace
-            .lookup_in_variables_namespace(self.scope_index, &name)
+            .semantic_db
+            .namespace_ref()
+            .lookup_in_variables_namespace(self.scope_index, name)
         {
             LookupResult::Ok(lookup_data) => {
-                let symbol_data = lookup_data.symbol_data;
+                let symbol_obj = lookup_data.symbol_obj;
                 let depth = lookup_data.depth;
-                self.bind_decl_to_self_keyword(self_keyword, symbol_data.0.clone());
-                Some((symbol_data.0, depth))
+                self.bind_decl_to_self_keyword(self_keyword, symbol_obj.symbol_index());
+                Some((symbol_obj.symbol_index(), depth))
             }
             LookupResult::NotInitialized(_) => unreachable!(),
             LookupResult::Unresolved => None,
@@ -473,26 +482,33 @@ impl Resolver {
     }
 
     pub fn try_declare_and_bind<
-        T: AbstractSymbolData,
-        U: Fn(&mut Namespace, usize, StrId, TextRange, usize) -> Result<T, (StrId, TextRange)>,
+        V: IsInitialized,
+        T: AbstractSymbol,
+        U: Fn(
+            &mut Namespace,
+            ScopeIndex,
+            StrId,
+            TextRange,
+            IdentDeclId<V>,
+        ) -> Result<T, (StrId, TextRange)>,
     >(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
         declare_fn: U,
-        unique_id: usize,
+        unique_id: IdentDeclId<V>,
     ) -> Result<T, (StrId, TextRange)> {
-        let name = identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
+        let name = identifier.token_value(&self.code_handler, self.semantic_db.interner());
         let result = declare_fn(
-            &mut self.semantic_state_db.namespace,
+            self.semantic_db.namespace_mut_ref(),
             self.scope_index,
             name,
             identifier.core_ref().name.range(),
             unique_id,
         );
         match result {
-            Ok(symbol_data) => {
-                self.bind_decl_to_identifier_in_decl(identifier, symbol_data.get_entry());
-                Ok(symbol_data)
+            Ok(symbol_obj) => {
+                self.bind_decl_to_identifier_in_decl(identifier, symbol_obj.entry());
+                Ok(symbol_obj)
             }
             Err(err) => Err(err),
         }
@@ -503,15 +519,15 @@ impl Resolver {
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<VariableSymbolData, (StrId, TextRange)> {
         let declare_fn = |namespace: &mut Namespace,
-                          scope_index: usize,
+                          scope_index: ScopeIndex,
                           name: StrId,
                           decl_range: TextRange,
-                          unique_id: usize| {
+                          unique_id: IdentDeclId<VariableData>| {
             namespace.declare_variable(scope_index, name, decl_range, unique_id)
         };
         let unique_id = self
-            .semantic_state_db
-            .unique_key_generator
+            .semantic_db
+            .unique_key_generator_mut_ref()
             .generate_unique_id_for_variable();
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
@@ -521,15 +537,15 @@ impl Resolver {
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<FunctionSymbolData, (StrId, TextRange)> {
         let declare_fn = |namespace: &mut Namespace,
-                          scope_index: usize,
+                          scope_index: ScopeIndex,
                           name: StrId,
                           decl_range: TextRange,
-                          unique_id: usize| {
+                          unique_id: IdentDeclId<CallableData>| {
             namespace.declare_function(scope_index, name, decl_range, unique_id)
         };
         let unique_id = self
-            .semantic_state_db
-            .unique_key_generator
+            .semantic_db
+            .unique_key_generator_mut_ref()
             .generate_unique_id_for_function();
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
@@ -539,15 +555,15 @@ impl Resolver {
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
         let declare_fn = |namespace: &mut Namespace,
-                          scope_index: usize,
+                          scope_index: ScopeIndex,
                           name: StrId,
                           decl_range: TextRange,
-                          unique_id: usize| {
+                          unique_id: IdentDeclId<UserDefinedTypeData>| {
             namespace.declare_struct_type(scope_index, name, decl_range, unique_id)
         };
         let unique_id = self
-            .semantic_state_db
-            .unique_key_generator
+            .semantic_db
+            .unique_key_generator_mut_ref()
             .generate_unique_id_for_type();
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
@@ -557,15 +573,15 @@ impl Resolver {
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
         let declare_fn = |namespace: &mut Namespace,
-                          scope_index: usize,
+                          scope_index: ScopeIndex,
                           name: StrId,
                           decl_range: TextRange,
-                          unique_id: usize| {
+                          unique_id: IdentDeclId<UserDefinedTypeData>| {
             namespace.declare_enum_type(scope_index, name, decl_range, unique_id)
         };
         let unique_id = self
-            .semantic_state_db
-            .unique_key_generator
+            .semantic_db
+            .unique_key_generator_mut_ref()
             .generate_unique_id_for_type();
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
@@ -575,15 +591,15 @@ impl Resolver {
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<InterfaceSymbolData, (StrId, TextRange)> {
         let declare_fn = |namespace: &mut Namespace,
-                          scope_index: usize,
+                          scope_index: ScopeIndex,
                           name: StrId,
                           decl_range: TextRange,
-                          unique_id: usize| {
+                          unique_id: IdentDeclId<InterfaceData>| {
             namespace.declare_interface(scope_index, name, decl_range, unique_id)
         };
         let unique_id = self
-            .semantic_state_db
-            .unique_key_generator
+            .semantic_db
+            .unique_key_generator_mut_ref()
             .generate_unique_id_for_interface();
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
@@ -591,158 +607,151 @@ impl Resolver {
     pub fn type_obj_from_user_defined_type_expr<'a>(
         &mut self,
         user_defined_ty_expr: &'a UserDefinedTypeNode,
-        scope_index: usize,
+        scope_index: ScopeIndex,
         has_generics: &mut bool,
     ) -> TypeResolveKind<'a> {
-        if let CoreIdentifierInUseNode::Ok(ok_identifier) =
+        let CoreIdentifierInUseNode::Ok(ok_identifier) =
             user_defined_ty_expr.core_ref().name.core_ref()
+        else {
+            return TypeResolveKind::Invalid;
+        };
+        let name = ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+        match self
+            .semantic_db
+            .namespace_ref()
+            .lookup_in_types_namespace(scope_index, name)
         {
-            let name = ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
-            match self
-                .semantic_state_db
-                .namespace
-                .lookup_in_types_namespace(scope_index, &name)
-            {
-                LookupResult::Ok(lookup_data) => {
-                    let symbol_data = lookup_data.symbol_data;
-                    let resolved_scope_index = lookup_data.resolved_scope_index;
-                    let ty_kind = symbol_data.0.get_core_ref().get_kind();
-                    let result = match ty_kind {
-                        UserDefineTypeKind::Struct => {
-                            match self.bind_decl_to_identifier_in_use(
-                                ok_identifier,
-                                &symbol_data,
-                                false,
-                            ) {
-                                Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
-                                    if has_generics_inside_angle_bracket_types {
+            LookupResult::Ok(lookup_data) => {
+                let symbol_obj = lookup_data.symbol_obj;
+                let resolved_scope_index = symbol_obj.0.scope_index();
+                let ty_kind = self.semantic_db.ty_symbol_ref(symbol_obj.0).kind();
+                let result = match ty_kind {
+                    UserDefineTypeKind::Struct => {
+                        match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
+                        {
+                            Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
+                                if has_generics_inside_angle_bracket_types {
+                                    *has_generics = true;
+                                }
+                                TypeResolveKind::Resolved(Type::new_with_struct(
+                                    symbol_obj.0,
+                                    concrete_types,
+                                ))
+                            }
+                            Err(err) => TypeResolveKind::Unresolved(vec![
+                                UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
+                                    ok_identifier,
+                                    err,
+                                ),
+                            ]),
+                        }
+                    }
+                    UserDefineTypeKind::Enum => {
+                        match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
+                        {
+                            Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
+                                if has_generics_inside_angle_bracket_types {
+                                    *has_generics = true;
+                                }
+                                TypeResolveKind::Resolved(Type::new_with_enum(
+                                    symbol_obj.0,
+                                    concrete_types,
+                                ))
+                            }
+                            Err(err) => TypeResolveKind::Unresolved(vec![
+                                UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
+                                    ok_identifier,
+                                    err,
+                                ),
+                            ]),
+                        }
+                    }
+                    UserDefineTypeKind::Lambda => {
+                        match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
+                        {
+                            Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
+                                if has_generics_inside_angle_bracket_types {
+                                    *has_generics = true;
+                                }
+                                TypeResolveKind::Resolved(Type::new_with_lambda_named(
+                                    symbol_obj.0,
+                                    concrete_types,
+                                ))
+                            }
+                            Err(err) => TypeResolveKind::Unresolved(vec![
+                                UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
+                                    ok_identifier,
+                                    err,
+                                ),
+                            ]),
+                        }
+                    }
+                    UserDefineTypeKind::Generic => {
+                        // NOTE: generic types are only allowed to be resolved inside local scope (of function, method, struct etc.)
+                        // This kind of check is similiar to how `Rust` programming language expects generic type resolution.
+                        let (expected_scope_index, possible_expected_class_scope_index) =
+                            self.enclosing_generics_declarative_scope_index();
+                        let result = if resolved_scope_index != expected_scope_index {
+                            match possible_expected_class_scope_index {
+                                Some(class_scope_index) => {
+                                    if resolved_scope_index != class_scope_index {
+                                        Err(())
+                                    } else {
+                                        Ok(())
+                                    }
+                                }
+                                None => Err(()),
+                            }
+                        } else {
+                            Ok(())
+                        };
+                        match result {
+                            Ok(_) => {
+                                match self.bind_decl_to_identifier_in_use(
+                                    ok_identifier,
+                                    &symbol_obj,
+                                    false,
+                                ) {
+                                    Ok((concrete_types, _)) => {
+                                        debug_assert!(concrete_types.is_none());
                                         *has_generics = true;
+                                        TypeResolveKind::Resolved(Type::new_with_generic(
+                                            symbol_obj.0,
+                                        ))
                                     }
-                                    TypeResolveKind::Resolved(Type::new_with_struct(
-                                        &symbol_data.0,
-                                        concrete_types,
-                                    ))
+                                    Err(err) => TypeResolveKind::Unresolved(vec![
+                                        UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
+                                            ok_identifier,
+                                            err,
+                                        ),
+                                    ]),
                                 }
-                                Err(err) => TypeResolveKind::Unresolved(vec![
-                                    UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
-                                        ok_identifier,
-                                        err,
-                                    ),
-                                ]),
                             }
-                        }
-                        UserDefineTypeKind::Enum => {
-                            match self.bind_decl_to_identifier_in_use(
-                                ok_identifier,
-                                &symbol_data,
-                                false,
-                            ) {
-                                Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
-                                    if has_generics_inside_angle_bracket_types {
-                                        *has_generics = true;
-                                    }
-                                    TypeResolveKind::Resolved(Type::new_with_enum(
-                                        &symbol_data.0,
-                                        concrete_types,
-                                    ))
-                                }
-                                Err(err) => TypeResolveKind::Unresolved(vec![
-                                    UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
-                                        ok_identifier,
-                                        err,
+                            Err(_) => TypeResolveKind::Unresolved(vec![
+                                UnresolvedIdentifier::GenericResolvedToOutsideScope(
+                                    ok_identifier,
+                                    symbol_obj.0.declaration_line_number(
+                                        self.semantic_db.namespace_ref().types_ref(),
                                     ),
-                                ]),
-                            }
+                                ),
+                            ]),
                         }
-                        UserDefineTypeKind::Lambda => {
-                            match self.bind_decl_to_identifier_in_use(
-                                ok_identifier,
-                                &symbol_data,
-                                false,
-                            ) {
-                                Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
-                                    if has_generics_inside_angle_bracket_types {
-                                        *has_generics = true;
-                                    }
-                                    TypeResolveKind::Resolved(Type::new_with_lambda_named(
-                                        &symbol_data.0,
-                                        concrete_types,
-                                    ))
-                                }
-                                Err(err) => TypeResolveKind::Unresolved(vec![
-                                    UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
-                                        ok_identifier,
-                                        err,
-                                    ),
-                                ]),
-                            }
-                        }
-                        UserDefineTypeKind::Generic => {
-                            // NOTE: generic types are only allowed to be resolved inside local scope (of function, method, struct etc.)
-                            // This kind of check is similiar to how `Rust` programming language expects generic type resolution.
-                            let (expected_scope_index, possible_expected_class_scope_index) =
-                                self.get_enclosing_generics_declarative_scope_index();
-                            let result = if resolved_scope_index != expected_scope_index {
-                                match possible_expected_class_scope_index {
-                                    Some(class_scope_index) => {
-                                        if resolved_scope_index != class_scope_index {
-                                            Err(())
-                                        } else {
-                                            Ok(())
-                                        }
-                                    }
-                                    None => Err(()),
-                                }
-                            } else {
-                                Ok(())
-                            };
-                            match result {
-                                Ok(_) => {
-                                    match self.bind_decl_to_identifier_in_use(
-                                        ok_identifier,
-                                        &symbol_data,
-                                        false,
-                                    ) {
-                                        Ok((concrete_types, _)) => {
-                                            debug_assert!(concrete_types.is_none());
-                                            *has_generics = true;
-                                            TypeResolveKind::Resolved(Type::new_with_generic(
-                                                &symbol_data.0,
-                                            ))
-                                        }
-                                        Err(err) => TypeResolveKind::Unresolved(vec![
-                                            UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
-                                                ok_identifier,
-                                                err,
-                                            ),
-                                        ]),
-                                    }
-                                }
-                                Err(_) => TypeResolveKind::Unresolved(vec![
-                                    UnresolvedIdentifier::GenericResolvedToOutsideScope(
-                                        ok_identifier,
-                                        symbol_data.0.declaration_line_number(),
-                                    ),
-                                ]),
-                            }
-                        }
-                    };
-                    return result;
-                }
-                LookupResult::NotInitialized(decl_range) => {
-                    return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::NotInitialized(
-                        ok_identifier,
-                        decl_range,
-                    )])
-                }
-                LookupResult::Unresolved => {
-                    return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::Unresolved(
-                        ok_identifier,
-                    )])
-                }
+                    }
+                };
+                result
+            }
+            LookupResult::NotInitialized(decl_range) => {
+                return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::NotInitialized(
+                    ok_identifier,
+                    decl_range,
+                )])
+            }
+            LookupResult::Unresolved => {
+                return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::Unresolved(
+                    ok_identifier,
+                )])
             }
         }
-        TypeResolveKind::Invalid
     }
 
     pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> (Type, bool) {
@@ -773,9 +782,9 @@ impl Resolver {
                             }
                             UnresolvedIdentifier::NotInitialized(identifier, decl_range) => {
                                 let name = identifier
-                                    .token_value(&self.code, &mut self.semantic_state_db.interner);
+                                    .token_value(&self.code_handler, self.semantic_db.interner());
                                 let err = IdentifierUsedBeforeInitializedError::new(
-                                    self.semantic_state_db.interner.lookup(name),
+                                    self.semantic_db.interner().lookup(name),
                                     IdentKind::UserDefinedType,
                                     decl_range,
                                     identifier.range(),
@@ -800,7 +809,7 @@ impl Resolver {
                 }
                 TypeResolveKind::Invalid => Type::new_with_unknown(),
             };
-        self.semantic_state_db
+        self.semantic_db
             .set_type_expr_obj_mapping(type_expr, &ty_obj, has_generics);
         (ty_obj, has_generics)
     }
@@ -821,9 +830,8 @@ impl Resolver {
         interface_expr: &OkIdentifierInUseNode,
     ) -> Option<InterfaceObject> {
         match self.try_resolving_interface(interface_expr, true) {
-            ResolveResult::Ok(lookup_data, concrete_types, name) => Some(InterfaceObject::new(
-                name,
-                lookup_data.symbol_data.0,
+            ResolveResult::Ok(lookup_data, concrete_types) => Some(InterfaceObject::new(
+                lookup_data.symbol_obj.symbol_index(),
                 concrete_types,
             )),
             _ => None,
@@ -834,27 +842,26 @@ impl Resolver {
         &mut self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
     ) -> (Option<ConcreteTypesTuple>, Option<Vec<TextRange>>, bool) {
-        match &ok_identifier_in_use.core_ref().generic_type_args {
-            Some((_, generic_type_args, _)) => {
-                let mut has_generics = false;
-                let mut concrete_types: Vec<Type> = vec![];
-                let mut ty_ranges: Vec<TextRange> = vec![];
-                for generic_type_expr in generic_type_args.iter() {
-                    let (ty, ty_has_generics) = self.type_obj_from_expression(generic_type_expr);
-                    if ty_has_generics {
-                        has_generics = true;
-                    }
-                    concrete_types.push(ty);
-                    ty_ranges.push(generic_type_expr.range())
-                }
-                (
-                    Some(ConcreteTypesTuple::new(concrete_types)),
-                    Some(ty_ranges),
-                    has_generics,
-                )
+        let Some((_, generic_type_args, _)) = &ok_identifier_in_use.core_ref().generic_type_args
+        else {
+            return (None, None, false);
+        };
+        let mut has_generics = false;
+        let mut concrete_types: Vec<Type> = vec![];
+        let mut ty_ranges: Vec<TextRange> = vec![];
+        for generic_type_expr in generic_type_args.iter() {
+            let (ty, ty_has_generics) = self.type_obj_from_expression(generic_type_expr);
+            if ty_has_generics {
+                has_generics = true;
             }
-            None => (None, None, false),
+            concrete_types.push(ty);
+            ty_ranges.push(generic_type_expr.range())
         }
+        (
+            Some(ConcreteTypesTuple::new(concrete_types)),
+            Some(ty_ranges),
+            has_generics,
+        )
     }
 
     fn declare_angle_bracket_content_from_identifier_in_decl(
@@ -862,99 +869,95 @@ impl Resolver {
         ok_identifier_in_decl: &OkIdentifierInDeclNode,
         decl_place_category: GenericTypeDeclarationPlaceCategory,
     ) -> (Option<GenericTypeParams>, Option<ConcreteTypesTuple>) {
-        match &ok_identifier_in_decl.core_ref().generic_type_decls {
-            Some((_, generic_type_decls, _)) => {
-                let mut generic_type_params_vec: Vec<(StrId, InterfaceBounds, TextRange)> = vec![];
-                let mut concrete_types: Vec<Type> = vec![];
-                for (index, generic_type_decl) in generic_type_decls.iter().enumerate() {
-                    let core_generic_type_decl = generic_type_decl.core_ref();
-                    if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) =
-                        core_generic_type_decl.generic_type_name.core_ref()
-                    {
-                        debug_assert!(ok_identifier_in_decl
-                            .core_ref()
-                            .generic_type_decls
-                            .is_none());
-                        let generic_ty_name = ok_identifier_in_decl
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
-                        let mut interface_bounds = InterfaceBounds::default();
-                        if let Some((_, interface_bounds_node)) =
-                            &core_generic_type_decl.interface_bounds
-                        {
-                            for interface_expr in interface_bounds_node.iter() {
-                                if let CoreIdentifierInUseNode::Ok(interface_expr) =
-                                    interface_expr.core_ref()
-                                {
-                                    if let Some(interface_obj) =
-                                        self.interface_obj_from_expression(interface_expr)
-                                    {
-                                        if let Some(previous_decl_range) = interface_bounds
-                                            .insert(interface_obj, interface_expr.range())
-                                        {
-                                            let name = interface_expr.token_value(
-                                                &self.code,
-                                                &mut self.semantic_state_db.interner,
-                                            );
-                                            let err =
-                                                InterfaceAlreadyExistInBoundsDeclarationError::new(
-                                                    self.semantic_state_db.interner.lookup(name),
-                                                    previous_decl_range,
-                                                    interface_expr.range(),
-                                                );
-                                            self.errors.push(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        let unique_id = self
-                            .semantic_state_db
-                            .unique_key_generator
-                            .generate_unique_id_for_type();
-                        match self
-                            .semantic_state_db
-                            .namespace
-                            .declare_generic_type_with_meta_data(
-                                self.scope_index,
-                                generic_ty_name,
-                                index,
-                                decl_place_category,
-                                &interface_bounds,
-                                ok_identifier_in_decl.range(),
-                                unique_id,
-                            ) {
-                            Ok(symbol_data) => {
-                                self.bind_decl_to_identifier_in_decl(
-                                    ok_identifier_in_decl,
-                                    symbol_data.get_entry(),
-                                );
-                                generic_type_params_vec.push((
-                                    generic_ty_name,
-                                    interface_bounds,
-                                    ok_identifier_in_decl.range(),
-                                ));
-                                concrete_types.push(Type::new_with_generic(&symbol_data.0))
-                            }
-                            Err((param_name, previous_decl_range)) => {
-                                let err = IdentifierAlreadyDeclaredError::new(
-                                    IdentKind::UserDefinedType,
-                                    self.semantic_state_db.interner.lookup(param_name),
-                                    previous_decl_range,
-                                    ok_identifier_in_decl.range(),
-                                );
-                                self.errors
-                                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                            }
-                        }
-                    }
+        let Some((_, generic_type_decls, _)) = &ok_identifier_in_decl.core_ref().generic_type_decls
+        else {
+            return (None, None);
+        };
+        let mut generic_type_params_vec: Vec<(StrId, InterfaceBounds, TextRange)> = vec![];
+        let mut concrete_types: Vec<Type> = vec![];
+        for (index, generic_type_decl) in generic_type_decls.iter().enumerate() {
+            let core_generic_type_decl = generic_type_decl.core_ref();
+            let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) =
+                core_generic_type_decl.generic_type_name.core_ref()
+            else {
+                continue;
+            };
+            debug_assert!(ok_identifier_in_decl
+                .core_ref()
+                .generic_type_decls
+                .is_none());
+            let generic_ty_name =
+                ok_identifier_in_decl.token_value(&self.code_handler, self.semantic_db.interner());
+            let mut interface_bounds = InterfaceBounds::default();
+            if let Some((_, interface_bounds_node)) = &core_generic_type_decl.interface_bounds {
+                for interface_expr in interface_bounds_node.iter() {
+                    let CoreIdentifierInUseNode::Ok(interface_expr) = interface_expr.core_ref()
+                    else {
+                        continue;
+                    };
+                    let Some(interface_obj) = self.interface_obj_from_expression(interface_expr)
+                    else {
+                        continue;
+                    };
+                    let Some(previous_decl_range) = interface_bounds.insert(
+                        interface_obj,
+                        interface_expr.range(),
+                        self.semantic_db.namespace_ref(),
+                    ) else {
+                        continue;
+                    };
+                    let name =
+                        interface_expr.token_value(&self.code_handler, self.semantic_db.interner());
+                    let err = InterfaceAlreadyExistInBoundsDeclarationError::new(
+                        self.semantic_db.interner().lookup(name),
+                        previous_decl_range,
+                        interface_expr.range(),
+                    );
+                    self.errors
+                        .push(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
                 }
-                (
-                    Some(GenericTypeParams(generic_type_params_vec)),
-                    Some(ConcreteTypesTuple::new(concrete_types)),
-                )
             }
-            None => (None, None),
+            let unique_id = self
+                .semantic_db
+                .unique_key_generator_mut_ref()
+                .generate_unique_id_for_type();
+            match self
+                .semantic_db
+                .namespace_mut_ref()
+                .declare_generic_type_with_meta_data(
+                    self.scope_index,
+                    generic_ty_name,
+                    index,
+                    decl_place_category,
+                    &interface_bounds,
+                    ok_identifier_in_decl.range(),
+                    unique_id,
+                ) {
+                Ok(symbol_obj) => {
+                    self.bind_decl_to_identifier_in_decl(ok_identifier_in_decl, symbol_obj.entry());
+                    generic_type_params_vec.push((
+                        generic_ty_name,
+                        interface_bounds,
+                        ok_identifier_in_decl.range(),
+                    ));
+                    concrete_types.push(Type::new_with_generic(symbol_obj.0))
+                }
+                Err((param_name, previous_decl_range)) => {
+                    let err = IdentifierAlreadyDeclaredError::new(
+                        IdentKind::UserDefinedType,
+                        self.semantic_db.interner().lookup(param_name),
+                        previous_decl_range,
+                        ok_identifier_in_decl.range(),
+                    );
+                    self.errors
+                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                }
+            }
         }
+        (
+            Some(GenericTypeParams::new(generic_type_params_vec)),
+            Some(ConcreteTypesTuple::new(concrete_types)),
+        )
     }
 
     fn is_already_a_method(
@@ -1016,18 +1019,21 @@ impl Resolver {
             for param in params_iter {
                 let core_param = param.core_ref();
                 let param_name = &core_param.name;
-                if let CoreIdentifierInDeclNode::Ok(ok_identifier) = param_name.core_ref() {
-                    let param_name =
-                        ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
-                    let (param_type, param_ty_has_generics) = self
-                        .type_obj_for_expression_contained_inside_declarations(
-                            &core_param.data_type,
-                        );
-                    let unique_id = self
-                        .semantic_state_db
-                        .unique_key_generator
-                        .generate_unique_id_for_variable();
-                    let result = self.semantic_state_db.namespace.declare_variable_with_type(
+                let CoreIdentifierInDeclNode::Ok(ok_identifier) = param_name.core_ref() else {
+                    continue;
+                };
+                let param_name =
+                    ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+                let (param_type, param_ty_has_generics) = self
+                    .type_obj_for_expression_contained_inside_declarations(&core_param.data_type);
+                let unique_id = self
+                    .semantic_db
+                    .unique_key_generator_mut_ref()
+                    .generate_unique_id_for_variable();
+                let result = self
+                    .semantic_db
+                    .namespace_mut_ref()
+                    .declare_variable_with_type(
                         self.scope_index,
                         param_name,
                         &param_type,
@@ -1035,27 +1041,23 @@ impl Resolver {
                         true,
                         unique_id,
                     );
-                    match result {
-                        Ok(symbol_data) => {
-                            self.bind_decl_to_identifier_in_decl(
-                                ok_identifier,
-                                symbol_data.get_entry(),
-                            );
-                            if param_ty_has_generics {
-                                generics_containing_params_indexes.push(param_types_vec.len());
-                            }
-                            param_types_vec.push(param_type);
+                match result {
+                    Ok(symbol_obj) => {
+                        self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_obj.entry());
+                        if param_ty_has_generics {
+                            generics_containing_params_indexes.push(param_types_vec.len());
                         }
-                        Err((param_name, previous_decl_range)) => {
-                            let err = IdentifierAlreadyDeclaredError::new(
-                                IdentKind::Variable,
-                                self.semantic_state_db.interner.lookup(param_name),
-                                previous_decl_range,
-                                ok_identifier.range(),
-                            );
-                            self.errors
-                                .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                        }
+                        param_types_vec.push(param_type);
+                    }
+                    Err((param_name, previous_decl_range)) => {
+                        let err = IdentifierAlreadyDeclaredError::new(
+                            IdentKind::Variable,
+                            self.semantic_db.interner().lookup(param_name),
+                            previous_decl_range,
+                            ok_identifier.range(),
+                        );
+                        self.errors
+                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
                     }
                 }
             }
@@ -1083,7 +1085,7 @@ impl Resolver {
         &mut self,
         callable_body: &CallableBodyNode,
         optional_identifier_in_decl: Option<&OkIdentifierInDeclNode>,
-        symbol_data: &Option<FunctionSymbolData>,
+        symbol_obj: &Option<FunctionSymbolData>,
     ) -> (
         Vec<Type>,
         Type,
@@ -1101,13 +1103,12 @@ impl Resolver {
             generic_type_decls,
         ) = self
             .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
-        if let Some(symbol_data) = symbol_data {
-            symbol_data
-                .0
-                .get_core_mut_ref()
+        if let Some(symbol_obj) = symbol_obj {
+            self.semantic_db
+                .function_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_generics(generic_type_decls);
         }
-        for stmt in callable_body.0.as_ref().stmts.as_ref() {
+        for stmt in &callable_body.0.as_ref().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
         self.close_block(Some(callable_body));
@@ -1141,7 +1142,7 @@ impl Resolver {
             generic_type_decls,
         ) = self
             .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
-        for stmt in callable_body.0.as_ref().stmts.as_ref() {
+        for stmt in &callable_body.0.as_ref().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
         self.close_block(Some(callable_body));
@@ -1170,7 +1171,7 @@ impl Resolver {
         self.open_block(callable_body.core_ref().kind);
         let (param_types_vec, return_type, return_type_range, is_concretization_required, _) =
             self.declare_callable_prototype(&core_callable_body.prototype, None);
-        for stmt in callable_body.0.as_ref().stmts.as_ref() {
+        for stmt in &callable_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => {
@@ -1180,29 +1181,33 @@ impl Resolver {
                 _ => continue,
             };
             self.walk_stmt(stmt);
-            if let CoreStatementNode::Assignment(assignment) = stmt.core_ref() {
-                if let CoreAssignmentNode::Ok(ok_assignment) = assignment.core_ref() {
-                    let l_atom = &ok_assignment.core_ref().l_atom;
-                    if let CoreAtomNode::PropertyAccess(property_access) = l_atom.core_ref() {
-                        let core_property_access = property_access.core_ref();
-                        let property_name = &core_property_access.propertry;
-                        if let CoreIdentifierInUseNode::Ok(property_name) = property_name.core_ref()
-                        {
-                            let atom = &core_property_access.atom;
-                            if let CoreAtomNode::AtomStart(atom_start) = atom.core_ref() {
-                                if let CoreAtomStartNode::SelfKeyword(_) = atom_start.core_ref() {
-                                    // l_atom of the form `self.<property_name>`
-                                    let property_name_str = property_name.token_value(
-                                        &self.code,
-                                        &mut self.semantic_state_db.interner,
-                                    );
-                                    initialized_fields.insert(property_name_str);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+
+            // check for assignment node of the form `self.<property_name>`
+            let CoreStatementNode::Assignment(assignment) = stmt.core_ref() else {
+                continue;
+            };
+            let CoreAssignmentNode::Ok(ok_assignment) = assignment.core_ref() else {
+                continue;
+            };
+            let l_atom = &ok_assignment.core_ref().l_atom;
+            let CoreAtomNode::PropertyAccess(property_access) = l_atom.core_ref() else {
+                continue;
+            };
+            let core_property_access = property_access.core_ref();
+            let property_name = &core_property_access.propertry;
+            let CoreIdentifierInUseNode::Ok(property_name) = property_name.core_ref() else {
+                continue;
+            };
+            let atom = &core_property_access.atom;
+            let CoreAtomNode::AtomStart(atom_start) = atom.core_ref() else {
+                continue;
+            };
+            let CoreAtomStartNode::SelfKeyword(_) = atom_start.core_ref() else {
+                continue;
+            };
+            let property_name_str =
+                property_name.token_value(&self.code_handler, self.semantic_db.interner());
+            initialized_fields.insert(property_name_str);
         }
         self.close_block(Some(callable_body));
         (
@@ -1216,16 +1221,16 @@ impl Resolver {
 
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
-        let mut symbol_data: Option<VariableSymbolData> = None;
+        let mut symbol_obj: Option<VariableSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             match self.try_declare_and_bind_variable(ok_identifier) {
-                Ok(local_symbol_data) => {
-                    symbol_data = Some(local_symbol_data);
+                Ok(local_symbol_obj) => {
+                    symbol_obj = Some(local_symbol_obj);
                 }
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
                         IdentKind::Variable,
-                        self.semantic_state_db.interner.lookup(name),
+                        self.semantic_db.interner().lookup(name),
                         previous_decl_range,
                         ok_identifier.range(),
                     );
@@ -1244,8 +1249,10 @@ impl Resolver {
             CoreRVariableDeclarationNode::Lambda(lambda_r_assign) => {
                 // For case of lambda variable, it is allowed to be referenced inside the body to
                 // enable recursive definitions
-                if let Some(symbol_data) = &symbol_data {
-                    symbol_data.0.get_core_mut_ref().set_is_init(true);
+                if let Some(symbol_obj) = &symbol_obj {
+                    self.semantic_db
+                        .variable_symbol_mut_ref(symbol_obj.symbol_index())
+                        .set_is_init(true);
                 }
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
                 let (params_vec, return_type, _, is_concretization_required) =
@@ -1257,10 +1264,12 @@ impl Resolver {
                 ));
                 let final_variable_ty = match ty_from_optional_annotation {
                     Some((ty_from_optional_annotation, range)) => {
-                        if !ty_from_optional_annotation.is_eq(&lambda_ty) {
+                        if !ty_from_optional_annotation
+                            .is_eq(&lambda_ty, self.semantic_db.namespace_ref())
+                        {
                             let err = InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError::new(
-                                ty_from_optional_annotation.to_string(&self.semantic_state_db.interner),
-                                lambda_ty.to_string(&self.semantic_state_db.interner),
+                                ty_from_optional_annotation.to_string(self.semantic_db.interner(), self.semantic_db.namespace_ref()),
+                                lambda_ty.to_string(self.semantic_db.interner(), self.semantic_db.namespace_ref()),
                                 range
                             );
                             self.errors.push(Diagnostics::InferredLambdaVariableTypeMismatchedWithTypeFromAnnotation(err));
@@ -1269,22 +1278,25 @@ impl Resolver {
                     }
                     None => lambda_ty,
                 };
-                if let Some(symbol_data) = &symbol_data {
-                    symbol_data
-                        .0
-                        .get_core_mut_ref()
+                if let Some(symbol_obj) = &symbol_obj {
+                    self.semantic_db
+                        .variable_symbol_mut_ref(symbol_obj.symbol_index())
                         .set_data_type(&final_variable_ty);
                 }
             }
             CoreRVariableDeclarationNode::Expression(expr_r_assign) => {
                 self.walk_expr_stmt(expr_r_assign);
-                if let Some(symbol_data) = &symbol_data {
+                if let Some(symbol_obj) = &symbol_obj {
                     match ty_from_optional_annotation {
-                        Some((ty, _)) => symbol_data
-                            .0
-                            .get_core_mut_ref()
+                        Some((ty, _)) => self
+                            .semantic_db
+                            .variable_symbol_mut_ref(symbol_obj.symbol_index())
                             .set_data_type_from_optional_annotation(ty),
-                        None => symbol_data.0.get_core_mut_ref().set_is_init(true),
+                        None => {
+                            self.semantic_db
+                                .variable_symbol_mut_ref(symbol_obj.symbol_index())
+                                .set_is_init(true);
+                        }
                     }
                 }
             }
@@ -1296,15 +1308,15 @@ impl Resolver {
         let func_name = &core_func_decl.name;
         let body = &core_func_decl.body;
         let mut optional_ok_identifier_node = None;
-        let mut symbol_data: Option<FunctionSymbolData> = None;
+        let mut symbol_obj: Option<FunctionSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = func_name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
             match self.try_declare_and_bind_function(ok_identifier) {
-                Ok(local_symbol_data) => symbol_data = Some(local_symbol_data),
+                Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
                         IdentKind::Function,
-                        self.semantic_state_db.interner.lookup(name),
+                        self.semantic_db.interner().lookup(name),
                         previous_decl_range,
                         ok_identifier.range(),
                     );
@@ -1314,14 +1326,16 @@ impl Resolver {
             }
         }
         let (param_types_vec, return_type, _, is_concretization_required) =
-            self.visit_callable_body(body, optional_ok_identifier_node, &symbol_data);
-        if let Some(symbol_data) = &symbol_data {
-            symbol_data.0.get_core_mut_ref().set_meta_data(
-                param_types_vec,
-                return_type,
-                CallableKind::Function,
-                is_concretization_required,
-            );
+            self.visit_callable_body(body, optional_ok_identifier_node, &symbol_obj);
+        if let Some(symbol_obj) = &symbol_obj {
+            self.semantic_db
+                .function_symbol_mut_ref(symbol_obj.symbol_index())
+                .set_meta_data(
+                    param_types_vec,
+                    return_type,
+                    CallableKind::Function,
+                    is_concretization_required,
+                );
         }
     }
 
@@ -1333,17 +1347,17 @@ impl Resolver {
         let struct_body = &core_struct_decl.block;
         let implementing_interfaces_node = &core_struct_decl.implementing_interfaces;
         let mut optional_ok_identifier_node = None;
-        let mut symbol_data: Option<UserDefinedTypeSymbolData> = None;
+        let mut symbol_obj: Option<UserDefinedTypeSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
             match self.try_declare_and_bind_struct_type(ok_identifier) {
-                Ok(local_symbol_data) => {
-                    symbol_data = Some(local_symbol_data);
+                Ok(local_symbol_obj) => {
+                    symbol_obj = Some(local_symbol_obj);
                 }
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
                         IdentKind::UserDefinedType,
-                        self.semantic_state_db.interner.lookup(name),
+                        self.semantic_db.interner().lookup(name),
                         previous_decl_range,
                         ok_identifier.range(),
                     );
@@ -1360,8 +1374,8 @@ impl Resolver {
                         ok_identifier,
                         GenericTypeDeclarationPlaceCategory::InStruct,
                     );
-                let struct_ty = match &symbol_data {
-                    Some(symbol_data) => Type::new_with_struct(&symbol_data.0, concrete_types),
+                let struct_ty = match &symbol_obj {
+                    Some(symbol_obj) => Type::new_with_struct(symbol_obj.0, concrete_types),
                     None => Type::new_with_unknown(),
                 };
                 (struct_generic_type_decls, struct_ty)
@@ -1369,51 +1383,58 @@ impl Resolver {
             None => (None, Type::new_with_unknown()),
         };
         let unique_id = self
-            .semantic_state_db
-            .unique_key_generator
+            .semantic_db
+            .unique_key_generator_mut_ref()
             .generate_unique_id_for_variable();
-        let result = self.semantic_state_db.namespace.declare_variable_with_type(
-            self.scope_index,
-            self.semantic_state_db.interner.intern("self"),
-            &struct_ty,
-            core_struct_decl.name.range(),
-            true,
-            unique_id,
-        );
+        let self_str_id = self.semantic_db.interner().intern("self");
+        let result = self
+            .semantic_db
+            .namespace_mut_ref()
+            .declare_variable_with_type(
+                self.scope_index,
+                self_str_id,
+                &struct_ty,
+                core_struct_decl.name.range(),
+                true,
+                unique_id,
+            );
         debug_assert!(result.is_ok());
 
         let mut implementing_interfaces: Option<InterfaceBounds> = None;
         if let Some((_, interfaces_node)) = implementing_interfaces_node {
             let mut interfaces = InterfaceBounds::default();
             for interface_expr in interfaces_node.iter() {
-                if let CoreIdentifierInUseNode::Ok(interface_expr) = interface_expr.core_ref() {
-                    if let Some(interface_obj) = self.interface_obj_from_expression(interface_expr)
-                    {
-                        if let Some(previous_decl_range) =
-                            interfaces.insert(interface_obj, interface_expr.range())
-                        {
-                            let name = interface_expr
-                                .token_value(&self.code, &mut self.semantic_state_db.interner);
-                            let err = InterfaceAlreadyExistInBoundsDeclarationError::new(
-                                self.semantic_state_db.interner.lookup(name),
-                                previous_decl_range,
-                                interface_expr.range(),
-                            );
-                            self.errors
-                                .push(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
-                        }
-                    }
-                }
+                let CoreIdentifierInUseNode::Ok(interface_expr) = interface_expr.core_ref() else {
+                    continue;
+                };
+                let Some(interface_obj) = self.interface_obj_from_expression(interface_expr) else {
+                    continue;
+                };
+                let Some(previous_decl_range) = interfaces.insert(
+                    interface_obj,
+                    interface_expr.range(),
+                    self.semantic_db.namespace_ref(),
+                ) else {
+                    continue;
+                };
+                let name =
+                    interface_expr.token_value(&self.code_handler, self.semantic_db.interner());
+                let err = InterfaceAlreadyExistInBoundsDeclarationError::new(
+                    self.semantic_db.interner().lookup(name),
+                    previous_decl_range,
+                    interface_expr.range(),
+                );
+                self.errors
+                    .push(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
             }
             if interfaces.len() > 0 {
                 implementing_interfaces = Some(interfaces);
             }
         }
-        if let Some(symbol_data) = &symbol_data {
-            symbol_data
-                .0
-                .get_core_mut_ref()
-                .get_struct_data_mut_ref()
+        if let Some(symbol_obj) = &symbol_obj {
+            self.semantic_db
+                .ty_symbol_mut_ref(symbol_obj.0)
+                .struct_data_mut_ref()
                 .set_generics_and_interfaces(struct_generic_type_decls, implementing_interfaces);
         }
 
@@ -1422,7 +1443,7 @@ impl Resolver {
         let mut methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
         let mut initialized_fields: FxHashSet<StrId> = FxHashSet::default();
-        for stmt in struct_body.0.as_ref().stmts.as_ref() {
+        for stmt in &struct_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
@@ -1435,7 +1456,7 @@ impl Resolver {
                     let name = &name_type_spec.name;
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, self.semantic_db.interner());
                         let (type_obj, _) = self
                             .type_obj_for_expression_contained_inside_declarations(
                                 &name_type_spec.data_type,
@@ -1444,7 +1465,7 @@ impl Resolver {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
                                     IdentKind::Field,
-                                    self.semantic_state_db.interner.lookup(field_name),
+                                    self.semantic_db.interner().lookup(field_name),
                                     *previous_decl_range,
                                     ok_identifier.range(),
                                 );
@@ -1467,8 +1488,8 @@ impl Resolver {
                     {
                         optional_ok_identifier_node = Some(ok_bounded_method_name);
                         let method_name_str = ok_bounded_method_name
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
-                        if method_name_str.eq(&self.semantic_state_db.interner.intern("__init__"))
+                            .token_value(&self.code_handler, self.semantic_db.interner());
+                        if method_name_str == self.semantic_db.interner().intern("__init__")
                             && constructor.is_none()
                         {
                             is_constructor = true;
@@ -1520,13 +1541,13 @@ impl Resolver {
                             method_generic_type_decls,
                         );
                         let method_name_str = ok_bounded_method_name
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
-                        if method_name_str.eq(&self.semantic_state_db.interner.intern("__init__")) {
+                            .token_value(&self.code_handler, self.semantic_db.interner());
+                        if method_name_str == self.semantic_db.interner().intern("__init__") {
                             match constructor {
                                 Some((_, previous_decl_range)) => {
                                     let err = IdentifierAlreadyDeclaredError::new(
                                         IdentKind::Constructor,
-                                        self.semantic_state_db.interner.lookup(method_name_str),
+                                        self.semantic_db.interner().lookup(method_name_str),
                                         previous_decl_range,
                                         ok_bounded_method_name.range(),
                                     );
@@ -1543,7 +1564,7 @@ impl Resolver {
                                     }
                                     constructor =
                                         Some((method_meta_data, ok_bounded_method_name.range()));
-                                    self.semantic_state_db.set_bounded_kind(
+                                    self.semantic_db.set_bounded_kind(
                                         bounded_method_wrapper,
                                         BoundedMethodKind::Constructor,
                                     );
@@ -1558,7 +1579,7 @@ impl Resolver {
                                 Some(previous_decl_range) => {
                                     let err = IdentifierAlreadyDeclaredError::new(
                                         IdentKind::Method,
-                                        self.semantic_state_db.interner.lookup(method_name_str),
+                                        self.semantic_db.interner().lookup(method_name_str),
                                         previous_decl_range,
                                         ok_bounded_method_name.range(),
                                     );
@@ -1567,13 +1588,13 @@ impl Resolver {
                                 }
                                 None => {
                                     let is_containing_self =
-                                        self.get_curr_class_context_is_containing_self();
+                                        self.curr_class_context_is_containing_self();
                                     if is_containing_self {
                                         methods.insert(
                                             method_name_str,
                                             (method_meta_data, ok_bounded_method_name.range()),
                                         );
-                                        self.semantic_state_db.set_bounded_kind(
+                                        self.semantic_db.set_bounded_kind(
                                             bounded_method_wrapper,
                                             BoundedMethodKind::Method,
                                         );
@@ -1582,7 +1603,7 @@ impl Resolver {
                                             method_name_str,
                                             (method_meta_data, ok_bounded_method_name.range()),
                                         );
-                                        self.semantic_state_db.set_bounded_kind(
+                                        self.semantic_db.set_bounded_kind(
                                             bounded_method_wrapper,
                                             BoundedMethodKind::ClassMethod,
                                         );
@@ -1609,7 +1630,7 @@ impl Resolver {
                         let err = FieldsNotInitializedInConstructorError::new(
                             missing_fields_from_constructor,
                             construct_span,
-                            &self.semantic_state_db.interner,
+                            self.semantic_db.interner(),
                         );
                         self.errors
                             .push(Diagnostics::FieldsNotInitializedInConstructor(err));
@@ -1622,11 +1643,10 @@ impl Resolver {
                         .push(Diagnostics::ConstructorNotFoundInsideStructDeclaration(err));
                 }
             }
-            if let Some(symbol_data) = &symbol_data {
-                symbol_data
-                    .0
-                    .get_core_mut_ref()
-                    .get_struct_data_mut_ref()
+            if let Some(symbol_obj) = &symbol_obj {
+                self.semantic_db
+                    .ty_symbol_mut_ref(symbol_obj.0)
+                    .struct_data_mut_ref()
                     .set_meta_data(fields_map, constructor, methods, class_methods);
             }
         }
@@ -1637,15 +1657,15 @@ impl Resolver {
         let core_enum_type_decl = enum_type_decl.core_ref();
         let name = &core_enum_type_decl.name;
         let mut optional_ok_identifier_in_decl = None;
-        let mut symbol_data: Option<UserDefinedTypeSymbolData> = None;
+        let mut symbol_obj: Option<UserDefinedTypeSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
             optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
             match self.try_declare_and_bind_enum_type(ok_identifier_in_decl) {
-                Ok(local_symbol_data) => symbol_data = Some(local_symbol_data),
+                Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
                         IdentKind::UserDefinedType,
-                        self.semantic_state_db.interner.lookup(name),
+                        self.semantic_db.interner().lookup(name),
                         previous_decl_range,
                         ok_identifier_in_decl.range(),
                     );
@@ -1666,67 +1686,61 @@ impl Resolver {
             }
             None => None,
         };
-        if let Some(symbol_data) = &symbol_data {
-            symbol_data
-                .0
-                .get_core_mut_ref()
-                .get_enum_data_mut_ref()
+        if let Some(symbol_obj) = &symbol_obj {
+            self.semantic_db
+                .ty_symbol_mut_ref(symbol_obj.0)
+                .enum_data_mut_ref()
                 .set_generics(generic_type_decls);
         }
         let mut variants: Vec<(StrId, Option<Type>, TextRange)> = vec![];
         let mut variants_map: FxHashMap<StrId, TextRange> = FxHashMap::default();
-        for stmt in enum_body.0.as_ref().stmts.as_ref() {
+        for stmt in &enum_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
                 _ => continue,
             };
-            match stmt.core_ref() {
-                CoreStatementNode::EnumVariantDeclaration(enum_variant_decl) => {
-                    let core_enum_variant_decl = enum_variant_decl.core_ref();
-                    let variant_name = &core_enum_variant_decl.variant;
-                    let ty = &core_enum_variant_decl.ty;
-                    let mut variant_ty_obj: Option<Type> = None;
-                    if let CoreIdentifierInDeclNode::Ok(ok_identifier) = variant_name.core_ref() {
-                        let variant_name = ok_identifier
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
-                        if let Some((_, ty_expr, _)) = ty {
-                            variant_ty_obj = Some(
-                                self.type_obj_for_expression_contained_inside_declarations(ty_expr)
-                                    .0,
-                            );
-                        }
-                        match variants_map.get(&variant_name) {
-                            Some(previous_decl_range) => {
-                                let err = IdentifierAlreadyDeclaredError::new(
-                                    IdentKind::Variant,
-                                    self.semantic_state_db.interner.lookup(variant_name),
-                                    *previous_decl_range,
-                                    ok_identifier.range(),
-                                );
-                                self.errors
-                                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                            }
-                            None => {
-                                variants.push((
-                                    variant_name,
-                                    variant_ty_obj,
-                                    ok_identifier.range(),
-                                ));
-                                variants_map.insert(variant_name, ok_identifier.range());
-                            }
-                        }
-                    }
-                }
+            let enum_variant_decl = match stmt.core_ref() {
+                CoreStatementNode::EnumVariantDeclaration(enum_variant_decl) => enum_variant_decl,
                 _ => unreachable!(),
+            };
+            let core_enum_variant_decl = enum_variant_decl.core_ref();
+            let variant_name = &core_enum_variant_decl.variant;
+            let ty = &core_enum_variant_decl.ty;
+            let mut variant_ty_obj: Option<Type> = None;
+            let CoreIdentifierInDeclNode::Ok(ok_identifier) = variant_name.core_ref() else {
+                continue;
+            };
+            let variant_name =
+                ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+            if let Some((_, ty_expr, _)) = ty {
+                variant_ty_obj = Some(
+                    self.type_obj_for_expression_contained_inside_declarations(ty_expr)
+                        .0,
+                );
+            }
+            match variants_map.get(&variant_name) {
+                Some(previous_decl_range) => {
+                    let err = IdentifierAlreadyDeclaredError::new(
+                        IdentKind::Variant,
+                        self.semantic_db.interner().lookup(variant_name),
+                        *previous_decl_range,
+                        ok_identifier.range(),
+                    );
+                    self.errors
+                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                }
+                None => {
+                    variants.push((variant_name, variant_ty_obj, ok_identifier.range()));
+                    variants_map.insert(variant_name, ok_identifier.range());
+                }
             }
         }
         self.close_block(Some(enum_body));
-        if let Some(symbol_data) = &symbol_data {
-            symbol_data
-                .0
-                .get_core_mut_ref()
-                .get_enum_data_mut_ref()
+        if let Some(symbol_obj) = &symbol_obj {
+            self.semantic_db
+                .ty_symbol_mut_ref(symbol_obj.0)
+                .enum_data_mut_ref()
                 .set_meta_data(variants);
         }
     }
@@ -1773,48 +1787,49 @@ impl Resolver {
             }
         }
         self.close_block(None);
-        if let Some(ok_identifier) = optional_ok_identifier_node {
-            let name = ok_identifier.token_value(&self.code, &mut self.semantic_state_db.interner);
-            let unique_id = self
-                .semantic_state_db
-                .unique_key_generator
-                .generate_unique_id_for_type();
-            let result = self
-                .semantic_state_db
-                .namespace
-                .declare_lambda_type_with_meta_data(
-                    self.scope_index,
-                    name,
-                    types_vec,
-                    return_type,
-                    if generics_containing_params_indexes.is_empty()
-                        && !is_concretization_required_for_return_type
-                    {
-                        None
-                    } else {
-                        Some((
-                            generics_containing_params_indexes,
-                            is_concretization_required_for_return_type,
-                        ))
-                    },
-                    generic_type_decls,
-                    ok_identifier.core_ref().name.range(),
-                    unique_id,
+        let Some(ok_identifier) = optional_ok_identifier_node else {
+            return;
+        };
+        let name = ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+        let unique_id = self
+            .semantic_db
+            .unique_key_generator_mut_ref()
+            .generate_unique_id_for_type();
+        let result = self
+            .semantic_db
+            .namespace_mut_ref()
+            .declare_lambda_type_with_meta_data(
+                self.scope_index,
+                name,
+                types_vec,
+                return_type,
+                if generics_containing_params_indexes.is_empty()
+                    && !is_concretization_required_for_return_type
+                {
+                    None
+                } else {
+                    Some((
+                        generics_containing_params_indexes,
+                        is_concretization_required_for_return_type,
+                    ))
+                },
+                generic_type_decls,
+                ok_identifier.core_ref().name.range(),
+                unique_id,
+            );
+        match result {
+            Ok(symbol_obj) => {
+                self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_obj.entry());
+            }
+            Err((name, previous_decl_range)) => {
+                let err = IdentifierAlreadyDeclaredError::new(
+                    IdentKind::UserDefinedType,
+                    self.semantic_db.interner().lookup(name),
+                    previous_decl_range,
+                    ok_identifier.range(),
                 );
-            match result {
-                Ok(symbol_data) => {
-                    self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_data.get_entry());
-                }
-                Err((name, previous_decl_range)) => {
-                    let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::UserDefinedType,
-                        self.semantic_state_db.interner.lookup(name),
-                        previous_decl_range,
-                        ok_identifier.range(),
-                    );
-                    self.errors
-                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
-                }
+                self.errors
+                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
             }
         }
     }
@@ -1823,15 +1838,15 @@ impl Resolver {
         let core_interface_decl = interface_decl.core_ref();
         let name = &core_interface_decl.name;
         let mut optional_ok_identifier_in_decl = None;
-        let mut symbol_data: Option<InterfaceSymbolData> = None;
+        let mut symbol_obj: Option<InterfaceSymbolData> = None;
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
             optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
             match self.try_declare_and_bind_interface(ok_identifier_in_decl) {
-                Ok(local_symbol_data) => symbol_data = Some(local_symbol_data),
+                Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
                         IdentKind::Interface,
-                        self.semantic_state_db.interner.lookup(name),
+                        self.semantic_db.interner().lookup(name),
                         previous_decl_range,
                         ok_identifier_in_decl.range(),
                     );
@@ -1852,16 +1867,15 @@ impl Resolver {
             }
             None => None,
         };
-        if let Some(symbol_data) = &symbol_data {
-            symbol_data
-                .0
-                .get_core_mut_ref()
+        if let Some(symbol_obj) = &symbol_obj {
+            self.semantic_db
+                .interface_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_generics(generic_type_decls);
         }
 
         let mut fields_map: FxHashMap<StrId, (Type, TextRange)> = FxHashMap::default();
         let mut methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
-        for stmt in interface_body.0.as_ref().stmts.as_ref() {
+        for stmt in &interface_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
@@ -1874,7 +1888,7 @@ impl Resolver {
                     let name = &name_type_spec.name;
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
+                            .token_value(&self.code_handler, self.semantic_db.interner());
                         let (type_obj, _) = self
                             .type_obj_for_expression_contained_inside_declarations(
                                 &name_type_spec.data_type,
@@ -1883,7 +1897,7 @@ impl Resolver {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
                                     IdentKind::Field,
-                                    self.semantic_state_db.interner.lookup(field_name),
+                                    self.semantic_db.interner().lookup(field_name),
                                     *previous_decl_range,
                                     ok_identifier.range(),
                                 );
@@ -1902,8 +1916,8 @@ impl Resolver {
                         core_interface_method_wrapper.name.core_ref()
                     {
                         let method_name = ok_identifier
-                            .token_value(&self.code, &mut self.semantic_state_db.interner);
-                        if method_name == self.semantic_state_db.interner.intern("__init__") {
+                            .token_value(&self.code_handler, self.semantic_db.interner());
+                        if method_name == self.semantic_db.interner().intern("__init__") {
                             let err = InitMethodNotAllowedInsideConstructorError::new(
                                 ok_identifier.core_ref().name.range(),
                             );
@@ -1935,10 +1949,9 @@ impl Resolver {
             }
         }
         self.close_block(Some(interface_body));
-        if let Some(symbol_data) = &symbol_data {
-            symbol_data
-                .0
-                .get_core_mut_ref()
+        if let Some(symbol_obj) = &symbol_obj {
+            self.semantic_db
+                .interface_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_meta_data(fields_map, methods);
         }
     }
@@ -1948,36 +1961,35 @@ impl Resolver {
         let block = &core_match_case.block;
         self.walk_expression(&core_match_case.expr);
         self.open_block(block.core_ref().kind);
-        for stmt in block.core_ref().stmts.as_ref() {
+        for stmt in &block.core_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
                 _ => continue,
             };
-            match stmt.core_ref() {
-                CoreStatementNode::CaseBranch(case_branch) => {
-                    let core_case_branch = case_branch.core_ref();
-                    let case_block = &core_case_branch.block;
-                    self.open_block(case_block.core_ref().kind);
-                    if let Some((_, variable_name, _)) = &core_case_branch.variable_name {
-                        if let CoreIdentifierInDeclNode::Ok(ok_identifier) =
-                            variable_name.core_ref()
-                        {
-                            match self.try_declare_and_bind_variable(ok_identifier) {
-                                Ok(symbol_data) => {
-                                    symbol_data.0.get_core_mut_ref().set_is_init(true);
-                                }
-                                Err(_) => unreachable!(),
-                            }
-                        }
-                    }
-                    for stmt in case_block.core_ref().stmts.as_ref() {
-                        self.walk_stmt_indent_wrapper(stmt);
-                    }
-                    self.close_block(Some(case_block));
-                }
+            let case_branch = match stmt.core_ref() {
+                CoreStatementNode::CaseBranch(case_branch) => case_branch,
                 _ => unreachable!(),
+            };
+            let core_case_branch = case_branch.core_ref();
+            let case_block = &core_case_branch.block;
+            self.open_block(case_block.core_ref().kind);
+            if let Some((_, variable_name, _)) = &core_case_branch.variable_name {
+                if let CoreIdentifierInDeclNode::Ok(ok_identifier) = variable_name.core_ref() {
+                    match self.try_declare_and_bind_variable(ok_identifier) {
+                        Ok(symbol_obj) => {
+                            self.semantic_db
+                                .variable_symbol_mut_ref(symbol_obj.symbol_index())
+                                .set_is_init(true);
+                        }
+                        Err(_) => unreachable!(),
+                    }
+                }
             }
+            for stmt in &case_block.core_ref().stmts {
+                self.walk_stmt_indent_wrapper(stmt);
+            }
+            self.close_block(Some(case_block));
         }
         self.close_block(Some(block));
     }
@@ -1990,16 +2002,176 @@ impl Resolver {
         self.open_block(block.core_ref().kind);
         if let CoreIdentifierInDeclNode::Ok(ok_loop_variable) = loop_variable.core_ref() {
             match self.try_declare_and_bind_variable(ok_loop_variable) {
-                Ok(symbol_data) => {
-                    symbol_data.0.get_core_mut_ref().set_is_init(true);
+                Ok(symbol_obj) => {
+                    self.semantic_db
+                        .variable_symbol_mut_ref(symbol_obj.symbol_index())
+                        .set_is_init(true);
                 }
                 Err(_) => unreachable!(),
             }
         }
-        for stmt in block.core_ref().stmts.as_ref() {
+        for stmt in &block.core_ref().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
         self.close_block(Some(block));
+    }
+
+    fn resolve_variable(&mut self, identifier: &IdentifierInUseNode) {
+        let CoreIdentifierInUseNode::Ok(ok_identifier) = identifier.core_ref() else {
+            return;
+        };
+        if let ResolveResult::Ok(lookup_data, _) = self.try_resolving_variable(ok_identifier, true)
+        {
+            if lookup_data.depth > 0 {
+                self.set_to_variable_non_locals(
+                    lookup_data
+                        .symbol_obj
+                        .mangled_name(self.semantic_db.namespace_ref()),
+                    lookup_data.enclosing_func_scope_depth,
+                );
+            }
+        }
+    }
+
+    fn resolve_self_value(&mut self, self_keyword: &SelfKeywordNode) {
+        let CoreSelfKeywordNode::Ok(ok_self_keyword) = self_keyword.core_ref() else {
+            return;
+        };
+        match self.try_resolving_self_keyword(ok_self_keyword) {
+            Some(_) => {
+                self.set_curr_class_context_is_containing_self(true);
+            }
+            None => {
+                let err = SelfNotFoundError::new(ok_self_keyword.range());
+                self.errors.push(Diagnostics::SelfNotFound(err));
+            }
+        }
+    }
+
+    fn resolve_call_expr(&mut self, func_call: &CallExpressionNode) {
+        let core_func_call = func_call.core_ref();
+        if let CoreIdentifierInUseNode::Ok(ok_identifier) = core_func_call.function_name.core_ref()
+        {
+            // order of namespace search: function => type => variable
+            match self.try_resolving_function(ok_identifier, false) {
+                ResolveResult::Ok(_, _) => {}
+                ResolveResult::NotInitialized(_, _) => unreachable!(),
+                ResolveResult::InvalidGenericTypeArgsProvided(err) => {
+                    let err = err_for_generic_type_args(
+                        &err,
+                        ok_identifier.core_ref().name.range(),
+                        IdentKind::Function,
+                    );
+                    self.errors.push(err);
+                }
+                ResolveResult::Unresolved => {
+                    match self.try_resolving_user_defined_type(ok_identifier, false, true) {
+                        ResolveResult::Ok(_, _) => {}
+                        ResolveResult::NotInitialized(decl_range, name) => {
+                            let err = IdentifierUsedBeforeInitializedError::new(
+                                self.semantic_db.interner().lookup(name),
+                                IdentKind::UserDefinedType,
+                                decl_range,
+                                ok_identifier.range(),
+                            );
+                            self.errors
+                                .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
+                        }
+                        ResolveResult::InvalidGenericTypeArgsProvided(err) => {
+                            let err = err_for_generic_type_args(
+                                &err,
+                                ok_identifier.core_ref().name.range(),
+                                IdentKind::UserDefinedType,
+                            );
+                            self.errors.push(err);
+                        }
+                        ResolveResult::Unresolved => {
+                            match self.try_resolving_variable(ok_identifier, false) {
+                                ResolveResult::Ok(lookup_data, _) => {
+                                    let depth = lookup_data.depth;
+                                    if depth > 0 {
+                                        self.set_to_variable_non_locals(
+                                            lookup_data
+                                                .symbol_obj
+                                                .mangled_name(self.semantic_db.namespace_ref()),
+                                            lookup_data.enclosing_func_scope_depth,
+                                        );
+                                    }
+                                }
+                                ResolveResult::NotInitialized(decl_range, name) => {
+                                    let err = IdentifierUsedBeforeInitializedError::new(
+                                        self.semantic_db.interner().lookup(name),
+                                        IdentKind::Variable,
+                                        decl_range,
+                                        ok_identifier.range(),
+                                    );
+                                    self.errors
+                                        .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
+                                }
+                                ResolveResult::Unresolved => {
+                                    let err = IdentifierNotFoundInAnyNamespaceError::new(
+                                        ok_identifier.range(),
+                                    );
+                                    self.errors
+                                        .push(Diagnostics::IdentifierNotFoundInAnyNamespace(err));
+                                }
+                                ResolveResult::InvalidGenericTypeArgsProvided(err) => {
+                                    let err = err_for_generic_type_args(
+                                        &err,
+                                        ok_identifier.core_ref().name.range(),
+                                        IdentKind::Variable,
+                                    );
+                                    self.errors.push(err);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if let Some(params) = &core_func_call.params {
+            self.walk_comma_separated_expressions(params)
+        }
+    }
+
+    fn resolve_enum_variant_expr_or_class_method_call(
+        &mut self,
+        enum_variant_expr_or_class_method_call: &EnumVariantExprOrClassMethodCallNode,
+    ) {
+        let core_enum_variant_expr_or_class_method_call =
+            enum_variant_expr_or_class_method_call.core_ref();
+        if let CoreIdentifierInUseNode::Ok(ok_identifier) =
+            core_enum_variant_expr_or_class_method_call
+                .ty_name
+                .core_ref()
+        {
+            self.try_resolving_user_defined_type(ok_identifier, true, false);
+        }
+        self.walk_identifier_in_use(&core_enum_variant_expr_or_class_method_call.property_name);
+        if let Some((_, params, _)) = &core_enum_variant_expr_or_class_method_call.params {
+            if let Some(params) = params {
+                self.walk_comma_separated_expressions(params);
+            }
+        }
+    }
+
+    fn resolve_identifier(&mut self, atom_start: &AtomStartNode) {
+        match atom_start.core_ref() {
+            CoreAtomStartNode::Identifier(identifier) => {
+                self.resolve_variable(identifier);
+            }
+            CoreAtomStartNode::SelfKeyword(self_keyword) => {
+                self.resolve_self_value(self_keyword);
+            }
+            CoreAtomStartNode::Call(func_call) => {
+                self.resolve_call_expr(func_call);
+            }
+            CoreAtomStartNode::EnumVariantExprOrClassMethodCall(
+                enum_variant_expr_or_class_method_call,
+            ) => self.resolve_enum_variant_expr_or_class_method_call(
+                enum_variant_expr_or_class_method_call,
+            ),
+        }
     }
 }
 
@@ -2009,30 +2181,10 @@ impl Visitor for Resolver {
             ASTNode::Block(block) => {
                 let core_block = block.0.as_ref();
                 self.open_block(core_block.kind);
-                for stmt in core_block.stmts.as_ref() {
+                for stmt in &core_block.stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
                 self.close_block(Some(block));
-                None
-            }
-            ASTNode::Break(break_stmt) => {
-                if !self.check_enclosing_loop_scope() {
-                    let err =
-                        InvalidLoopControlFlowStatementFoundError::new(break_stmt.range(), "break");
-                    self.errors
-                        .push(Diagnostics::InvalidLoopControlFlowStatementFound(err));
-                }
-                None
-            }
-            ASTNode::Continue(continue_stmt) => {
-                if !self.check_enclosing_loop_scope() {
-                    let err = InvalidLoopControlFlowStatementFoundError::new(
-                        continue_stmt.range(),
-                        "continue",
-                    );
-                    self.errors
-                        .push(Diagnostics::InvalidLoopControlFlowStatementFound(err));
-                }
                 None
             }
             ASTNode::VariableDeclaration(variable_decl) => {
@@ -2072,159 +2224,26 @@ impl Visitor for Resolver {
                 None
             }
             ASTNode::AtomStart(atom_start) => {
-                match atom_start.core_ref() {
-                    CoreAtomStartNode::Identifier(identifier) => {
-                        if let CoreIdentifierInUseNode::Ok(ok_identifier) = identifier.core_ref() {
-                            if let ResolveResult::Ok(lookup_data, _, _) =
-                                self.try_resolving_variable(ok_identifier, true)
-                            {
-                                if lookup_data.depth > 0 {
-                                    self.set_to_variable_non_locals(
-                                        lookup_data.symbol_data.get_mangled_name(),
-                                        lookup_data.enclosing_func_scope_depth,
-                                    );
-                                }
-                            }
-                        }
-                    }
-                    CoreAtomStartNode::SelfKeyword(self_keyword) => {
-                        if let CoreSelfKeywordNode::Ok(ok_self_keyword) = self_keyword.core_ref() {
-                            match self.try_resolving_self_keyword(ok_self_keyword) {
-                                Some(_) => {
-                                    self.set_curr_class_context_is_containing_self(true);
-                                }
-                                None => {
-                                    let err = SelfNotFoundError::new(ok_self_keyword.range());
-                                    self.errors.push(Diagnostics::SelfNotFound(err));
-                                }
-                            }
-                        }
-                    }
-                    CoreAtomStartNode::Call(func_call) => {
-                        let core_func_call = func_call.core_ref();
-                        if let CoreIdentifierInUseNode::Ok(ok_identifier) =
-                            core_func_call.function_name.core_ref()
-                        {
-                            // order of namespace search: function => type => variable
-                            match self.try_resolving_function(ok_identifier, false) {
-                                ResolveResult::Ok(_, _, _) => {}
-                                ResolveResult::NotInitialized(_, _) => unreachable!(),
-                                ResolveResult::InvalidGenericTypeArgsProvided(err) => {
-                                    let err = err_for_generic_type_args(
-                                        &err,
-                                        ok_identifier.core_ref().name.range(),
-                                        IdentKind::Function,
-                                    );
-                                    self.errors.push(err);
-                                }
-                                ResolveResult::Unresolved => {
-                                    match self.try_resolving_user_defined_type(
-                                        ok_identifier,
-                                        false,
-                                        true,
-                                    ) {
-                                        ResolveResult::Ok(_, _, _) => {}
-                                        ResolveResult::NotInitialized(decl_range, name) => {
-                                            let err = IdentifierUsedBeforeInitializedError::new(
-                                                self.semantic_state_db.interner.lookup(name),
-                                                IdentKind::UserDefinedType,
-                                                decl_range,
-                                                ok_identifier.range(),
-                                            );
-                                            self.errors.push(
-                                                Diagnostics::IdentifierUsedBeforeInitialized(err),
-                                            );
-                                        }
-                                        ResolveResult::InvalidGenericTypeArgsProvided(err) => {
-                                            let err = err_for_generic_type_args(
-                                                &err,
-                                                ok_identifier.core_ref().name.range(),
-                                                IdentKind::UserDefinedType,
-                                            );
-                                            self.errors.push(err);
-                                        }
-                                        ResolveResult::Unresolved => {
-                                            match self.try_resolving_variable(ok_identifier, false)
-                                            {
-                                                ResolveResult::Ok(lookup_data, _, _) => {
-                                                    let depth = lookup_data.depth;
-                                                    if depth > 0 {
-                                                        self.set_to_variable_non_locals(
-                                                            lookup_data
-                                                                .symbol_data
-                                                                .get_mangled_name(),
-                                                            lookup_data.enclosing_func_scope_depth,
-                                                        );
-                                                    }
-                                                }
-                                                ResolveResult::NotInitialized(decl_range, name) => {
-                                                    let err =
-                                                        IdentifierUsedBeforeInitializedError::new(
-                                                            self.semantic_state_db
-                                                                .interner
-                                                                .lookup(name),
-                                                            IdentKind::Variable,
-                                                            decl_range,
-                                                            ok_identifier.range(),
-                                                        );
-                                                    self.errors.push(
-                                                        Diagnostics::IdentifierUsedBeforeInitialized(
-                                                            err,
-                                                        ),
-                                                    );
-                                                }
-                                                ResolveResult::Unresolved => {
-                                                    let err =
-                                                        IdentifierNotFoundInAnyNamespaceError::new(
-                                                            ok_identifier.range(),
-                                                        );
-                                                    self.errors.push(
-                                                        Diagnostics::IdentifierNotFoundInAnyNamespace(err),
-                                                    );
-                                                }
-                                                ResolveResult::InvalidGenericTypeArgsProvided(
-                                                    err,
-                                                ) => {
-                                                    let err = err_for_generic_type_args(
-                                                        &err,
-                                                        ok_identifier.core_ref().name.range(),
-                                                        IdentKind::Variable,
-                                                    );
-                                                    self.errors.push(err);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        if let Some(params) = &core_func_call.params {
-                            self.walk_comma_separated_expressions(params)
-                        }
-                    }
-                    CoreAtomStartNode::EnumVariantExprOrClassMethodCall(
-                        enum_variant_expr_or_class_method_call,
-                    ) => {
-                        let core_enum_variant_expr_or_class_method_call =
-                            enum_variant_expr_or_class_method_call.core_ref();
-                        if let CoreIdentifierInUseNode::Ok(ok_identifier) =
-                            core_enum_variant_expr_or_class_method_call
-                                .ty_name
-                                .core_ref()
-                        {
-                            self.try_resolving_user_defined_type(ok_identifier, true, false);
-                        }
-                        self.walk_identifier_in_use(
-                            &core_enum_variant_expr_or_class_method_call.property_name,
-                        );
-                        if let Some((_, params, _)) =
-                            &core_enum_variant_expr_or_class_method_call.params
-                        {
-                            if let Some(params) = params {
-                                self.walk_comma_separated_expressions(params);
-                            }
-                        }
-                    }
+                self.resolve_identifier(atom_start);
+                None
+            }
+            ASTNode::Break(break_stmt) => {
+                if !self.check_enclosing_loop_scope() {
+                    let err =
+                        InvalidLoopControlFlowStatementFoundError::new(break_stmt.range(), "break");
+                    self.errors
+                        .push(Diagnostics::InvalidLoopControlFlowStatementFound(err));
+                }
+                None
+            }
+            ASTNode::Continue(continue_stmt) => {
+                if !self.check_enclosing_loop_scope() {
+                    let err = InvalidLoopControlFlowStatementFoundError::new(
+                        continue_stmt.range(),
+                        "continue",
+                    );
+                    self.errors
+                        .push(Diagnostics::InvalidLoopControlFlowStatementFound(err));
                 }
                 None
             }

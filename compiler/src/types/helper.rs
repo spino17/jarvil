@@ -1,34 +1,39 @@
-use super::core::Type;
+use super::{core::Type, traits::UserDefinedType};
 use crate::{
-    core::string_interner::{Interner, StrId},
+    core::string_interner::Interner,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::{ConcreteTypesTuple, ConcretizationContext},
-        core::SymbolData,
-        interfaces::InterfaceBounds,
-        types::{
-            core::UserDefinedTypeData,
-            generic_type::{GenericTypeData, GenericTypeDeclarationPlaceCategory},
-        },
+        namespace::Namespace,
+        scope::ScopeIndex,
+        symbol::{core::SymbolIndex, types::generic_type::GenericTypeDeclarationPlaceCategory},
     },
-    types::core::AbstractType,
+    types::traits::TypeLike,
 };
-use text_size::TextRange;
 
-pub fn get_unbounded_generic_type_with_declaration_index(
+pub fn unbounded_generic_ty_in_type_with_declaration_index(
     index: usize,
-    interner: &mut Interner,
+    interner: &Interner,
 ) -> Type {
-    Type::new_with_generic(&SymbolData::new(
-        interner.intern("T"),
-        UserDefinedTypeData::Generic(GenericTypeData {
-            category: GenericTypeDeclarationPlaceCategory::InStruct,
-            index,
-            interface_bounds: InterfaceBounds::new(vec![]),
-        }),
-        TextRange::default(),
-        None,
-    ))
+    let mut ty = match index {
+        0 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("T"))),
+        1 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("U"))),
+        _ => unreachable!(),
+    };
+    ty.set_concretization_required_flag();
+    ty
+}
+
+pub fn unbounded_generic_ty_in_func_with_declaration_index(
+    index: usize,
+    interner: &Interner,
+) -> Type {
+    let mut ty = match index {
+        0 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("V"))),
+        _ => unreachable!(),
+    };
+    ty.set_concretization_required_flag();
+    ty
 }
 
 pub fn try_infer_types_from_tuple(
@@ -38,6 +43,7 @@ pub fn try_infer_types_from_tuple(
     global_concrete_types: Option<&ConcreteTypesTuple>,
     num_inferred_types: &mut usize,
     inference_category: GenericTypeDeclarationPlaceCategory,
+    namespace: &Namespace,
 ) -> Result<(), ()> {
     if base_types_tuple.len() != generics_containing_types_tuple.len() {
         return Err(());
@@ -50,45 +56,43 @@ pub fn try_infer_types_from_tuple(
             global_concrete_types,
             num_inferred_types,
             inference_category,
+            namespace,
         )?;
     }
     Ok(())
 }
 
-pub trait StructEnumType {
-    fn get_concrete_types(&self) -> Option<&ConcreteTypesTuple>;
-    fn get_name(&self) -> StrId;
-}
-
-pub fn struct_enum_compare_fn<
-    T: StructEnumType,
-    F: Fn(&Type, &Type, &ConcretizationContext) -> bool,
+pub fn user_defined_ty_compare_fn<
+    T: UserDefinedType,
+    F: Fn(&Type, &Type, &ConcretizationContext, &Namespace) -> bool,
 >(
     base: &T,
     other: &T,
     ty_cmp_func: F,
     context: &ConcretizationContext,
+    namespace: &Namespace,
 ) -> bool {
-    if base.get_name() == other.get_name() {
-        match base.get_concrete_types() {
-            Some(self_concrete_types) => match other.get_concrete_types() {
-                Some(other_concrete_types) => {
-                    let self_len = self_concrete_types.len();
-                    let other_len = other_concrete_types.len();
-
-                    debug_assert!(self_len == other_len);
-                    for i in 0..self_len {
-                        if !ty_cmp_func(&self_concrete_types[i], &other_concrete_types[i], context)
-                        {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                None => unreachable!(),
-            },
-            None => return true,
+    if base.name() != other.name() {
+        return false;
+    }
+    let Some(self_concrete_types) = base.concrete_types() else {
+        return true;
+    };
+    let Some(other_concrete_types) = other.concrete_types() else {
+        unreachable!()
+    };
+    let self_len = self_concrete_types.len();
+    let other_len = other_concrete_types.len();
+    debug_assert!(self_len == other_len);
+    for i in 0..self_len {
+        if !ty_cmp_func(
+            &self_concrete_types[i],
+            &other_concrete_types[i],
+            context,
+            namespace,
+        ) {
+            return false;
         }
     }
-    false
+    true
 }

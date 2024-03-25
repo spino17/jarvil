@@ -1,9 +1,9 @@
+use super::namespace::Namespace;
+use super::symbol::core::SymbolIndex;
 use crate::core::string_interner::Interner;
-use crate::scope::core::AbstractConcreteTypesHandler;
-use crate::scope::core::SymbolData;
-use crate::types::core::AbstractType;
+use crate::scope::traits::IsInitialized;
 use crate::types::core::Type;
-use std::cell::Ref;
+use crate::types::traits::TypeLike;
 use std::ops::Index;
 use std::slice::Iter;
 
@@ -15,7 +15,7 @@ impl ConcreteTypesTuple {
         ConcreteTypesTuple(concrete_types)
     }
 
-    pub fn get_core_ref(&self) -> &Vec<Type> {
+    pub fn core_ref(&self) -> &Vec<Type> {
         &self.0
     }
 
@@ -27,13 +27,16 @@ impl ConcreteTypesTuple {
         self.0.len()
     }
 
-    pub fn to_string(&self, interner: &Interner) -> String {
+    pub fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
         let mut s = "".to_string();
         let concrete_types = &self.0;
         let len = concrete_types.len();
-        s.push_str(&concrete_types[0].to_string(interner));
+        s.push_str(&concrete_types[0].to_string(interner, namespace));
         for i in 1..len {
-            s.push_str(&format!(", {}", concrete_types[i].to_string(interner)));
+            s.push_str(&format!(
+                ", {}",
+                concrete_types[i].to_string(interner, namespace)
+            ));
         }
         s
     }
@@ -47,54 +50,59 @@ impl Index<usize> for ConcreteTypesTuple {
 }
 
 #[derive(Debug)]
-pub struct ConcreteSymbolData<T: AbstractConcreteTypesHandler> {
-    pub symbol_data: SymbolData<T>,
-    pub concrete_types: Option<ConcreteTypesTuple>, // This will be `None` for symbol data which does not have any generic type params
+pub struct ConcreteSymbolIndex<T: IsInitialized> {
+    index: SymbolIndex<T>,
+    concrete_types: Option<ConcreteTypesTuple>, // This will be `None` for symbol data which does not have any generic type params
 }
 
-impl<T: AbstractConcreteTypesHandler> Clone for ConcreteSymbolData<T> {
+impl<T: IsInitialized> Clone for ConcreteSymbolIndex<T> {
     fn clone(&self) -> Self {
-        ConcreteSymbolData {
-            symbol_data: self.symbol_data.clone(),
-            concrete_types: match &self.concrete_types {
-                Some(concrete_types) => Some(concrete_types.clone()),
-                None => None,
-            },
+        ConcreteSymbolIndex {
+            index: self.index,
+            concrete_types: self.concrete_types.clone(),
         }
     }
 }
 
-impl<T: AbstractConcreteTypesHandler> ConcreteSymbolData<T> {
-    pub fn new(symbol_data: SymbolData<T>, concrete_types: Option<ConcreteTypesTuple>) -> Self {
-        ConcreteSymbolData {
-            symbol_data,
+impl<T: IsInitialized> ConcreteSymbolIndex<T> {
+    pub fn new(symbol_index: SymbolIndex<T>, concrete_types: Option<ConcreteTypesTuple>) -> Self {
+        ConcreteSymbolIndex {
+            index: symbol_index,
             concrete_types,
         }
     }
 
-    pub fn get_core_ref<'a>(&'a self) -> Ref<'a, T> {
-        self.symbol_data.get_core_ref::<'a>()
+    pub fn symbol_index(&self) -> SymbolIndex<T> {
+        self.index
     }
 
-    pub fn get_concrete_types(&self) -> &Option<ConcreteTypesTuple> {
-        &self.concrete_types
+    pub fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+        self.concrete_types.as_ref()
     }
 }
 
 #[derive(Debug, Default)]
 pub struct ConcretizationContext<'a> {
-    pub struct_concrete_types: Option<&'a ConcreteTypesTuple>,
-    pub function_local_concrete_types: Option<&'a ConcreteTypesTuple>,
+    bounding_ty_concrete_types: Option<&'a ConcreteTypesTuple>,
+    func_local_concrete_types: Option<&'a ConcreteTypesTuple>,
 }
 
 impl<'a> ConcretizationContext<'a> {
     pub fn new(
-        struct_concrete_types: Option<&'a ConcreteTypesTuple>,
+        bounding_ty_concrete_types: Option<&'a ConcreteTypesTuple>,
         function_local_concrete_types: Option<&'a ConcreteTypesTuple>,
     ) -> Self {
         ConcretizationContext {
-            struct_concrete_types,
-            function_local_concrete_types,
+            bounding_ty_concrete_types,
+            func_local_concrete_types: function_local_concrete_types,
         }
+    }
+
+    pub fn bounding_ty_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+        self.bounding_ty_concrete_types
+    }
+
+    pub fn func_local_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+        self.func_local_concrete_types
     }
 }

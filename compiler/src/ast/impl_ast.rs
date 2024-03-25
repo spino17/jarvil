@@ -46,11 +46,13 @@ use crate::ast::ast::ErrornousNode;
 use crate::ast::ast::MissingTokenNode;
 use crate::ast::ast::Node;
 use crate::ast::ast::SkippedTokensNode;
-use crate::code::JarvilCode;
+use crate::code::JarvilCodeHandler;
 use crate::core::string_interner::{Interner, StrId};
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, Resolver};
+use crate::scope::scope::ScopeIndex;
 use crate::types::core::Type;
+use serde::Serialize;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use text_size::TextRange;
@@ -64,7 +66,7 @@ impl BlockNode {
     ) -> Self {
         let node = Rc::new(CoreBlockNode {
             newline,
-            stmts: Rc::new(stmts),
+            stmts,
             kind,
         });
         BlockNode(node)
@@ -1196,12 +1198,13 @@ impl TypeExpressionNode {
     pub fn type_obj_before_resolved(
         &self,
         resolver: &mut Resolver,
-        scope_index: usize,
+        scope_index: ScopeIndex,
         has_generics: &mut bool,
     ) -> TypeResolveKind {
         match self.core_ref() {
-            CoreTypeExpressionNode::Atomic(atomic) => atomic
-                .type_obj_before_resolved(&resolver.code, &mut resolver.semantic_state_db.interner),
+            CoreTypeExpressionNode::Atomic(atomic) => {
+                atomic.type_obj_before_resolved(resolver.code_handler(), resolver.interner())
+            }
             CoreTypeExpressionNode::Array(array) => {
                 array.type_obj_before_resolved(resolver, scope_index, has_generics)
             }
@@ -1245,24 +1248,22 @@ impl AtomicTypeNode {
 
     pub fn type_obj_before_resolved(
         &self,
-        code: &JarvilCode,
-        interner: &mut Interner,
+        code: &JarvilCodeHandler,
+        interner: &Interner,
     ) -> TypeResolveKind {
         self.type_obj_after_resolved(code, interner)
     }
 
     pub fn type_obj_after_resolved(
         &self,
-        code: &JarvilCode,
-        interner: &mut Interner,
+        code: &JarvilCodeHandler,
+        interner: &Interner,
     ) -> TypeResolveKind {
-        match self.core_ref().kind.core_ref() {
-            CoreTokenNode::Ok(ok_token) => {
-                let idx = ok_token.token_value(code, interner);
-                return TypeResolveKind::Resolved(Type::new_with_atomic(interner.lookup(idx)));
-            }
-            _ => TypeResolveKind::Invalid,
-        }
+        let CoreTokenNode::Ok(ok_token) = self.core_ref().kind.core_ref() else {
+            return TypeResolveKind::Invalid;
+        };
+        let idx = ok_token.token_value(code, interner);
+        TypeResolveKind::Resolved(Type::new_with_atomic(&interner.lookup(idx)))
     }
 
     impl_core_ref!(CoreAtomicTypeNode);
@@ -1290,7 +1291,7 @@ impl ArrayTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         resolver: &mut Resolver,
-        scope_index: usize,
+        scope_index: ScopeIndex,
         has_generics: &mut bool,
     ) -> TypeResolveKind {
         match self
@@ -1337,7 +1338,7 @@ impl TupleTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         resolver: &mut Resolver,
-        scope_index: usize,
+        scope_index: ScopeIndex,
         has_generics: &mut bool,
     ) -> TypeResolveKind {
         let mut unresolved_identifiers: Vec<UnresolvedIdentifier> = vec![];
@@ -1438,7 +1439,7 @@ impl HashMapTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         resolver: &mut Resolver,
-        scope_index: usize,
+        scope_index: ScopeIndex,
         has_generics: &mut bool,
     ) -> TypeResolveKind {
         let key_result =
@@ -1474,7 +1475,7 @@ impl UserDefinedTypeNode {
     pub fn type_obj_before_resolved(
         &self,
         resolver: &mut Resolver,
-        scope_index: usize,
+        scope_index: ScopeIndex,
         has_generics: &mut bool,
     ) -> TypeResolveKind {
         resolver.type_obj_from_user_defined_type_expr(self, scope_index, has_generics)
@@ -1562,23 +1563,19 @@ impl ExpressionNode {
     }
 
     pub fn is_valid_l_value(&self) -> Option<AtomNode> {
-        match &self.0.as_ref() {
-            CoreExpressionNode::Unary(unary_expr_node) => match &unary_expr_node.0.as_ref() {
-                CoreUnaryExpressionNode::Atomic(atomic_expr_node) => {
-                    match &atomic_expr_node.0.as_ref() {
-                        CoreAtomicExpressionNode::Atom(atom_node) => {
-                            if atom_node.is_valid_l_value() {
-                                Some(atom_node.clone())
-                            } else {
-                                None
-                            }
-                        }
-                        _ => None,
-                    }
-                }
-                _ => None,
-            },
-            _ => None,
+        let CoreExpressionNode::Unary(unary_expr_node) = &self.0.as_ref() else {
+            return None;
+        };
+        let CoreUnaryExpressionNode::Atomic(atomic_expr_node) = &unary_expr_node.0.as_ref() else {
+            return None;
+        };
+        let CoreAtomicExpressionNode::Atom(atom_node) = &atomic_expr_node.0.as_ref() else {
+            return None;
+        };
+        if atom_node.is_valid_l_value() {
+            Some(atom_node.clone())
+        } else {
+            None
         }
     }
 
@@ -1782,7 +1779,7 @@ impl Node for ComparisonNode {
     }
 }
 
-impl<T: Clone> SymbolSeparatedSequenceNode<T> {
+impl<T: Node + Serialize + Clone> SymbolSeparatedSequenceNode<T> {
     pub fn new_with_single_entity(entity: T) -> Self {
         let node = Rc::new(CoreSymbolSeparatedSequenceNode {
             entity,
@@ -1812,7 +1809,7 @@ impl<T: Clone> SymbolSeparatedSequenceNode<T> {
     }
 }
 
-impl<T: Clone + Node> Node for SymbolSeparatedSequenceNode<T> {
+impl<T: Clone + Node + Serialize> Node for SymbolSeparatedSequenceNode<T> {
     fn range(&self) -> TextRange {
         match &self.0.as_ref().remaining_entities {
             Some((_, remaining_entities)) => {
@@ -1823,6 +1820,15 @@ impl<T: Clone + Node> Node for SymbolSeparatedSequenceNode<T> {
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().entity.start_line_number()
+    }
+}
+
+impl<T: Clone + Node + Serialize> Serialize for SymbolSeparatedSequenceNode<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.0.as_ref().serialize(serializer)
     }
 }
 
@@ -2237,7 +2243,7 @@ impl OkSelfKeywordNode {
         OkSelfKeywordNode(node)
     }
 
-    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
         self.0.as_ref().token.token_value(code, interner)
     }
 }
@@ -2292,11 +2298,11 @@ impl OkTokenNode {
         self.core_ref().token.try_as_binary_operator()
     }
 
-    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
         self.0.as_ref().token.token_value(code, interner)
     }
 
-    pub fn token_value_str(&self, code: &JarvilCode) -> String {
+    pub fn token_value_str(&self, code: &JarvilCodeHandler) -> String {
         self.0.as_ref().token.token_value_str(code)
     }
 
@@ -2305,10 +2311,10 @@ impl OkTokenNode {
 
 impl Node for OkTokenNode {
     fn range(&self) -> TextRange {
-        self.0.as_ref().token.range
+        self.0.as_ref().token.range()
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().token.line_number
+        self.0.as_ref().token.line_number()
     }
 }
 
@@ -2345,10 +2351,13 @@ impl MissingTokenNode {
 impl Node for MissingTokenNode {
     fn range(&self) -> TextRange {
         let received_token = &self.0.as_ref().received_token;
-        TextRange::new(received_token.range.start(), received_token.range.start())
+        TextRange::new(
+            received_token.range().start(),
+            received_token.range().start(),
+        )
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().received_token.line_number
+        self.0.as_ref().received_token.line_number()
     }
 }
 
@@ -2363,10 +2372,10 @@ impl SkippedTokenNode {
 
 impl Node for SkippedTokenNode {
     fn range(&self) -> TextRange {
-        self.0.as_ref().skipped_token.range
+        self.0.as_ref().skipped_token.range()
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().skipped_token.line_number
+        self.0.as_ref().skipped_token.line_number()
     }
 }
 
@@ -2426,11 +2435,11 @@ impl OkIdentifierInUseNode {
         OkIdentifierInUseNode(node)
     }
 
-    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
         self.0.as_ref().name.token_value(code, interner)
     }
 
-    pub fn token_value_str(&self, code: &JarvilCode) -> String {
+    pub fn token_value_str(&self, code: &JarvilCodeHandler) -> String {
         self.0.as_ref().name.token_value_str(code)
     }
 
@@ -2480,11 +2489,11 @@ impl OkIdentifierInDeclNode {
         OkIdentifierInDeclNode(node)
     }
 
-    pub fn token_value(&self, code: &JarvilCode, interner: &mut Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
         self.0.as_ref().name.token_value(code, interner)
     }
 
-    pub fn token_value_str(&self, code: &JarvilCode) -> String {
+    pub fn token_value_str(&self, code: &JarvilCodeHandler) -> String {
         self.0.as_ref().name.token_value_str(code).to_owned()
     }
 

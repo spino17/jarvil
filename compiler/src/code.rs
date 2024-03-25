@@ -1,48 +1,39 @@
 use text_size::TextRange;
 
-pub struct JarvilCode {
-    code_vec: Vec<char>,
-    code_lines: Option<Vec<usize>>,
+pub struct JarvilCodeHandler {
+    pub code: JarvilCode,
+    code_lines: Vec<usize>,
 }
+
+impl JarvilCodeHandler {
+    pub fn new(code: JarvilCode, code_lines: Vec<usize>) -> Self {
+        JarvilCodeHandler { code, code_lines }
+    }
+
+    pub fn line_start_index(&self, line_number: usize) -> usize {
+        self.code_lines[line_number - 1]
+    }
+}
+
+pub struct JarvilCode(Vec<char>);
 
 impl JarvilCode {
     pub fn new(code: &str) -> Self {
-        JarvilCode {
-            code_vec: code.chars().collect(),
-            code_lines: None,
-        }
-    }
-
-    pub fn extract_code_lines(&self) -> &Vec<usize> {
-        match &self.code_lines {
-            Some(code_lines) => code_lines,
-            None => unreachable!(
-                "this method should always be called once code_lines has been set by the lexer"
-            ),
-        }
+        JarvilCode(code.chars().collect())
     }
 
     pub fn len(&self) -> usize {
-        self.code_vec.len()
+        self.0.len()
     }
 
     pub fn get_char(&self, index: usize) -> char {
-        self.code_vec[index]
-    }
-
-    pub fn get_line_start_index(&self, line_number: usize) -> usize {
-        let code_lines = self.extract_code_lines();
-        code_lines[line_number - 1]
-    }
-
-    pub fn set_code_lines(&mut self, code_lines: Vec<usize>) {
-        self.code_lines = Some(code_lines);
+        self.0[index]
     }
 
     pub fn token_value(&self, start_index: usize, end_index: Option<usize>) -> String {
         match end_index {
-            Some(end_index) => self.code_vec[start_index..end_index].iter().collect(),
-            None => self.code_vec[start_index..].iter().collect(),
+            Some(end_index) => self.0[start_index..end_index].iter().collect(),
+            None => self.0[start_index..].iter().collect(),
         }
     }
 
@@ -56,8 +47,8 @@ impl JarvilCode {
         end_index: Option<usize>,
     ) -> std::slice::Iter<char> {
         match end_index {
-            Some(end_index) => self.code_vec[start_index..end_index].iter(),
-            None => self.code_vec[start_index..].iter(),
+            Some(end_index) => self.0[start_index..end_index].iter(),
+            None => self.0[start_index..].iter(),
         }
     }
 }

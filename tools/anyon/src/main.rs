@@ -1,10 +1,10 @@
-use anyon::{core::AbstractCommand, error::AnyonError, helper::get_cmd_from_command_line_args};
+use anyon::{core::AbstractCommand, error::AnyonError, helper::cmd_from_command_line_args};
 use miette::{GraphicalReportHandler, GraphicalTheme};
 use owo_colors::Style;
 use std::env::args;
 
 fn check_and_execute_cmd(args: Vec<String>) -> Result<(), AnyonError> {
-    let mut anyon_obj = get_cmd_from_command_line_args(args)?;
+    let mut anyon_obj = cmd_from_command_line_args(args)?;
     anyon_obj.check_cmd()?;
     anyon_obj.execute_cmd()?;
     Ok(())

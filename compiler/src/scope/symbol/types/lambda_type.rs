@@ -1,9 +1,11 @@
+use crate::scope::namespace::Namespace;
+use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::traits::IsInitialized;
 use crate::{
     core::common::RefOrOwned,
     scope::{
         concrete::ConcreteTypesTuple,
-        core::{AbstractConcreteTypesHandler, GenericTypeParams},
-        function::{CallableData, CallableKind, CallablePrototypeData},
+        symbol::function::{CallableData, CallableKind, CallablePrototypeData},
     },
     types::core::Type,
 };
@@ -31,27 +33,21 @@ impl LambdaTypeData {
         }
     }
 
-    pub fn get_concrete_prototype(
+    pub fn prototype(
         &self,
         global_concrete_types: Option<&ConcreteTypesTuple>,
+        namespace: &Namespace,
     ) -> RefOrOwned<CallablePrototypeData> {
-        match global_concrete_types {
-            Some(concrete_types) => {
-                return self
-                    .meta_data
-                    .prototype
-                    .concretize_prototype(None, Some(concrete_types));
-            }
-            None => return RefOrOwned::Ref(&self.meta_data.prototype),
-        }
+        self.meta_data
+            .concretized_prototype(None, global_concrete_types, namespace)
     }
 
-    pub fn get_generic_type_decls(&self) -> &Option<GenericTypeParams> {
-        &self.meta_data.generics
+    pub fn generic_type_decls(&self) -> Option<&GenericTypeParams> {
+        self.meta_data.generics()
     }
 }
 
-impl AbstractConcreteTypesHandler for LambdaTypeData {
+impl IsInitialized for LambdaTypeData {
     fn is_initialized(&self) -> bool {
         unreachable!()
     }

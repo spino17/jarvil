@@ -1,10 +1,11 @@
 use super::helper::{range_to_span, IdentifierKind, PropertyKind};
-use crate::types::core::AbstractType;
+use crate::scope::namespace::Namespace;
+use crate::types::traits::TypeLike;
 use crate::{
     core::string_interner::{Interner, StrId},
     lexer::token::Token,
     parser::helper::format_symbol,
-    scope::interfaces::PartialConcreteInterfaceMethodsCheckError,
+    scope::symbol::interfaces::PartialConcreteInterfaceMethodsCheckError,
     types::core::Type,
 };
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
@@ -246,9 +247,9 @@ pub struct InvalidCharError {
 }
 
 impl InvalidCharError {
-    pub fn new(invalid_token: &Token) -> Self {
+    pub fn new(range: TextRange) -> Self {
         InvalidCharError {
-            span: (invalid_token.start_index(), invalid_token.len()).into(),
+            span: range_to_span(range).into(),
         }
     }
 }
@@ -259,16 +260,16 @@ impl InvalidCharError {
 )]
 #[diagnostic(code("LexicalError"))]
 pub struct NoClosingSymbolError {
-    pub expected_symbol: String,
+    pub expected_symbol: &'static str,
     #[label("no closing `{}` found", self.expected_symbol)]
     pub unclosed_span: SourceSpan,
 }
 
 impl NoClosingSymbolError {
-    pub fn new(expected_symbol: String, token: &Token) -> Self {
+    pub fn new(expected_symbol: &'static str, range: TextRange) -> Self {
         NoClosingSymbolError {
             expected_symbol,
-            unclosed_span: (token.start_index(), token.len()).into(),
+            unclosed_span: range_to_span(range).into(),
         }
     }
 }
@@ -508,7 +509,7 @@ pub struct IdentifierAlreadyDeclaredError {
 impl IdentifierAlreadyDeclaredError {
     pub fn new(
         identifier_kind: IdentifierKind,
-        name: &str,
+        name: String,
         previous_decl_range: TextRange,
         redecl_range: TextRange,
     ) -> Self {
@@ -537,7 +538,7 @@ impl IdentifierAlreadyDeclaredError {
                 )
             }
             IdentifierKind::Variant => {
-                format!("all variants of enum should have distinct names")
+                "all variants of enum should have distinct names".to_string()
             }
             IdentifierKind::Constructor => {
                 "constructor is not allowed to be redeclared".to_string()
@@ -545,7 +546,7 @@ impl IdentifierAlreadyDeclaredError {
         };
         IdentifierAlreadyDeclaredError {
             identifier_kind,
-            name: name.to_string(),
+            name,
             previous_decl_span: range_to_span(previous_decl_range).into(),
             redecl_span: range_to_span(redecl_range).into(),
             help: Some(help_str.style(Style::new().yellow()).to_string()),
@@ -775,7 +776,7 @@ pub struct IdentifierUsedBeforeInitializedError {
 
 impl IdentifierUsedBeforeInitializedError {
     pub fn new(
-        identifier_name: &str,
+        identifier_name: String,
         identifier_kind: IdentifierKind,
         decl_range: TextRange,
         usage_range: TextRange,
@@ -787,7 +788,7 @@ impl IdentifierUsedBeforeInitializedError {
             _ => unreachable!()
         };
         IdentifierUsedBeforeInitializedError {
-            identifier_name: identifier_name.to_string(),
+            identifier_name,
             identifier_kind,
             decl_span: range_to_span(decl_range).into(),
             usage_span: range_to_span(usage_range).into(),
@@ -815,9 +816,9 @@ pub struct InterfaceAlreadyExistInBoundsDeclarationError {
 }
 
 impl InterfaceAlreadyExistInBoundsDeclarationError {
-    pub fn new(name: &str, previous_decl_span: TextRange, decl_span: TextRange) -> Self {
+    pub fn new(name: String, previous_decl_span: TextRange, decl_span: TextRange) -> Self {
         InterfaceAlreadyExistInBoundsDeclarationError {
-            name: name.to_string(),
+            name,
             previous_decl_span: range_to_span(previous_decl_span).into(),
             decl_span: range_to_span(decl_span).into(),
             help: Some(
@@ -1177,7 +1178,7 @@ impl InterfaceMethodsInStructCheckError {
             if let Some(missing_interface_method_names) = missing_interface_method_names {
                 let mut s = "".to_string();
                 if !missing_interface_method_names.is_empty() {
-                    s.push_str(interner.lookup(*missing_interface_method_names[0]));
+                    s.push_str(&interner.lookup(*missing_interface_method_names[0]));
                 }
                 for i in 1..missing_interface_method_names.len() {
                     s.push_str(&format!(
@@ -1316,12 +1317,16 @@ impl InferredTypesNotBoundedByInterfacesError {
         err_strs: Vec<(String, String)>,
         concrete_types: Vec<Type>,
         interner: &Interner,
+        namespace: &Namespace,
     ) -> Self {
         let mut concrete_types_str = "<".to_string();
         let concrete_types_len = concrete_types.len();
-        concrete_types_str.push_str(&concrete_types[0].to_string(interner));
+        concrete_types_str.push_str(&concrete_types[0].to_string(interner, namespace));
         for i in 1..concrete_types_len {
-            concrete_types_str.push_str(&format!(", {}", concrete_types[i].to_string(interner)));
+            concrete_types_str.push_str(&format!(
+                ", {}",
+                concrete_types[i].to_string(interner, namespace)
+            ));
         }
         concrete_types_str.push('>');
         let mut err_msg = format!(
@@ -1449,9 +1454,9 @@ pub struct ConstructorNotFoundForTypeError {
 }
 
 impl ConstructorNotFoundForTypeError {
-    pub fn new(ty_str: &str, range: TextRange) -> Self {
+    pub fn new(ty_str: String, range: TextRange) -> Self {
         ConstructorNotFoundForTypeError {
-            ty: ty_str.to_string(),
+            ty: ty_str,
             span: range_to_span(range).into(),
             help: Some(
                 "only struct type is allowed to call constructor via self name"
@@ -1473,9 +1478,9 @@ pub struct ClassmethodDoesNotExistError {
 }
 
 impl ClassmethodDoesNotExistError {
-    pub fn new(struct_name: &str, range: TextRange) -> Self {
+    pub fn new(struct_name: String, range: TextRange) -> Self {
         ClassmethodDoesNotExistError {
-            struct_name: struct_name.to_string(),
+            struct_name,
             span: range_to_span(range).into(),
         }
     }

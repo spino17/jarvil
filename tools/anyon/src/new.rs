@@ -1,6 +1,6 @@
 use super::{core::AbstractCommand, error::AnyonError};
 use compiler::{
-    codegen::python::get_whitespaces_from_indent_level, curr_dir_path,
+    codegen::python::whitespaces_from_indent_level, curr_dir_path,
     error::constants::TOO_MANY_COMMAND_LINE_ARGUMENTS_PASSED_ERROR_MSG,
 };
 use std::{fs, mem, process::Command};
@@ -47,7 +47,7 @@ impl AbstractCommand for NewCommand {
         let _ = Command::new("mkdir").arg(project_name).output()?;
         let default_main_func = format!(
             "def main():\n{}print(\"Hello, World!\")",
-            get_whitespaces_from_indent_level(1)
+            whitespaces_from_indent_level(1)
         );
         fs::write(main_file_path, default_main_func)?;
         Ok(())

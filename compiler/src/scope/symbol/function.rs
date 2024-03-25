@@ -1,17 +1,22 @@
-use super::{
-    concrete::{ConcreteTypesTuple, ConcretizationContext},
-    core::{AbstractConcreteTypesHandler, GenericTypeParams},
-    errors::GenericTypeArgsCheckError,
-};
+use super::core::{SymbolDataEntry, SymbolIndex};
+use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::errors::GenericTypeArgsCheckError;
+use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
+use crate::scope::mangled::MangledIdentifierName;
+use crate::scope::namespace::Namespace;
+use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::traits::AbstractSymbol;
+use crate::types::core::Type;
 use crate::{
     ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode},
     core::common::RefOrOwned,
     parser::type_checker::{
         InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
     },
-    types::core::AbstractType,
+    types::traits::TypeLike,
 };
-use crate::{scope::types::generic_type::GenericTypeDeclarationPlaceCategory, types::core::Type};
+use crate::{core::string_interner::Interner, scope::traits::IsInitialized};
 use std::vec;
 use text_size::TextRange;
 
@@ -24,9 +29,9 @@ pub enum CallableKind {
 
 #[derive(Debug, Clone)]
 pub struct CallablePrototypeData {
-    pub params: Vec<Type>,
-    pub return_type: Type,
-    pub is_concretization_required: Option<(Vec<usize>, bool)>, // (indexes of params that has generics, is_concretization required for return_type)
+    params: Vec<Type>,
+    return_type: Type,
+    is_concretization_required: Option<(Vec<usize>, bool)>, // (indexes of params that has generics, is_concretization required for return_type)
 }
 
 impl CallablePrototypeData {
@@ -42,11 +47,20 @@ impl CallablePrototypeData {
         }
     }
 
-    fn compare<F: Fn(&Type, &Type, &ConcretizationContext) -> bool>(
+    pub fn params(&self) -> &Vec<Type> {
+        &self.params
+    }
+
+    pub fn return_ty(&self) -> &Type {
+        &self.return_type
+    }
+
+    fn compare<F: Fn(&Type, &Type, &ConcretizationContext, &Namespace) -> bool>(
         &self,
         other: &CallablePrototypeData,
         cmp_func: F,
         context: &ConcretizationContext,
+        namespace: &Namespace,
     ) -> bool {
         let (self_param_types, self_return_type) = (&self.params, &self.return_type);
         let (other_param_types, other_return_type) = (&other.params, &other.return_type);
@@ -55,31 +69,46 @@ impl CallablePrototypeData {
         if self_params_len != other_params_len {
             return false;
         }
-        if !cmp_func(self_return_type, other_return_type, context) {
+        if !cmp_func(self_return_type, other_return_type, context, namespace) {
             return false;
         }
         for index in 0..self_params_len {
-            if !cmp_func(&self_param_types[index], &other_param_types[index], context) {
+            if !cmp_func(
+                &self_param_types[index],
+                &other_param_types[index],
+                context,
+                namespace,
+            ) {
                 return false;
             }
         }
         true
     }
 
-    pub fn is_eq(&self, other: &CallablePrototypeData) -> bool {
-        let cmp_func = |ty1: &Type, ty2: &Type, _context: &ConcretizationContext| ty1.is_eq(ty2);
-        self.compare(other, cmp_func, &ConcretizationContext::default())
+    pub fn is_eq(&self, other: &CallablePrototypeData, namespace: &Namespace) -> bool {
+        let cmp_func = |ty1: &Type,
+                        ty2: &Type,
+                        _context: &ConcretizationContext,
+                        namespace: &Namespace| ty1.is_eq(ty2, namespace);
+        self.compare(
+            other,
+            cmp_func,
+            &ConcretizationContext::default(),
+            namespace,
+        )
     }
 
     pub fn is_structurally_eq(
         &self,
         other: &CallablePrototypeData,
         context: &ConcretizationContext,
+        namespace: &Namespace,
     ) -> bool {
-        let cmp_func = |ty1: &Type, ty2: &Type, context: &ConcretizationContext| {
-            ty1.is_structurally_eq(ty2, context)
-        };
-        self.compare(other, cmp_func, context)
+        let cmp_func =
+            |ty1: &Type, ty2: &Type, context: &ConcretizationContext, namespace: &Namespace| {
+                ty1.is_structurally_eq(ty2, context, namespace)
+            };
+        self.compare(other, cmp_func, context, namespace)
     }
 
     pub fn try_infer_type(
@@ -89,6 +118,7 @@ impl CallablePrototypeData {
         global_concrete_types: Option<&ConcreteTypesTuple>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
+        namespace: &Namespace,
     ) -> Result<(), ()> {
         let (self_param_types, self_return_type) = (&self.params, &self.return_type);
         let (other_param_types, other_return_type) = (&other.params, &other.return_type);
@@ -103,6 +133,7 @@ impl CallablePrototypeData {
             global_concrete_types,
             num_inferred_types,
             inference_category,
+            namespace,
         )?;
         for index in 0..self_params_len {
             let _ = &self_param_types[index].try_infer_type_or_check_equivalence(
@@ -111,53 +142,16 @@ impl CallablePrototypeData {
                 global_concrete_types,
                 num_inferred_types,
                 inference_category,
+                namespace,
             )?;
         }
         Ok(())
     }
 
-    pub fn concretize_prototype_core(
-        &self,
-        context: &ConcretizationContext,
-    ) -> RefOrOwned<'_, CallablePrototypeData> {
-        match &self.is_concretization_required {
-            Some((
-                generics_containing_params_indexes,
-                is_concretization_required_for_return_type,
-            )) => {
-                let mut concrete_params = self.params.clone();
-                let mut concrete_return_type = self.return_type.clone();
-                for index in generics_containing_params_indexes {
-                    concrete_params[*index] = self.params[*index].concretize(context);
-                }
-                if *is_concretization_required_for_return_type {
-                    concrete_return_type = self.return_type.concretize(context);
-                }
-                return RefOrOwned::Owned(CallablePrototypeData::new(
-                    concrete_params,
-                    concrete_return_type,
-                    None,
-                ));
-            }
-            None => return RefOrOwned::Ref(self),
-        }
-    }
-
-    pub fn concretize_prototype(
-        &self,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
-        local_concrete_types: Option<&ConcreteTypesTuple>,
-    ) -> RefOrOwned<'_, CallablePrototypeData> {
-        return self.concretize_prototype_core(&ConcretizationContext::new(
-            global_concrete_types,
-            local_concrete_types,
-        ));
-    }
-
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
-        type_checker: &mut TypeChecker,
+        type_checker: &TypeChecker,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PrototypeEquivalenceCheckError> {
         let expected_params = &self.params;
@@ -179,9 +173,9 @@ impl Default for CallablePrototypeData {
 
 #[derive(Debug)]
 pub struct CallableData {
-    pub prototype: CallablePrototypeData,
-    pub kind: CallableKind,
-    pub generics: Option<GenericTypeParams>,
+    prototype: CallablePrototypeData,
+    kind: CallableKind,
+    generics: Option<GenericTypeParams>,
 }
 
 impl CallableData {
@@ -227,9 +221,65 @@ impl CallableData {
     pub fn set_generics(&mut self, generics_spec: Option<GenericTypeParams>) {
         self.generics = generics_spec;
     }
+
+    pub fn generics(&self) -> Option<&GenericTypeParams> {
+        self.generics.as_ref()
+    }
+
+    pub fn structural_prototype(&self) -> &CallablePrototypeData {
+        &self.prototype
+    }
+
+    pub fn concretized_return_ty(
+        &self,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
+        local_concrete_types: Option<&ConcreteTypesTuple>,
+        namespace: &Namespace,
+    ) -> RefOrOwned<Type> {
+        let unconcrete_return_ty = self.prototype.return_ty();
+        if unconcrete_return_ty.is_concretization_required() {
+            RefOrOwned::Owned(unconcrete_return_ty.concretize(
+                &ConcretizationContext::new(global_concrete_types, local_concrete_types),
+                namespace,
+            ))
+        } else {
+            RefOrOwned::Ref(unconcrete_return_ty)
+        }
+    }
+
+    pub fn concretized_prototype(
+        &self,
+        global_concrete_types: Option<&ConcreteTypesTuple>,
+        local_concrete_types: Option<&ConcreteTypesTuple>,
+        namespace: &Namespace,
+    ) -> RefOrOwned<'_, CallablePrototypeData> {
+        if global_concrete_types.is_none() && local_concrete_types.is_none() {
+            debug_assert!(self.prototype.is_concretization_required.is_none());
+            return RefOrOwned::Ref(&self.prototype);
+        }
+        let context = ConcretizationContext::new(global_concrete_types, local_concrete_types);
+        let Some((generics_containing_params_indexes, is_concretization_required_for_return_type)) =
+            &self.prototype.is_concretization_required
+        else {
+            return RefOrOwned::Ref(&self.prototype);
+        };
+        let mut concrete_params = self.prototype.params.clone();
+        let mut concrete_return_type = self.prototype.return_type.clone();
+        for index in generics_containing_params_indexes {
+            concrete_params[*index] = self.prototype.params[*index].concretize(&context, namespace);
+        }
+        if *is_concretization_required_for_return_type {
+            concrete_return_type = self.prototype.return_type.concretize(&context, namespace);
+        }
+        RefOrOwned::Owned(CallablePrototypeData::new(
+            concrete_params,
+            concrete_return_type,
+            None,
+        ))
+    }
 }
 
-impl AbstractConcreteTypesHandler for CallableData {
+impl IsInitialized for CallableData {
     fn is_initialized(&self) -> bool {
         true
     }
@@ -273,7 +323,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
-        type_checker: &mut TypeChecker,
+        type_checker: &TypeChecker,
         local_concrete_types: Option<ConcreteTypesTuple>,
         local_concrete_ty_ranges: Option<Vec<TextRange>>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
@@ -288,12 +338,14 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                             Some(type_ranges) => type_ranges,
                             None => unreachable!(),
                         },
-                        &type_checker.semantic_state_db.interner,
+                        type_checker.semantic_db().interner(),
+                        type_checker.semantic_db().namespace_ref(),
                     )?;
-                    let concrete_prototype = self
-                        .callable_data
-                        .prototype
-                        .concretize_prototype(self.concrete_types, Some(&local_concrete_types));
+                    let concrete_prototype = self.callable_data.concretized_prototype(
+                        self.concrete_types,
+                        Some(&local_concrete_types),
+                        type_checker.semantic_db().namespace_ref(),
+                    );
                     let return_ty = concrete_prototype
                         .is_received_params_valid(type_checker, received_params)?;
                     Ok(return_ty)
@@ -315,25 +367,78 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                     )?;
                     let unconcrete_return_ty = &self.callable_data.prototype.return_type;
                     let concrete_return_ty = if unconcrete_return_ty.is_concretization_required() {
-                        unconcrete_return_ty.concretize(&ConcretizationContext::new(
-                            self.concrete_types,
-                            Some(&local_concrete_types),
-                        ))
+                        unconcrete_return_ty.concretize(
+                            &ConcretizationContext::new(
+                                self.concrete_types,
+                                Some(&local_concrete_types),
+                            ),
+                            type_checker.semantic_db().namespace_ref(),
+                        )
                     } else {
                         unconcrete_return_ty.clone()
                     };
                     Ok(concrete_return_ty)
                 }
                 None => {
-                    let concrete_prototype = self
-                        .callable_data
-                        .prototype
-                        .concretize_prototype(self.concrete_types, None);
+                    let concrete_prototype = self.callable_data.concretized_prototype(
+                        self.concrete_types,
+                        None,
+                        type_checker.semantic_db().namespace_ref(),
+                    );
                     let return_ty = concrete_prototype
                         .is_received_params_valid(type_checker, received_params)?;
                     Ok(return_ty)
                 }
             },
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct FunctionSymbolData(SymbolIndex<CallableData>);
+
+impl AbstractSymbol for FunctionSymbolData {
+    type SymbolTy = CallableData;
+
+    fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy>
+    where
+        <Self as AbstractSymbol>::SymbolTy: IsInitialized,
+    {
+        self.0
+    }
+
+    fn entry(&self) -> SymbolDataEntry {
+        SymbolDataEntry::Function(self.0)
+    }
+
+    fn check_generic_type_args(
+        &self,
+        concrete_types: Option<&ConcreteTypesTuple>,
+        type_ranges: Option<&Vec<TextRange>>,
+        is_concrete_types_none_allowed: bool,
+        interner: &Interner,
+        namespace: &Namespace,
+    ) -> Result<(), GenericTypeArgsCheckError> {
+        debug_assert!(is_concrete_types_none_allowed);
+        let function_data = namespace.functions_ref().symbol_ref(self.0).data_ref();
+        let generic_type_decls = function_data.generics();
+        check_concrete_types_bounded_by_interfaces(
+            generic_type_decls,
+            concrete_types,
+            type_ranges,
+            true,
+            interner,
+            namespace,
+        )
+    }
+
+    fn mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<CallableData> {
+        self.0.mangled_name(namespace.functions_ref())
+    }
+}
+
+impl From<SymbolIndex<CallableData>> for FunctionSymbolData {
+    fn from(value: SymbolIndex<CallableData>) -> Self {
+        FunctionSymbolData(value)
     }
 }
