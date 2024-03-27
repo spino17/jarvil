@@ -82,9 +82,15 @@ impl<T: IsInitialized> ConcreteSymbolIndex<T> {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Copy)]
 pub struct TypeGenericsInstantiationContext<'a> {
     args: Option<&'a TurbofishTypes>,
+}
+
+impl<'a> Clone for TypeGenericsInstantiationContext<'a> {
+    fn clone(&self) -> Self {
+        TypeGenericsInstantiationContext { args: self.args }
+    }
 }
 
 impl<'a> TypeGenericsInstantiationContext<'a> {

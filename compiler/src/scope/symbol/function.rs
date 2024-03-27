@@ -235,14 +235,10 @@ impl CallableData {
 
     pub fn concretized_return_ty(
         &self,
-        global_concrete_types: Option<&TurbofishTypes>,
-        local_concrete_types: Option<&TurbofishTypes>,
         namespace: &Namespace,
+        context: &MethodGenericsInstantiationContext,
     ) -> Type {
-        self.prototype.return_ty().concretize(
-            &MethodGenericsInstantiationContext::new(global_concrete_types, local_concrete_types),
-            namespace,
-        )
+        self.prototype.return_ty().concretize(context, namespace)
     }
 
     pub fn concretized_prototype(
@@ -302,17 +298,17 @@ impl From<GenericTypeArgsCheckError> for PartialCallableDataPrototypeCheckError 
 #[derive(Debug)]
 pub struct PartialConcreteCallableDataRef<'a> {
     callable_data: &'a CallableData,
-    concrete_types: Option<&'a TurbofishTypes>,
+    context: TypeGenericsInstantiationContext<'a>,
 }
 
 impl<'a> PartialConcreteCallableDataRef<'a> {
     pub fn new(
         callable_data: &'a CallableData,
-        concrete_types: Option<&'a TurbofishTypes>,
+        context: TypeGenericsInstantiationContext<'a>,
     ) -> Self {
         PartialConcreteCallableDataRef {
             callable_data,
-            concrete_types,
+            context,
         }
     }
 
@@ -338,7 +334,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         type_checker.semantic_db().namespace_ref(),
                     )?;
                     let context = MethodGenericsInstantiationContext::new(
-                        self.concrete_types,
+                        self.context.ty_generics_instantiation_args(),
                         Some(&local_concrete_types),
                     );
                     let concrete_prototype = self.callable_data.concretized_prototype(
@@ -360,19 +356,24 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                     let local_concrete_types = type_checker.infer_concrete_types_from_arguments(
                         generic_type_decls,
                         &self.callable_data.prototype,
-                        self.concrete_types,
+                        self.context.ty_generics_instantiation_args(),
                         received_params,
                         GenericTypeDeclarationPlaceCategory::InCallable,
                     )?;
-                    Ok(self.callable_data.concretized_return_ty(
-                        self.concrete_types,
+                    let context = MethodGenericsInstantiationContext::new(
+                        self.context.ty_generics_instantiation_args(),
                         Some(&local_concrete_types),
+                    );
+                    Ok(self.callable_data.concretized_return_ty(
                         type_checker.semantic_db().namespace_ref(),
+                        &context,
                     ))
                 }
                 None => {
-                    let context =
-                        MethodGenericsInstantiationContext::new(self.concrete_types, None);
+                    let context = MethodGenericsInstantiationContext::new(
+                        self.context.ty_generics_instantiation_args(),
+                        None,
+                    );
                     let concrete_prototype = self.callable_data.concretized_prototype(
                         type_checker.semantic_db().namespace_ref(),
                         &context,

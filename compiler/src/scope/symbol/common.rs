@@ -58,13 +58,7 @@ impl MethodsMap {
             return None;
         };
         Some((
-            PartialConcreteCallableDataRef::new(
-                callable_data,
-                match context.ty_generics_instantiation_args() {
-                    Some(concrete_types) => Some(concrete_types),
-                    None => None,
-                },
-            ),
+            PartialConcreteCallableDataRef::new(callable_data, context.clone()),
             *range,
         ))
     }

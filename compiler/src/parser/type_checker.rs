@@ -555,10 +555,10 @@ impl TypeChecker {
                     params,
                     GenericTypeDeclarationPlaceCategory::InCallable,
                 )?;
+                let context = FunctionGenericsInstantiationContext::new(Some(&concrete_types));
                 Ok(func_data.concretized_return_ty(
-                    None,
-                    Some(&concrete_types),
                     self.semantic_db.namespace_ref(),
+                    &context.into_method_context(),
                 ))
             }
         }
