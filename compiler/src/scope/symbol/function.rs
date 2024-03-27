@@ -365,19 +365,14 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         received_params,
                         GenericTypeDeclarationPlaceCategory::InCallable,
                     )?;
-                    let unconcrete_return_ty = &self.callable_data.prototype.return_type;
-                    let concrete_return_ty = if unconcrete_return_ty.is_concretization_required() {
-                        unconcrete_return_ty.concretize(
-                            &ConcretizationContext::new(
-                                self.concrete_types,
-                                Some(&local_concrete_types),
-                            ),
+                    Ok(self
+                        .callable_data
+                        .concretized_return_ty(
+                            self.concrete_types,
+                            Some(&local_concrete_types),
                             type_checker.semantic_db().namespace_ref(),
                         )
-                    } else {
-                        unconcrete_return_ty.clone()
-                    };
-                    Ok(concrete_return_ty)
+                        .cloned())
                 }
                 None => {
                     let concrete_prototype = self.callable_data.concretized_prototype(

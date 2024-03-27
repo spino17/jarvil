@@ -6,6 +6,15 @@ pub enum RefOrOwned<'a, T> {
     Owned(T),
 }
 
+impl<'a, T: Clone> RefOrOwned<'a, T> {
+    pub fn cloned(&self) -> T {
+        match self {
+            RefOrOwned::Owned(val) => val.clone(),
+            RefOrOwned::Ref(val) => (*val).clone(),
+        }
+    }
+}
+
 impl<'a, T> From<T> for RefOrOwned<'a, T> {
     fn from(value: T) -> Self {
         RefOrOwned::Owned(value)
