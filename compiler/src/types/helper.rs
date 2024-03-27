@@ -20,7 +20,6 @@ pub fn unbounded_generic_ty_in_type_with_declaration_index(
         1 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("U"))),
         _ => unreachable!(),
     };
-    ty.set_concretization_required_flag();
     ty
 }
 
@@ -32,7 +31,6 @@ pub fn unbounded_generic_ty_in_func_with_declaration_index(
         0 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("V"))),
         _ => unreachable!(),
     };
-    ty.set_concretization_required_flag();
     ty
 }
 

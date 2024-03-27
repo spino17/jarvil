@@ -240,34 +240,26 @@ impl TypeChecker {
             .is_some()
     }
 
-    pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> (Type, bool) {
+    pub fn type_obj_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
         self.semantic_db.type_obj_from_expr(type_expr)
     }
 
     fn extract_angle_bracket_content_from_identifier_in_use(
         &self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
-    ) -> (Option<TurbofishTypes>, Option<Vec<TextRange>>, bool) {
+    ) -> (Option<TurbofishTypes>, Option<Vec<TextRange>>) {
         let Some((_, generic_type_args, _)) = &ok_identifier_in_use.core_ref().generic_type_args
         else {
-            return (None, None, false);
+            return (None, None);
         };
-        let mut has_generics = false;
         let mut concrete_types: Vec<Type> = vec![];
         let mut ty_ranges: Vec<TextRange> = vec![];
         for generic_type_expr in generic_type_args.iter() {
-            let (ty, ty_has_generics) = self.type_obj_from_expression(generic_type_expr);
-            if ty_has_generics {
-                has_generics = true;
-            }
+            let ty = self.type_obj_from_expression(generic_type_expr);
             concrete_types.push(ty);
             ty_ranges.push(generic_type_expr.range())
         }
-        (
-            Some(TurbofishTypes::new(concrete_types)),
-            Some(ty_ranges),
-            has_generics,
-        )
+        (Some(TurbofishTypes::new(concrete_types)), Some(ty_ranges))
     }
 
     pub fn is_unary_expr_int_valued(&self, unary: &UnaryExpressionNode) -> Option<i32> {
@@ -348,7 +340,6 @@ impl TypeChecker {
         let received_params_iter = received_params.iter();
         let expected_params = expected_prototype.params();
         let expected_params_len = expected_params.len();
-        let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![];
         let mut params_len = 0;
 
         for (index, received_param) in received_params_iter.enumerate() {
@@ -359,31 +350,16 @@ impl TypeChecker {
                 ));
             }
             let expected_ty = &expected_params[index];
-            if expected_ty.is_concretization_required() {
-                let inference_result = expected_ty.try_infer_type_or_check_equivalence(
-                    &param_ty,
-                    &mut inferred_concrete_types,
-                    global_concrete_types,
-                    &mut num_inferred_types,
-                    inference_category,
-                    self.semantic_db.namespace_ref(),
-                );
-                if let Err(()) = inference_result {
-                    return Err(PrototypeEquivalenceCheckError::TypeInferenceFailed);
-                }
-            } else if !param_ty.is_eq(expected_ty, self.semantic_db.namespace_ref()) {
-                mismatch_types_vec.push((
-                    expected_ty.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
-                    param_ty.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
-                    index + 1,
-                    received_param.range(),
-                ));
+            let inference_result = expected_ty.try_infer_type_or_check_equivalence(
+                &param_ty,
+                &mut inferred_concrete_types,
+                global_concrete_types,
+                &mut num_inferred_types,
+                inference_category,
+                self.semantic_db.namespace_ref(),
+            );
+            if let Err(()) = inference_result {
+                return Err(PrototypeEquivalenceCheckError::TypeInferenceFailed);
             }
             params_len += 1;
         }
@@ -393,11 +369,6 @@ impl TypeChecker {
                 expected_params_len,
                 params_len,
             )));
-        }
-        if !mismatch_types_vec.is_empty() {
-            return Err(PrototypeEquivalenceCheckError::MismatchedType(
-                mismatch_types_vec,
-            ));
         }
         if num_inferred_types != generic_type_decls_len {
             return Err(PrototypeEquivalenceCheckError::NotAllConcreteTypesInferred);
@@ -759,7 +730,7 @@ impl TypeChecker {
         let context = TypeGenericsInstantiationContext::new(concrete_types);
         match struct_data.try_class_method(&class_method_name, context) {
             Some((partial_concrete_callable_data, _)) => {
-                let (concrete_types, ty_ranges, _) =
+                let (concrete_types, ty_ranges) =
                     self.extract_angle_bracket_content_from_identifier_in_use(property_name);
                 let result = partial_concrete_callable_data.is_received_params_valid(
                     self,
@@ -1180,7 +1151,7 @@ impl TypeChecker {
                 // if field is not there then check in methods
                 match struct_data.try_method(&method_name, context) {
                     Some((partial_concrete_callable_data, _)) => {
-                        let (concrete_types, ty_ranges, _) = self
+                        let (concrete_types, ty_ranges) = self
                             .extract_angle_bracket_content_from_identifier_in_use(
                                 method_name_ok_identifier,
                             );
@@ -1258,7 +1229,7 @@ impl TypeChecker {
                         let context = TypeGenericsInstantiationContext::new(concrete_types);
                         match interface_data.try_method(&method_name, context) {
                             Some((partial_concrete_callable_data, _)) => {
-                                let (concrete_types, ty_ranges, _) = self
+                                let (concrete_types, ty_ranges) = self
                                     .extract_angle_bracket_content_from_identifier_in_use(
                                         method_name_ok_identifier,
                                     );
@@ -1953,7 +1924,7 @@ impl TypeChecker {
         let core_callable_prototype = callable_prototype.0.as_ref();
         let return_type_node = &core_callable_prototype.return_type;
         match return_type_node {
-            Some((_, return_type_expr)) => self.type_obj_from_expression(return_type_expr).0,
+            Some((_, return_type_expr)) => self.type_obj_from_expression(return_type_expr),
             None => Type::new_with_void(),
         }
     }

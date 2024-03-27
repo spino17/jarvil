@@ -14,7 +14,6 @@ fn append_callable_data(interner: &Interner) -> CallableData {
         )],
         Type::new_with_void(),
         CallableKind::Method,
-        Some((vec![0], false)),
         None,
     )
 }

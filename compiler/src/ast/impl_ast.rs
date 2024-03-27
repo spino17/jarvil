@@ -1194,23 +1194,22 @@ impl TypeExpressionNode {
         &self,
         resolver: &mut Resolver,
         scope_index: ScopeIndex,
-        has_generics: &mut bool,
     ) -> TypeResolveKind {
         match self.core_ref() {
             CoreTypeExpressionNode::Atomic(atomic) => {
                 atomic.type_obj_before_resolved(resolver.code_handler(), resolver.interner())
             }
             CoreTypeExpressionNode::Array(array) => {
-                array.type_obj_before_resolved(resolver, scope_index, has_generics)
+                array.type_obj_before_resolved(resolver, scope_index)
             }
             CoreTypeExpressionNode::Tuple(tuple) => {
-                tuple.type_obj_before_resolved(resolver, scope_index, has_generics)
+                tuple.type_obj_before_resolved(resolver, scope_index)
             }
             CoreTypeExpressionNode::HashMap(hashmap) => {
-                hashmap.type_obj_before_resolved(resolver, scope_index, has_generics)
+                hashmap.type_obj_before_resolved(resolver, scope_index)
             }
             CoreTypeExpressionNode::UserDefined(user_defined) => {
-                user_defined.type_obj_before_resolved(resolver, scope_index, has_generics)
+                user_defined.type_obj_before_resolved(resolver, scope_index)
             }
             CoreTypeExpressionNode::MissingTokens(_) => TypeResolveKind::Invalid,
         }
@@ -1287,12 +1286,11 @@ impl ArrayTypeNode {
         &self,
         resolver: &mut Resolver,
         scope_index: ScopeIndex,
-        has_generics: &mut bool,
     ) -> TypeResolveKind {
         match self
             .core_ref()
             .sub_type
-            .type_obj_before_resolved(resolver, scope_index, has_generics)
+            .type_obj_before_resolved(resolver, scope_index)
         {
             TypeResolveKind::Resolved(element_type) => {
                 return TypeResolveKind::Resolved(Type::new_with_array(element_type))
@@ -1334,12 +1332,11 @@ impl TupleTypeNode {
         &self,
         resolver: &mut Resolver,
         scope_index: ScopeIndex,
-        has_generics: &mut bool,
     ) -> TypeResolveKind {
         let mut unresolved_identifiers: Vec<UnresolvedIdentifier> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
-            match ty.type_obj_before_resolved(resolver, scope_index, has_generics) {
+            match ty.type_obj_before_resolved(resolver, scope_index) {
                 TypeResolveKind::Resolved(type_obj) => resolved_types.push(type_obj),
                 TypeResolveKind::Unresolved(mut unresolved) => {
                     unresolved_identifiers.append(&mut unresolved);
@@ -1435,17 +1432,15 @@ impl HashMapTypeNode {
         &self,
         resolver: &mut Resolver,
         scope_index: ScopeIndex,
-        has_generics: &mut bool,
     ) -> TypeResolveKind {
-        let key_result =
-            self.core_ref()
-                .key_type
-                .type_obj_before_resolved(resolver, scope_index, has_generics);
-        let value_result = self.core_ref().value_type.type_obj_before_resolved(
-            resolver,
-            scope_index,
-            has_generics,
-        );
+        let key_result = self
+            .core_ref()
+            .key_type
+            .type_obj_before_resolved(resolver, scope_index);
+        let value_result = self
+            .core_ref()
+            .value_type
+            .type_obj_before_resolved(resolver, scope_index);
         return self.aggregate_key_value_result(key_result, value_result);
     }
 
@@ -1471,9 +1466,8 @@ impl UserDefinedTypeNode {
         &self,
         resolver: &mut Resolver,
         scope_index: ScopeIndex,
-        has_generics: &mut bool,
     ) -> TypeResolveKind {
-        resolver.type_obj_from_user_defined_type_expr(self, scope_index, has_generics)
+        resolver.type_obj_from_user_defined_type_expr(self, scope_index)
     }
 
     impl_core_ref!(CoreUserDefinedTypeNode);

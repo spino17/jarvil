@@ -287,7 +287,6 @@ impl Namespace {
         name: StrId,
         param_types: Vec<Type>,
         return_type: Type,
-        is_concretization_required: Option<(Vec<usize>, bool)>,
         generics_spec: Option<GenericTypeParams>,
         decl_range: TextRange,
         unique_id: IdentDeclId<UserDefinedTypeData>,
@@ -295,7 +294,6 @@ impl Namespace {
         let meta_data = UserDefinedTypeData::Lambda(LambdaTypeData::new(
             param_types,
             return_type,
-            is_concretization_required,
             generics_spec,
         ));
         self.declare_user_defined_type(scope_index, name, meta_data, decl_range, unique_id)

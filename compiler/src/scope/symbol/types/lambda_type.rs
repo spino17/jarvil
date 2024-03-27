@@ -17,7 +17,6 @@ impl LambdaTypeData {
     pub fn new(
         param_types: Vec<Type>,
         return_type: Type,
-        is_concretization_required: Option<(Vec<usize>, bool)>,
         generics_spec: Option<GenericTypeParams>,
     ) -> Self {
         LambdaTypeData {
@@ -25,7 +24,6 @@ impl LambdaTypeData {
                 param_types,
                 return_type,
                 CallableKind::LambdaType,
-                is_concretization_required,
                 generics_spec,
             ),
         }

@@ -316,9 +316,9 @@ impl Resolver {
         node: &OkIdentifierInUseNode,
         symbol_obj: &T,
         is_concrete_types_none_allowed: bool,
-    ) -> Result<(Option<TurbofishTypes>, bool), GenericTypeArgsCheckError> {
+    ) -> Result<Option<TurbofishTypes>, GenericTypeArgsCheckError> {
         // (index to the registry, has_generics)
-        let (concrete_types, ty_ranges, has_generics) =
+        let (concrete_types, ty_ranges) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
         symbol_obj.check_generic_type_args(
             concrete_types.as_ref(),
@@ -332,7 +332,7 @@ impl Resolver {
         self.semantic_db
             .identifier_in_use_binding_table_mut_ref()
             .insert(node.clone(), concrete_symbol_entry);
-        Ok((concrete_types, has_generics))
+        Ok(concrete_types)
     }
 
     pub fn bind_decl_to_self_keyword(
@@ -364,7 +364,7 @@ impl Resolver {
                     &lookup_data.symbol_obj,
                     is_concrete_types_none_allowed,
                 ) {
-                    Ok((concrete_types, _)) => ResolveResult::Ok(lookup_data, concrete_types),
+                    Ok(concrete_types) => ResolveResult::Ok(lookup_data, concrete_types),
                     Err(err) => {
                         if log_error {
                             let err = err_for_generic_type_args(
@@ -607,7 +607,6 @@ impl Resolver {
         &mut self,
         user_defined_ty_expr: &'a UserDefinedTypeNode,
         scope_index: ScopeIndex,
-        has_generics: &mut bool,
     ) -> TypeResolveKind<'a> {
         let CoreIdentifierInUseNode::Ok(ok_identifier) =
             user_defined_ty_expr.core_ref().name.core_ref()
@@ -628,15 +627,10 @@ impl Resolver {
                     UserDefineTypeKind::Struct => {
                         match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
                         {
-                            Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
-                                if has_generics_inside_angle_bracket_types {
-                                    *has_generics = true;
-                                }
-                                TypeResolveKind::Resolved(Type::new_with_struct(
-                                    symbol_obj.0,
-                                    concrete_types,
-                                ))
-                            }
+                            Ok(concrete_types) => TypeResolveKind::Resolved(Type::new_with_struct(
+                                symbol_obj.0,
+                                concrete_types,
+                            )),
                             Err(err) => TypeResolveKind::Unresolved(vec![
                                 UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
                                     ok_identifier,
@@ -648,15 +642,10 @@ impl Resolver {
                     UserDefineTypeKind::Enum => {
                         match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
                         {
-                            Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
-                                if has_generics_inside_angle_bracket_types {
-                                    *has_generics = true;
-                                }
-                                TypeResolveKind::Resolved(Type::new_with_enum(
-                                    symbol_obj.0,
-                                    concrete_types,
-                                ))
-                            }
+                            Ok(concrete_types) => TypeResolveKind::Resolved(Type::new_with_enum(
+                                symbol_obj.0,
+                                concrete_types,
+                            )),
                             Err(err) => TypeResolveKind::Unresolved(vec![
                                 UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
                                     ok_identifier,
@@ -668,15 +657,9 @@ impl Resolver {
                     UserDefineTypeKind::Lambda => {
                         match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
                         {
-                            Ok((concrete_types, has_generics_inside_angle_bracket_types)) => {
-                                if has_generics_inside_angle_bracket_types {
-                                    *has_generics = true;
-                                }
-                                TypeResolveKind::Resolved(Type::new_with_lambda_named(
-                                    symbol_obj.0,
-                                    concrete_types,
-                                ))
-                            }
+                            Ok(concrete_types) => TypeResolveKind::Resolved(
+                                Type::new_with_lambda_named(symbol_obj.0, concrete_types),
+                            ),
                             Err(err) => TypeResolveKind::Unresolved(vec![
                                 UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
                                     ok_identifier,
@@ -711,9 +694,8 @@ impl Resolver {
                                     &symbol_obj,
                                     false,
                                 ) {
-                                    Ok((concrete_types, _)) => {
+                                    Ok(concrete_types) => {
                                         debug_assert!(concrete_types.is_none());
-                                        *has_generics = true;
                                         TypeResolveKind::Resolved(Type::new_with_generic(
                                             symbol_obj.0,
                                         ))
@@ -753,75 +735,59 @@ impl Resolver {
         }
     }
 
-    pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> (Type, bool) {
-        let mut has_generics = false;
-        let ty_obj =
-            match type_expr.type_obj_before_resolved(self, self.scope_index, &mut has_generics) {
-                TypeResolveKind::Resolved(type_obj) => type_obj,
-                TypeResolveKind::Invalid => Type::new_with_unknown(),
-                TypeResolveKind::Unresolved(unresolved) => {
-                    for unresolved_identifier in unresolved {
-                        match unresolved_identifier {
-                            UnresolvedIdentifier::Unresolved(identifier) => {
-                                let err = IdentifierNotDeclaredError::new(
-                                    IdentKind::UserDefinedType,
-                                    identifier.range(),
-                                );
-                                self.errors.push(Diagnostics::IdentifierNotDeclared(err));
-                            }
-                            UnresolvedIdentifier::GenericResolvedToOutsideScope(
-                                identifier,
+    pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
+        let ty_obj = match type_expr.type_obj_before_resolved(self, self.scope_index) {
+            TypeResolveKind::Resolved(type_obj) => type_obj,
+            TypeResolveKind::Invalid => Type::new_with_unknown(),
+            TypeResolveKind::Unresolved(unresolved) => {
+                for unresolved_identifier in unresolved {
+                    match unresolved_identifier {
+                        UnresolvedIdentifier::Unresolved(identifier) => {
+                            let err = IdentifierNotDeclaredError::new(
+                                IdentKind::UserDefinedType,
+                                identifier.range(),
+                            );
+                            self.errors.push(Diagnostics::IdentifierNotDeclared(err));
+                        }
+                        UnresolvedIdentifier::GenericResolvedToOutsideScope(
+                            identifier,
+                            decl_range,
+                        ) => {
+                            let err = GenericTypeResolvedToOutsideScopeError::new(
+                                identifier.range(),
                                 decl_range,
-                            ) => {
-                                let err = GenericTypeResolvedToOutsideScopeError::new(
-                                    identifier.range(),
-                                    decl_range,
-                                );
-                                self.errors
-                                    .push(Diagnostics::GenericTypeResolvedToOutsideScope(err));
-                            }
-                            UnresolvedIdentifier::NotInitialized(identifier, decl_range) => {
-                                let name = identifier
-                                    .token_value(&self.code_handler, self.semantic_db.interner());
-                                let err = IdentifierUsedBeforeInitializedError::new(
-                                    self.semantic_db.interner().lookup(name),
-                                    IdentKind::UserDefinedType,
-                                    decl_range,
-                                    identifier.range(),
-                                );
-                                self.errors
-                                    .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
-                            }
-                            UnresolvedIdentifier::InvalidGenericTypeArgsProvided(
-                                identifier,
-                                err,
-                            ) => {
-                                let err = err_for_generic_type_args(
-                                    &err,
-                                    identifier.core_ref().name.range(),
-                                    IdentKind::UserDefinedType,
-                                );
-                                self.errors.push(err);
-                            }
+                            );
+                            self.errors
+                                .push(Diagnostics::GenericTypeResolvedToOutsideScope(err));
+                        }
+                        UnresolvedIdentifier::NotInitialized(identifier, decl_range) => {
+                            let name = identifier
+                                .token_value(&self.code_handler, self.semantic_db.interner());
+                            let err = IdentifierUsedBeforeInitializedError::new(
+                                self.semantic_db.interner().lookup(name),
+                                IdentKind::UserDefinedType,
+                                decl_range,
+                                identifier.range(),
+                            );
+                            self.errors
+                                .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
+                        }
+                        UnresolvedIdentifier::InvalidGenericTypeArgsProvided(identifier, err) => {
+                            let err = err_for_generic_type_args(
+                                &err,
+                                identifier.core_ref().name.range(),
+                                IdentKind::UserDefinedType,
+                            );
+                            self.errors.push(err);
                         }
                     }
-                    Type::new_with_unknown()
                 }
-            };
+                Type::new_with_unknown()
+            }
+        };
         self.semantic_db
-            .set_type_expr_obj_mapping(type_expr, &ty_obj, has_generics);
-        (ty_obj, has_generics)
-    }
-
-    pub fn type_obj_for_expression_contained_inside_declarations(
-        &mut self,
-        type_expr: &TypeExpressionNode,
-    ) -> (Type, bool) {
-        let (mut ty, ty_has_generics) = self.type_obj_from_expression(type_expr);
-        if ty_has_generics {
-            ty.set_concretization_required_flag();
-        }
-        (ty, ty_has_generics)
+            .set_type_expr_obj_mapping(type_expr, &ty_obj);
+        ty_obj
     }
 
     fn interface_obj_from_expression(
@@ -840,27 +806,19 @@ impl Resolver {
     fn extract_angle_bracket_content_from_identifier_in_use(
         &mut self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
-    ) -> (Option<TurbofishTypes>, Option<Vec<TextRange>>, bool) {
+    ) -> (Option<TurbofishTypes>, Option<Vec<TextRange>>) {
         let Some((_, generic_type_args, _)) = &ok_identifier_in_use.core_ref().generic_type_args
         else {
-            return (None, None, false);
+            return (None, None);
         };
-        let mut has_generics = false;
         let mut concrete_types: Vec<Type> = vec![];
         let mut ty_ranges: Vec<TextRange> = vec![];
         for generic_type_expr in generic_type_args.iter() {
-            let (ty, ty_has_generics) = self.type_obj_from_expression(generic_type_expr);
-            if ty_has_generics {
-                has_generics = true;
-            }
+            let ty = self.type_obj_from_expression(generic_type_expr);
             concrete_types.push(ty);
             ty_ranges.push(generic_type_expr.range())
         }
-        (
-            Some(TurbofishTypes::new(concrete_types)),
-            Some(ty_ranges),
-            has_generics,
-        )
+        (Some(TurbofishTypes::new(concrete_types)), Some(ty_ranges))
     }
 
     fn declare_angle_bracket_content_from_identifier_in_decl(
@@ -980,7 +938,6 @@ impl Resolver {
         Vec<Type>,
         Type,
         Option<TextRange>,
-        Option<(Vec<usize>, bool)>,
         Option<GenericTypeParams>,
     ) {
         let generic_type_decls = match optional_identifier_in_decl {
@@ -999,17 +956,10 @@ impl Resolver {
         let return_type = &core_callable_prototype.return_type;
         let mut param_types_vec: Vec<Type> = vec![];
         let mut return_type_range: Option<TextRange> = None;
-        let mut is_concretization_required_for_return_type = false;
-        let mut generics_containing_params_indexes = vec![];
         let return_type: Type = match return_type {
             Some((_, return_type_expr)) => {
                 return_type_range = Some(return_type_expr.range());
-                let (type_obj, ty_has_generics) =
-                    self.type_obj_for_expression_contained_inside_declarations(return_type_expr);
-                if ty_has_generics {
-                    is_concretization_required_for_return_type = true;
-                }
-                type_obj
+                self.type_obj_from_expression(return_type_expr)
             }
             None => Type::new_with_void(),
         };
@@ -1023,8 +973,7 @@ impl Resolver {
                 };
                 let param_name =
                     ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
-                let (param_type, param_ty_has_generics) = self
-                    .type_obj_for_expression_contained_inside_declarations(&core_param.data_type);
+                let param_type = self.type_obj_from_expression(&core_param.data_type);
                 let unique_id = self
                     .semantic_db
                     .unique_key_generator_mut_ref()
@@ -1043,9 +992,6 @@ impl Resolver {
                 match result {
                     Ok(symbol_obj) => {
                         self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_obj.entry());
-                        if param_ty_has_generics {
-                            generics_containing_params_indexes.push(param_types_vec.len());
-                        }
                         param_types_vec.push(param_type);
                     }
                     Err((param_name, previous_decl_range)) => {
@@ -1061,21 +1007,10 @@ impl Resolver {
                 }
             }
         }
-        let is_concretization_required = if generics_containing_params_indexes.is_empty()
-            && !is_concretization_required_for_return_type
-        {
-            None
-        } else {
-            Some((
-                generics_containing_params_indexes,
-                is_concretization_required_for_return_type,
-            ))
-        };
         (
             param_types_vec,
             return_type,
             return_type_range,
-            is_concretization_required,
             generic_type_decls,
         )
     }
@@ -1085,22 +1020,11 @@ impl Resolver {
         callable_body: &CallableBodyNode,
         optional_identifier_in_decl: Option<&OkIdentifierInDeclNode>,
         symbol_obj: &Option<FunctionSymbolData>,
-    ) -> (
-        Vec<Type>,
-        Type,
-        Option<TextRange>,
-        Option<(Vec<usize>, bool)>,
-    ) {
+    ) -> (Vec<Type>, Type, Option<TextRange>) {
         let core_callable_body = callable_body.core_ref();
         let callable_body = &core_callable_body.block;
         self.open_block(callable_body.core_ref().kind);
-        let (
-            param_types_vec,
-            return_type,
-            return_type_range,
-            is_concretization_required,
-            generic_type_decls,
-        ) = self
+        let (param_types_vec, return_type, return_type_range, generic_type_decls) = self
             .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
         if let Some(symbol_obj) = symbol_obj {
             self.semantic_db
@@ -1111,12 +1035,7 @@ impl Resolver {
             self.walk_stmt_indent_wrapper(stmt);
         }
         self.close_block(Some(callable_body));
-        (
-            param_types_vec,
-            return_type,
-            return_type_range,
-            is_concretization_required,
-        )
+        (param_types_vec, return_type, return_type_range)
     }
 
     pub fn visit_method_body(
@@ -1127,19 +1046,12 @@ impl Resolver {
         Vec<Type>,
         Type,
         Option<TextRange>,
-        Option<(Vec<usize>, bool)>,
         Option<GenericTypeParams>,
     ) {
         let core_callable_body = callable_body.core_ref();
         let callable_body = &core_callable_body.block;
         self.open_block(callable_body.core_ref().kind);
-        let (
-            param_types_vec,
-            return_type,
-            return_type_range,
-            is_concretization_required,
-            generic_type_decls,
-        ) = self
+        let (param_types_vec, return_type, return_type_range, generic_type_decls) = self
             .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
         for stmt in &callable_body.0.as_ref().stmts {
             self.walk_stmt_indent_wrapper(stmt);
@@ -1149,7 +1061,6 @@ impl Resolver {
             param_types_vec,
             return_type,
             return_type_range,
-            is_concretization_required,
             generic_type_decls,
         )
     }
@@ -1157,18 +1068,12 @@ impl Resolver {
     pub fn visit_constructor_body(
         &mut self,
         callable_body: &CallableBodyNode,
-    ) -> (
-        Vec<Type>,
-        Type,
-        Option<TextRange>,
-        FxHashSet<StrId>,
-        Option<(Vec<usize>, bool)>,
-    ) {
+    ) -> (Vec<Type>, Type, Option<TextRange>, FxHashSet<StrId>) {
         let core_callable_body = callable_body.core_ref();
         let mut initialized_fields: FxHashSet<StrId> = FxHashSet::default();
         let callable_body = &core_callable_body.block;
         self.open_block(callable_body.core_ref().kind);
-        let (param_types_vec, return_type, return_type_range, is_concretization_required, _) =
+        let (param_types_vec, return_type, return_type_range, _) =
             self.declare_callable_prototype(&core_callable_body.prototype, None);
         for stmt in &callable_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
@@ -1214,7 +1119,6 @@ impl Resolver {
             return_type,
             return_type_range,
             initialized_fields,
-            is_concretization_required,
         )
     }
 
@@ -1241,7 +1145,7 @@ impl Resolver {
         let ty_from_optional_annotation = core_variable_decl
             .ty_annotation
             .as_ref()
-            .map(|(_, ty_expr)| (self.type_obj_from_expression(ty_expr).0, ty_expr.range()));
+            .map(|(_, ty_expr)| (self.type_obj_from_expression(ty_expr), ty_expr.range()));
         // Except `CoreRAssignmentNode::LAMBDA`, type of the variable is set in the `type_checker.rs`. For `CoreRAssignmentNode::LAMBDA`,
         // it's type is set to the variable symbol_data here itself.
         match core_variable_decl.r_node.core_ref() {
@@ -1254,12 +1158,11 @@ impl Resolver {
                         .set_is_init(true);
                 }
                 let core_lambda_r_assign = &lambda_r_assign.core_ref();
-                let (params_vec, return_type, _, is_concretization_required) =
+                let (params_vec, return_type, _) =
                     self.visit_callable_body(&core_lambda_r_assign.body, None, &None);
                 let lambda_ty = Type::new_with_lambda_unnamed(CallablePrototypeData::new(
                     params_vec,
                     return_type,
-                    is_concretization_required,
                 ));
                 let final_variable_ty = match ty_from_optional_annotation {
                     Some((ty_from_optional_annotation, range)) => {
@@ -1324,17 +1227,12 @@ impl Resolver {
                 }
             }
         }
-        let (param_types_vec, return_type, _, is_concretization_required) =
+        let (param_types_vec, return_type, _) =
             self.visit_callable_body(body, optional_ok_identifier_node, &symbol_obj);
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
                 .function_symbol_mut_ref(symbol_obj.symbol_index())
-                .set_meta_data(
-                    param_types_vec,
-                    return_type,
-                    CallableKind::Function,
-                    is_concretization_required,
-                );
+                .set_meta_data(param_types_vec, return_type, CallableKind::Function);
         }
     }
 
@@ -1456,10 +1354,7 @@ impl Resolver {
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier
                             .token_value(&self.code_handler, self.semantic_db.interner());
-                        let (type_obj, _) = self
-                            .type_obj_for_expression_contained_inside_declarations(
-                                &name_type_spec.data_type,
-                            );
+                        let ty = self.type_obj_from_expression(&name_type_spec.data_type);
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
@@ -1472,7 +1367,7 @@ impl Resolver {
                                     .push(Diagnostics::IdentifierAlreadyDeclared(err));
                             }
                             None => {
-                                fields_map.insert(field_name, (type_obj, ok_identifier.range()));
+                                fields_map.insert(field_name, (ty, ok_identifier.range()));
                             }
                         }
                     }
@@ -1508,7 +1403,6 @@ impl Resolver {
                         param_types_vec,
                         return_type,
                         return_type_range,
-                        is_concretization_required,
                         method_generic_type_decls,
                     ) = if is_constructor {
                         let (
@@ -1516,16 +1410,9 @@ impl Resolver {
                             return_type,
                             return_type_range,
                             temp_initialized_fields,
-                            is_concretization_required,
                         ) = self.visit_constructor_body(&core_func_decl.body);
                         initialized_fields = temp_initialized_fields;
-                        (
-                            param_types_vec,
-                            return_type,
-                            return_type_range,
-                            is_concretization_required,
-                            None,
-                        )
+                        (param_types_vec, return_type, return_type_range, None)
                     } else {
                         self.visit_method_body(&core_func_decl.body, optional_ok_identifier_node)
                     };
@@ -1536,7 +1423,6 @@ impl Resolver {
                             param_types_vec,
                             return_type,
                             CallableKind::Method,
-                            is_concretization_required,
                             method_generic_type_decls,
                         );
                         let method_name_str = ok_bounded_method_name
@@ -1713,10 +1599,7 @@ impl Resolver {
             let variant_name =
                 ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
             if let Some((_, ty_expr, _)) = ty {
-                variant_ty_obj = Some(
-                    self.type_obj_for_expression_contained_inside_declarations(ty_expr)
-                        .0,
-                );
+                variant_ty_obj = Some(self.type_obj_from_expression(ty_expr));
             }
             match variants_map.get(&variant_name) {
                 Some(previous_decl_range) => {
@@ -1749,7 +1632,6 @@ impl Resolver {
         let mut types_vec: Vec<Type> = vec![];
         let type_tuple = &core_lambda_type_decl.type_tuple;
         let return_type = &core_lambda_type_decl.return_type;
-        let mut generics_containing_params_indexes = vec![];
         let mut is_concretization_required_for_return_type = false;
         let mut optional_ok_identifier_node: Option<&OkIdentifierInDeclNode> = None;
         let mut generic_type_decls: Option<GenericTypeParams> = None;
@@ -1764,24 +1646,13 @@ impl Resolver {
                 .0;
         }
         let return_type: Type = match return_type {
-            Some((_, return_type_expr)) => {
-                let (type_obj, ty_has_generics) =
-                    self.type_obj_for_expression_contained_inside_declarations(return_type_expr);
-                if ty_has_generics {
-                    is_concretization_required_for_return_type = true;
-                }
-                type_obj
-            }
+            Some((_, return_type_expr)) => self.type_obj_from_expression(return_type_expr),
             None => Type::new_with_void(),
         };
         if let Some(type_tuple) = type_tuple {
             let type_tuple_iter = type_tuple.iter();
             for data_type in type_tuple_iter {
-                let (ty, ty_has_generics) =
-                    self.type_obj_for_expression_contained_inside_declarations(data_type);
-                if ty_has_generics {
-                    generics_containing_params_indexes.push(types_vec.len());
-                }
+                let ty = self.type_obj_from_expression(data_type);
                 types_vec.push(ty);
             }
         }
@@ -1802,16 +1673,6 @@ impl Resolver {
                 name,
                 types_vec,
                 return_type,
-                if generics_containing_params_indexes.is_empty()
-                    && !is_concretization_required_for_return_type
-                {
-                    None
-                } else {
-                    Some((
-                        generics_containing_params_indexes,
-                        is_concretization_required_for_return_type,
-                    ))
-                },
                 generic_type_decls,
                 ok_identifier.core_ref().name.range(),
                 unique_id,
@@ -1888,10 +1749,7 @@ impl Resolver {
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier
                             .token_value(&self.code_handler, self.semantic_db.interner());
-                        let (type_obj, _) = self
-                            .type_obj_for_expression_contained_inside_declarations(
-                                &name_type_spec.data_type,
-                            );
+                        let ty = self.type_obj_from_expression(&name_type_spec.data_type);
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
@@ -1904,7 +1762,7 @@ impl Resolver {
                                     .push(Diagnostics::IdentifierAlreadyDeclared(err));
                             }
                             None => {
-                                fields_map.insert(field_name, (type_obj, ok_identifier.range()));
+                                fields_map.insert(field_name, (ty, ok_identifier.range()));
                             }
                         }
                     }
@@ -1925,19 +1783,13 @@ impl Resolver {
                         } else {
                             let prototype = &core_interface_method_wrapper.prototype;
                             self.open_block(BlockKind::Method);
-                            let (
-                                param_types_vec,
-                                return_type,
-                                _,
-                                is_concretization_required,
-                                method_generic_type_decls,
-                            ) = self.declare_callable_prototype(prototype, Some(ok_identifier));
+                            let (param_types_vec, return_type, _, method_generic_type_decls) =
+                                self.declare_callable_prototype(prototype, Some(ok_identifier));
                             self.close_block(None);
                             let method_meta_data = CallableData::new(
                                 param_types_vec,
                                 return_type,
                                 CallableKind::Method,
-                                is_concretization_required,
                                 method_generic_type_decls,
                             );
                             methods.insert(method_name, (method_meta_data, ok_identifier.range()));

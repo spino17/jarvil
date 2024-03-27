@@ -33,19 +33,13 @@ pub enum CallableKind {
 pub struct CallablePrototypeData {
     params: Vec<Type>,
     return_type: Type,
-    is_concretization_required: Option<(Vec<usize>, bool)>, // (indexes of params that has generics, is_concretization required for return_type)
 }
 
 impl CallablePrototypeData {
-    pub fn new(
-        params: Vec<Type>,
-        return_type: Type,
-        is_concretization_required: Option<(Vec<usize>, bool)>,
-    ) -> CallablePrototypeData {
+    pub fn new(params: Vec<Type>, return_type: Type) -> CallablePrototypeData {
         CallablePrototypeData {
             params,
             return_type,
-            is_concretization_required,
         }
     }
 
@@ -169,7 +163,6 @@ impl Default for CallablePrototypeData {
         CallablePrototypeData {
             params: vec![],
             return_type: Type::new_with_unset(),
-            is_concretization_required: None,
         }
     }
 }
@@ -186,14 +179,12 @@ impl CallableData {
         params: Vec<Type>,
         return_type: Type,
         kind: CallableKind,
-        is_concretization_required: Option<(Vec<usize>, bool)>,
         generics_spec: Option<GenericTypeParams>,
     ) -> Self {
         CallableData {
             prototype: CallablePrototypeData {
                 params,
                 return_type,
-                is_concretization_required,
             },
             kind,
             generics: generics_spec,
@@ -208,16 +199,9 @@ impl CallableData {
         }
     }
 
-    pub fn set_meta_data(
-        &mut self,
-        params: Vec<Type>,
-        return_type: Type,
-        kind: CallableKind,
-        is_concretization_required: Option<(Vec<usize>, bool)>,
-    ) {
+    pub fn set_meta_data(&mut self, params: Vec<Type>, return_type: Type, kind: CallableKind) {
         self.prototype.params = params;
         self.prototype.return_type = return_type;
-        self.prototype.is_concretization_required = is_concretization_required;
         self.kind = kind;
     }
 
@@ -247,26 +231,18 @@ impl CallableData {
         context: MethodGenericsInstantiationContext,
     ) -> RefOrOwned<'_, CallablePrototypeData> {
         if context.is_empty() {
-            debug_assert!(self.prototype.is_concretization_required.is_none());
             return RefOrOwned::Ref(&self.prototype);
         }
-        let Some((generics_containing_params_indexes, is_concretization_required_for_return_type)) =
-            &self.prototype.is_concretization_required
-        else {
-            return RefOrOwned::Ref(&self.prototype);
-        };
-        let mut concrete_params = self.prototype.params.clone();
-        let mut concrete_return_type = self.prototype.return_type.clone();
-        for index in generics_containing_params_indexes {
-            concrete_params[*index] = self.prototype.params[*index].concretize(context, namespace);
-        }
-        if *is_concretization_required_for_return_type {
-            concrete_return_type = self.prototype.return_type.concretize(context, namespace);
-        }
+        let concrete_return_type = self.concretized_return_ty(namespace, context);
+        let concrete_params = self
+            .prototype
+            .params
+            .iter()
+            .map(|ty| ty.concretize(context, namespace))
+            .collect();
         RefOrOwned::Owned(CallablePrototypeData::new(
             concrete_params,
             concrete_return_type,
-            None,
         ))
     }
 }

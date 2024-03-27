@@ -19,7 +19,6 @@ fn print_callable_data(interner: &Interner) -> CallableData {
         )],
         Type::new_with_void(),
         CallableKind::Function,
-        Some((vec![0], false)),
         Some(GenericTypeParams::new(vec![(
             interner.intern("V"),
             InterfaceBounds::default(),
@@ -34,7 +33,6 @@ fn range_callable_data() -> CallableData {
         vec![Type::new_with_atomic(INT), Type::new_with_atomic(INT)],
         Type::new_with_array(Type::new_with_atomic(INT)),
         CallableKind::Function,
-        None,
         None,
     )
 }
