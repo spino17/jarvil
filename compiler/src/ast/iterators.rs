@@ -1,5 +1,5 @@
 use super::ast::SymbolSeparatedSequenceNode;
-use crate::ast::ast::Node;
+use crate::ast::traits::Node;
 use serde::Serialize;
 
 pub struct SymbolSeparatedSequenceIterator<'a, T: Node + Serialize + Clone> {

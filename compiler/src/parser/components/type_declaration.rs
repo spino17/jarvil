@@ -1,7 +1,8 @@
 use crate::ast::ast::{
-    ErrornousNode, IdentifierInUseNode, SymbolSeparatedSequenceNode, TokenNode, TypeExpressionNode,
+    IdentifierInUseNode, SymbolSeparatedSequenceNode, TokenNode, TypeExpressionNode,
 };
 use crate::ast::ast::{LambdaTypeDeclarationNode, TypeDeclarationNode};
+use crate::ast::traits::ErrornousNode;
 use crate::constants::common::DEF;
 use crate::lexer::token::CoreToken;
 use crate::parser::resolver::BlockKind;

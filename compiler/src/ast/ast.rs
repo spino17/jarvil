@@ -18,15 +18,6 @@ use std::rc::Rc;
 use text_size::TextRange;
 use text_size::TextSize;
 
-pub trait Node {
-    fn range(&self) -> TextRange;
-    fn start_line_number(&self) -> usize;
-}
-
-pub trait ErrornousNode {
-    fn new_with_missing_tokens(expected_symbols: Vec<&'static str>, received_token: Token) -> Self;
-}
-
 #[derive(Debug, Clone, Nodify)]
 pub enum ASTNode {
     Block(BlockNode),

@@ -1,6 +1,6 @@
 use super::parser::JarvilParser;
-use crate::ast::ast::Node;
 use crate::ast::ast::SkippedTokenNode;
+use crate::ast::traits::Node;
 use crate::error::diagnostics::{
     Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidTrailingTokensError,
     NoValidStatementFoundInsideBlockBodyError, SingleSubTypeFoundInTupleError,

@@ -8,10 +8,10 @@
 
 // block_kind: statement, struct, interface, implementation of struct, function
 
-use crate::ast::ast::Node;
 use crate::ast::ast::{
     BlockNode, SkippedTokenNode, SkippedTokensNode, StatementIndentWrapperNode, StatementNode,
 };
+use crate::ast::traits::Node;
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
 use crate::parser::helper::IndentResultKind;

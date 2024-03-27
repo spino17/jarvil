@@ -1,4 +1,7 @@
-use crate::ast::ast::{ErrornousNode, KeyValuePairNode, SymbolSeparatedSequenceNode};
+use crate::ast::{
+    ast::{KeyValuePairNode, SymbolSeparatedSequenceNode},
+    traits::ErrornousNode,
+};
 use crate::{
     ast::ast::{AtomicExpressionNode, ExpressionNode, UnaryExpressionNode},
     constants::common::{FALSE, FLOATING_POINT_NUMBER, IDENTIFIER, INTEGER, LITERAL, TRUE},

@@ -1,14 +1,14 @@
 use super::resolver::BlockKind;
-use crate::ast::ast::Node;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ConditionalBlockNode, ConditionalStatementNode,
-    ErrornousNode, ExpressionNode, ForLoopStatementNode, GenericTypeDeclNode, IdentifierInDeclNode,
+    ExpressionNode, ForLoopStatementNode, GenericTypeDeclNode, IdentifierInDeclNode,
     IdentifierInUseNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
     MatchCaseStatementNode, NameTypeSpecNode, OkTokenNode, SelfKeywordNode, SkippedTokenNode,
     StatementNode, SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
     UnaryExpressionNode, VariableDeclarationNode, WhileLoopStatementNode,
 };
+use crate::ast::traits::{ErrornousNode, Node};
 use crate::code::JarvilCodeHandler;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;

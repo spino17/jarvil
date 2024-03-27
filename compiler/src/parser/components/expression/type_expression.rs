@@ -1,6 +1,5 @@
-use crate::ast::ast::ErrornousNode;
-use crate::ast::ast::Node;
 use crate::ast::ast::TypeExpressionNode;
+use crate::ast::traits::{ErrornousNode, Node};
 use crate::constants::common::{ATOMIC_TYPE, IDENTIFIER};
 use crate::lexer::token::CoreToken;
 use crate::parser::parser::JarvilParser;

@@ -45,9 +45,10 @@ use crate::{
     ast::{
         ast::{
             ASTNode, BlockNode, CoreAtomStartNode, CoreStatementIndentWrapperNode,
-            CoreStatementNode, Node, StructDeclarationNode, TypeExpressionNode, TypeResolveKind,
+            CoreStatementNode, StructDeclarationNode, TypeExpressionNode, TypeResolveKind,
             VariableDeclarationNode,
         },
+        traits::Node,
         walk::Visitor,
     },
     error::diagnostics::{Diagnostics, IdentifierAlreadyDeclaredError, IdentifierNotDeclaredError},
