@@ -15,7 +15,7 @@ pub fn unbounded_generic_ty_in_type_with_declaration_index(
     index: usize,
     interner: &Interner,
 ) -> Type {
-    let mut ty = match index {
+    let ty = match index {
         0 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("T"))),
         1 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("U"))),
         _ => unreachable!(),
@@ -27,7 +27,7 @@ pub fn unbounded_generic_ty_in_func_with_declaration_index(
     index: usize,
     interner: &Interner,
 ) -> Type {
-    let mut ty = match index {
+    let ty = match index {
         0 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("V"))),
         _ => unreachable!(),
     };

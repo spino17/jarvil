@@ -1632,7 +1632,6 @@ impl Resolver {
         let mut types_vec: Vec<Type> = vec![];
         let type_tuple = &core_lambda_type_decl.type_tuple;
         let return_type = &core_lambda_type_decl.return_type;
-        let mut is_concretization_required_for_return_type = false;
         let mut optional_ok_identifier_node: Option<&OkIdentifierInDeclNode> = None;
         let mut generic_type_decls: Option<GenericTypeParams> = None;
         self.open_block(BlockKind::LambdaType);
