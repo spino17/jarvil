@@ -17,7 +17,6 @@ use crate::lexer::token::Token;
 use crate::parser::helper::IndentResultKind;
 use crate::parser::parser::JarvilParser;
 use crate::parser::resolver::BlockKind;
-use std::mem;
 
 pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
     parser: &mut JarvilParser,
@@ -29,9 +28,9 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
     let newline_node = parser.expect_terminators();
     parser.set_indent_level(parser.curr_indent_level() + 1);
     let mut stmts_vec: Vec<StatementIndentWrapperNode> = vec![];
-    let mut leading_skipped_tokens: Vec<SkippedTokenNode> = vec![];
     let mut has_atleast_one_stmt = false;
     loop {
+        let mut leading_skipped_tokens: Vec<SkippedTokenNode> = vec![];
         let indent_result = parser.expect_indent_spaces();
         let skipped_tokens = indent_result.skipped_tokens;
         if !skipped_tokens.is_empty() {
@@ -69,9 +68,7 @@ pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
         }
         if !leading_skipped_tokens.is_empty() {
             stmts_vec.push(StatementIndentWrapperNode::new_with_leading_skipped_tokens(
-                SkippedTokensNode::new_with_leading_skipped_tokens(mem::take(
-                    &mut leading_skipped_tokens,
-                )),
+                SkippedTokensNode::new_with_leading_skipped_tokens(leading_skipped_tokens),
             ));
         }
         let token = parser.curr_token();
