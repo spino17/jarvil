@@ -47,13 +47,12 @@ use crate::{
     ast::{
         ast::{
             ASTNode, AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode,
-            BinaryExpressionNode, BlockNode, BoundedMethodKind, BoundedMethodWrapperNode,
-            CallablePrototypeNode, ComparisonNode, CoreAssignmentNode, CoreAtomNode,
-            CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,
-            CoreRVariableDeclarationNode, CoreSelfKeywordNode, CoreStatementIndentWrapperNode,
-            CoreStatementNode, CoreTokenNode, CoreTypeDeclarationNode, CoreUnaryExpressionNode,
-            ExpressionNode, LambdaDeclarationNode, NameTypeSpecNode, Node, OnlyUnaryExpressionNode,
-            RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, StatementNode,
+            BinaryExpressionNode, BlockNode, BoundedMethodWrapperNode, CallablePrototypeNode,
+            ComparisonNode, CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode,
+            CoreAtomicExpressionNode, CoreExpressionNode, CoreRVariableDeclarationNode,
+            CoreSelfKeywordNode, CoreStatementIndentWrapperNode, CoreStatementNode, CoreTokenNode,
+            CoreTypeDeclarationNode, CoreUnaryExpressionNode, ExpressionNode, Node,
+            OnlyUnaryExpressionNode, RAssignmentNode, ReturnStatementNode, StatementNode,
             SymbolSeparatedSequenceNode, TokenNode, TypeExpressionNode, UnaryExpressionNode,
             VariableDeclarationNode,
         },
@@ -63,8 +62,7 @@ use crate::{
     error::{
         diagnostics::{
             BinaryOperatorInvalidOperandsError, ClassmethodDoesNotExistError,
-            ConstructorNotFoundForTypeError, Diagnostics,
-            ExplicitReturnStatementFoundInConstructorBodyError, ExpressionIndexingNotValidError,
+            ConstructorNotFoundForTypeError, Diagnostics, ExpressionIndexingNotValidError,
             ExpressionNotCallableError, FieldNotCallableError, IdentifierNotCallableError,
             ImmutableTypeNotAssignableError, InvalidIndexExpressionForTupleError,
             InvalidReturnStatementError, LessParamsCountError, MismatchedParamTypeError,
@@ -92,7 +90,7 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 struct Context {
-    func_stack: Vec<(bool, Type)>, // (is_constructor, return_type)
+    func_stack: Vec<Type>, // (is_constructor, return_type)
 }
 
 pub enum AtomicTokenExprKind {
@@ -1909,7 +1907,7 @@ impl TypeChecker {
             CoreRVariableDeclarationNode::Lambda(lambda) => {
                 // type for `lambda` is already checked and set to the variable during name-resolution
                 let body = lambda.core_ref().body.core_ref();
-                self.check_callable_body(&body.prototype, &body.block, false);
+                self.check_callable_body(&body.prototype, &body.block);
                 return;
             }
         };
@@ -1962,16 +1960,9 @@ impl TypeChecker {
         }
     }
 
-    pub fn check_callable_body(
-        &mut self,
-        prototype: &CallablePrototypeNode,
-        body: &BlockNode,
-        is_constructor: bool,
-    ) {
+    pub fn check_callable_body(&mut self, prototype: &CallablePrototypeNode, body: &BlockNode) {
         let return_type_obj = self.check_callable_prototype(prototype);
-        self.context
-            .func_stack
-            .push((is_constructor, return_type_obj.clone()));
+        self.context.func_stack.push(return_type_obj.clone());
         let mut has_return_stmt: Option<TextRange> = None;
 
         for stmt in &body.0.as_ref().stmts {
@@ -1989,18 +1980,7 @@ impl TypeChecker {
             }
         }
 
-        if is_constructor {
-            match has_return_stmt {
-                Some(return_stmt_range) => {
-                    let err =
-                        ExplicitReturnStatementFoundInConstructorBodyError::new(return_stmt_range);
-                    self.log_error(Diagnostics::ExplicitReturnStatementFoundInConstructorBody(
-                        err,
-                    ));
-                }
-                None => {}
-            }
-        } else if has_return_stmt.is_none() && !return_type_obj.is_void() {
+        if has_return_stmt.is_none() && !return_type_obj.is_void() {
             let (_, return_type_node) = prototype.core_ref().return_type.as_ref().unwrap();
             let err = NoReturnStatementInFunctionError::new(return_type_node.range());
             self.log_error(Diagnostics::NoReturnStatementInFunction(err));
@@ -2010,19 +1990,12 @@ impl TypeChecker {
 
     pub fn check_bounded_method(&mut self, bounded_method_wrapper: &BoundedMethodWrapperNode) {
         let core_bounded_method_wrapper = bounded_method_wrapper.0.as_ref();
-        let is_constructor = match self.semantic_db.bounded_kind_ref(bounded_method_wrapper) {
-            Some(bounded_kind) => match bounded_kind {
-                BoundedMethodKind::Constructor => true,
-                _ => false,
-            },
-            None => false,
-        };
-        let body = &core_bounded_method_wrapper
+        let body = core_bounded_method_wrapper
             .func_decl
             .core_ref()
             .body
             .core_ref();
-        self.check_callable_body(&body.prototype, &body.block, is_constructor);
+        self.check_callable_body(&body.prototype, &body.block);
     }
 
     pub fn check_return_stmt(&self, return_stmt: &ReturnStatementNode) {
@@ -2037,13 +2010,8 @@ impl TypeChecker {
             Some(expr) => self.check_expr(expr),
             _ => Type::new_with_void(),
         };
-        let (is_constructor, expected_type_obj) = &self.context.func_stack[func_stack_len - 1];
-        if *is_constructor {
-            let err = ExplicitReturnStatementFoundInConstructorBodyError::new(return_stmt.range());
-            self.log_error(Diagnostics::ExplicitReturnStatementFoundInConstructorBody(
-                err,
-            ));
-        } else if !expr_type_obj.is_eq(expected_type_obj, self.semantic_db.namespace_ref()) {
+        let expected_type_obj = &self.context.func_stack[func_stack_len - 1];
+        if !expr_type_obj.is_eq(expected_type_obj, self.semantic_db.namespace_ref()) {
             let err = MismatchedReturnTypeError::new(
                 expected_type_obj.to_string(
                     self.semantic_db.interner(),
@@ -2396,7 +2364,7 @@ impl TypeChecker {
             }
             CoreStatementNode::FunctionWrapper(func_wrapper) => {
                 let body = &func_wrapper.core_ref().func_decl.core_ref().body.core_ref();
-                self.check_callable_body(&body.prototype, &body.block, false);
+                self.check_callable_body(&body.prototype, &body.block);
             }
             CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
                 self.check_bounded_method(bounded_method_wrapper);
@@ -2435,7 +2403,6 @@ impl TypeChecker {
                     self.check_callable_body(
                         &core_interface_method_prototype_wrapper.prototype,
                         optional_default_body,
-                        false,
                     );
                 }
             }

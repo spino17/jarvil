@@ -759,6 +759,7 @@ impl Resolver {
         let ty_obj =
             match type_expr.type_obj_before_resolved(self, self.scope_index, &mut has_generics) {
                 TypeResolveKind::Resolved(type_obj) => type_obj,
+                TypeResolveKind::Invalid => Type::new_with_unknown(),
                 TypeResolveKind::Unresolved(unresolved) => {
                     for unresolved_identifier in unresolved {
                         match unresolved_identifier {
@@ -807,7 +808,6 @@ impl Resolver {
                     }
                     Type::new_with_unknown()
                 }
-                TypeResolveKind::Invalid => Type::new_with_unknown(),
             };
         self.semantic_db
             .set_type_expr_obj_mapping(type_expr, &ty_obj, has_generics);

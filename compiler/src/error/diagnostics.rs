@@ -67,9 +67,6 @@ pub enum Diagnostics {
     SingleSubTypeFoundInTuple(SingleSubTypeFoundInTupleError),
     MainFunctionNotFound(MainFunctionNotFoundError),
     MainFunctionWrongType(MainFunctionWrongTypeError),
-    ExplicitReturnStatementFoundInConstructorBody(
-        ExplicitReturnStatementFoundInConstructorBodyError,
-    ),
     InterfaceAlreadyExistInBoundsDeclaration(InterfaceAlreadyExistInBoundsDeclarationError),
     GenericTypesDeclarationInsideConstructorFound(
         GenericTypesDeclarationInsideConstructorFoundError,
@@ -168,9 +165,6 @@ impl Diagnostics {
             Diagnostics::SingleSubTypeFoundInTuple(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MainFunctionNotFound(diagnostic) => Report::new(diagnostic.clone()),
             Diagnostics::MainFunctionWrongType(diagnostic) => Report::new(diagnostic.clone()),
-            Diagnostics::ExplicitReturnStatementFoundInConstructorBody(diagnostic) => {
-                Report::new(diagnostic.clone())
-            }
             Diagnostics::GenericTypeResolvedToOutsideScope(diagnostic) => {
                 Report::new(diagnostic.clone())
             }
@@ -1858,30 +1852,6 @@ impl NoReturnStatementInFunctionError {
                 .style(Style::new().yellow())
                 .to_string()
             )
-        }
-    }
-}
-
-#[derive(Diagnostic, Debug, Error, Clone)]
-#[error("explicit return statement found in constructor body")]
-#[diagnostic(code("TypeCheckError"))]
-pub struct ExplicitReturnStatementFoundInConstructorBodyError {
-    #[label("explicit return statement found")]
-    pub span: SourceSpan,
-    #[help]
-    pub help: Option<String>,
-}
-
-impl ExplicitReturnStatementFoundInConstructorBodyError {
-    pub fn new(range: TextRange) -> Self {
-        ExplicitReturnStatementFoundInConstructorBodyError {
-            span: range_to_span(range).into(),
-            help: Some(
-                "constructor body should have no explicit return statements"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
         }
     }
 }
