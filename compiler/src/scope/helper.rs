@@ -52,7 +52,7 @@ pub fn fill_side_scope_with_generic_types(namespace: &mut Namespace, interner: &
         interner.intern("T"),
         UserDefinedTypeData::Generic(GenericTypeData::new(
             0,
-            GenericTypeDeclarationPlaceCategory::InStruct,
+            GenericTypeDeclarationPlaceCategory::InType,
             InterfaceBounds::default(),
         )),
         TextRange::default(),
@@ -62,7 +62,7 @@ pub fn fill_side_scope_with_generic_types(namespace: &mut Namespace, interner: &
         interner.intern("U"),
         UserDefinedTypeData::Generic(GenericTypeData::new(
             1,
-            GenericTypeDeclarationPlaceCategory::InStruct,
+            GenericTypeDeclarationPlaceCategory::InType,
             InterfaceBounds::default(),
         )),
         TextRange::default(),

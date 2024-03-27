@@ -656,7 +656,7 @@ impl TypeChecker {
                     constructor_meta_data.structural_prototype(),
                     None,
                     params,
-                    GenericTypeDeclarationPlaceCategory::InStruct,
+                    GenericTypeDeclarationPlaceCategory::InType,
                 )?;
                 Ok(Type::new_with_struct(
                     concrete_symbol_index.symbol_index(),

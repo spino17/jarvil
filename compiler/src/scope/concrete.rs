@@ -1,5 +1,6 @@
 use super::namespace::Namespace;
 use super::symbol::core::SymbolIndex;
+use super::traits::InstantiationContext;
 use crate::core::string_interner::Interner;
 use crate::scope::traits::IsInitialized;
 use crate::types::core::Type;
@@ -104,5 +105,79 @@ impl<'a> ConcretizationContext<'a> {
 
     pub fn func_local_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
         self.func_local_concrete_types
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct TypeGenericsInstantiationContext<'a> {
+    args: Option<&'a ConcreteTypesTuple>,
+}
+
+impl<'a> TypeGenericsInstantiationContext<'a> {
+    pub fn new(args: Option<&'a ConcreteTypesTuple>) -> Self {
+        return TypeGenericsInstantiationContext { args };
+    }
+}
+
+impl<'a> InstantiationContext<'a> for TypeGenericsInstantiationContext<'a> {
+    fn is_empty(&self) -> bool {
+        self.args.is_none()
+    }
+
+    fn ty_generics_instantiation_args(&self) -> Option<&'a ConcreteTypesTuple> {
+        self.args
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct FunctionGenericsInstantiationContext<'a> {
+    args: Option<&'a ConcreteTypesTuple>,
+}
+
+impl<'a> FunctionGenericsInstantiationContext<'a> {
+    pub fn new(args: Option<&'a ConcreteTypesTuple>) -> Self {
+        return FunctionGenericsInstantiationContext { args };
+    }
+}
+
+impl<'a> InstantiationContext<'a> for FunctionGenericsInstantiationContext<'a> {
+    fn is_empty(&self) -> bool {
+        self.args.is_none()
+    }
+
+    fn callable_generics_instantiation_args(&self) -> Option<&'a ConcreteTypesTuple> {
+        self.args
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct MethodGenericsInstantiationContext<'a> {
+    bounding_ty_args: Option<&'a ConcreteTypesTuple>,
+    local_args: Option<&'a ConcreteTypesTuple>,
+}
+
+impl<'a> MethodGenericsInstantiationContext<'a> {
+    pub fn new(
+        bounding_ty_args: Option<&'a ConcreteTypesTuple>,
+        local_args: Option<&'a ConcreteTypesTuple>,
+    ) -> Self {
+        return MethodGenericsInstantiationContext {
+            bounding_ty_args,
+            local_args,
+        };
+    }
+}
+
+impl<'a> InstantiationContext<'a> for MethodGenericsInstantiationContext<'a> {
+    fn is_empty(&self) -> bool {
+        self.bounding_ty_args.is_none() && self.local_args.is_none()
+    }
+
+    fn ty_generics_instantiation_args(&self) -> Option<&'a ConcreteTypesTuple> {
+        self.bounding_ty_args
+    }
+
+    fn callable_generics_instantiation_args(&self) -> Option<&'a ConcreteTypesTuple> {
+        self.local_args
     }
 }

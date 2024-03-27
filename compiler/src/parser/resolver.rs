@@ -1372,7 +1372,7 @@ impl Resolver {
                 let (struct_generic_type_decls, concrete_types) = self
                     .declare_angle_bracket_content_from_identifier_in_decl(
                         ok_identifier,
-                        GenericTypeDeclarationPlaceCategory::InStruct,
+                        GenericTypeDeclarationPlaceCategory::InType,
                     );
                 let struct_ty = match &symbol_obj {
                     Some(symbol_obj) => Type::new_with_struct(symbol_obj.0, concrete_types),
@@ -1680,7 +1680,7 @@ impl Resolver {
             Some(ok_identifier) => {
                 self.declare_angle_bracket_content_from_identifier_in_decl(
                     ok_identifier,
-                    GenericTypeDeclarationPlaceCategory::InStruct,
+                    GenericTypeDeclarationPlaceCategory::InType,
                 )
                 .0
             }
@@ -1861,7 +1861,7 @@ impl Resolver {
             Some(ok_identifier) => {
                 self.declare_angle_bracket_content_from_identifier_in_decl(
                     ok_identifier,
-                    GenericTypeDeclarationPlaceCategory::InStruct,
+                    GenericTypeDeclarationPlaceCategory::InType,
                 )
                 .0
             }

@@ -26,3 +26,15 @@ pub trait AbstractSymbol {
     ) -> Result<(), GenericTypeArgsCheckError>;
     fn mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<Self::SymbolTy>;
 }
+
+pub trait InstantiationContext<'a> {
+    fn is_empty(&self) -> bool {
+        return true;
+    }
+    fn ty_generics_instantiation_args(&self) -> Option<&'a ConcreteTypesTuple> {
+        return None;
+    }
+    fn callable_generics_instantiation_args(&self) -> Option<&'a ConcreteTypesTuple> {
+        return None;
+    }
+}

@@ -121,7 +121,7 @@ impl GenericTypeData {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum GenericTypeDeclarationPlaceCategory {
-    InStruct,
+    InType,
     InCallable,
 }
 
