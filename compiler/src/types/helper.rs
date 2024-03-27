@@ -3,7 +3,7 @@ use crate::{
     core::string_interner::Interner,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::{ConcreteTypesTuple, ConcretizationContext},
+        concrete::{TurbofishTypes, TypeGenericsInstantiationContext},
         namespace::Namespace,
         scope::ScopeIndex,
         symbol::{core::SymbolIndex, types::generic_type::GenericTypeDeclarationPlaceCategory},
@@ -40,7 +40,7 @@ pub fn try_infer_types_from_tuple(
     base_types_tuple: &Vec<Type>,
     generics_containing_types_tuple: &Vec<Type>,
     inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-    global_concrete_types: Option<&ConcreteTypesTuple>,
+    global_concrete_types: Option<&TurbofishTypes>,
     num_inferred_types: &mut usize,
     inference_category: GenericTypeDeclarationPlaceCategory,
     namespace: &Namespace,
@@ -64,12 +64,12 @@ pub fn try_infer_types_from_tuple(
 
 pub fn user_defined_ty_compare_fn<
     T: UserDefinedType,
-    F: Fn(&Type, &Type, &ConcretizationContext, &Namespace) -> bool,
+    F: Fn(&Type, &Type, &TypeGenericsInstantiationContext, &Namespace) -> bool,
 >(
     base: &T,
     other: &T,
     ty_cmp_func: F,
-    context: &ConcretizationContext,
+    context: &TypeGenericsInstantiationContext,
     namespace: &Namespace,
 ) -> bool {
     if base.name() != other.name() {

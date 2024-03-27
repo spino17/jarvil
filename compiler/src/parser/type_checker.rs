@@ -25,7 +25,7 @@ use crate::error::diagnostics::{
     UnexpectedValueProvidedToEnumVariantError,
 };
 use crate::error::helper::IdentifierKind;
-use crate::scope::concrete::{ConcreteSymbolIndex, ConcreteTypesTuple};
+use crate::scope::concrete::{ConcreteSymbolIndex, TurbofishTypes};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::symbol::core::{ConcreteSymbolDataEntry, SymbolDataEntry};
 use crate::scope::symbol::function::{CallableData, PartialCallableDataPrototypeCheckError};
@@ -244,7 +244,7 @@ impl TypeChecker {
     fn extract_angle_bracket_content_from_identifier_in_use(
         &self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
-    ) -> (Option<ConcreteTypesTuple>, Option<Vec<TextRange>>, bool) {
+    ) -> (Option<TurbofishTypes>, Option<Vec<TextRange>>, bool) {
         let Some((_, generic_type_args, _)) = &ok_identifier_in_use.core_ref().generic_type_args
         else {
             return (None, None, false);
@@ -261,7 +261,7 @@ impl TypeChecker {
             ty_ranges.push(generic_type_expr.range())
         }
         (
-            Some(ConcreteTypesTuple::new(concrete_types)),
+            Some(TurbofishTypes::new(concrete_types)),
             Some(ty_ranges),
             has_generics,
         )
@@ -331,10 +331,10 @@ impl TypeChecker {
         &self,
         generic_type_decls: &GenericTypeParams,
         expected_prototype: &CallablePrototypeData,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         inference_category: GenericTypeDeclarationPlaceCategory,
-    ) -> Result<ConcreteTypesTuple, PrototypeEquivalenceCheckError> {
+    ) -> Result<TurbofishTypes, PrototypeEquivalenceCheckError> {
         let Some(received_params) = received_params else {
             return Err(PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred);
         };
@@ -435,7 +435,7 @@ impl TypeChecker {
                 ),
             );
         }
-        Ok(ConcreteTypesTuple::new(unpacked_inferred_concrete_types))
+        Ok(TurbofishTypes::new(unpacked_inferred_concrete_types))
     }
 
     pub fn check_params_type_and_count(
@@ -735,7 +735,7 @@ impl TypeChecker {
     fn check_class_method_call(
         &self,
         struct_data: &StructTypeData,
-        concrete_types: Option<&ConcreteTypesTuple>,
+        concrete_types: Option<&TurbofishTypes>,
         ty_node: &OkIdentifierInUseNode,
         ty_name: StrId,
         property_name: &IdentifierInUseNode,

@@ -8,11 +8,12 @@ use crate::{
     lexer::token::BinaryOperatorKind,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::{ConcreteTypesTuple, ConcretizationContext},
+        concrete::{TurbofishTypes, TypeGenericsInstantiationContext},
         namespace::Namespace,
         symbol::{
             interfaces::InterfaceBounds, types::generic_type::GenericTypeDeclarationPlaceCategory,
         },
+        traits::InstantiationContext,
     },
     types::core::{CoreType, Type},
 };
@@ -75,7 +76,7 @@ impl TypeLike for Tuple {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &ConcretizationContext,
+        context: &TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let CoreType::Tuple(tuple_data) = other_ty.core_ty() else {
@@ -93,7 +94,11 @@ impl TypeLike for Tuple {
         true
     }
 
-    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
+    fn concretize<'a, T: InstantiationContext<'a>>(
+        &self,
+        context: &T,
+        namespace: &Namespace,
+    ) -> Type {
         let mut concrete_types = vec![];
         for ty in &self.sub_types {
             concrete_types.push(ty.concretize(context, namespace));
@@ -114,7 +119,7 @@ impl TypeLike for Tuple {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,

@@ -1,4 +1,4 @@
-use super::concrete::ConcreteTypesTuple;
+use super::concrete::TurbofishTypes;
 use super::errors::GenericTypeArgsCheckError;
 use super::namespace::Namespace;
 use super::symbol::core::{SymbolDataEntry, SymbolIndex};
@@ -18,7 +18,7 @@ pub trait AbstractSymbol {
     fn entry(&self) -> SymbolDataEntry;
     fn check_generic_type_args(
         &self,
-        concrete_types: Option<&ConcreteTypesTuple>,
+        concrete_types: Option<&TurbofishTypes>,
         type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         interner: &Interner,
@@ -31,10 +31,10 @@ pub trait InstantiationContext<'a> {
     fn is_empty(&self) -> bool {
         return true;
     }
-    fn ty_generics_instantiation_args(&self) -> Option<&'a ConcreteTypesTuple> {
+    fn ty_generics_instantiation_args(&self) -> Option<&'a TurbofishTypes> {
         return None;
     }
-    fn callable_generics_instantiation_args(&self) -> Option<&'a ConcreteTypesTuple> {
+    fn callable_generics_instantiation_args(&self) -> Option<&'a TurbofishTypes> {
         return None;
     }
 }

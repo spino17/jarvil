@@ -4,11 +4,12 @@ use crate::{
     lexer::token::BinaryOperatorKind,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::{ConcreteTypesTuple, ConcretizationContext},
+        concrete::{TurbofishTypes, TypeGenericsInstantiationContext},
         namespace::Namespace,
         symbol::{
             interfaces::InterfaceBounds, types::generic_type::GenericTypeDeclarationPlaceCategory,
         },
+        traits::InstantiationContext,
     },
     types::{
         core::{CoreType, Type},
@@ -51,7 +52,7 @@ impl TypeLike for HashMap {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &ConcretizationContext,
+        context: &TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let CoreType::HashMap(hashmap_data) = other_ty.core_ty() else {
@@ -64,7 +65,11 @@ impl TypeLike for HashMap {
                 .is_structurally_eq(&hashmap_data.value_type, context, namespace)
     }
 
-    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
+    fn concretize<'a, T: InstantiationContext<'a>>(
+        &self,
+        context: &T,
+        namespace: &Namespace,
+    ) -> Type {
         let concrete_key_ty = self.key_type.concretize(context, namespace);
         let concrete_value_ty = self.value_type.concretize(context, namespace);
         Type::new_with_hashmap(concrete_key_ty, concrete_value_ty)
@@ -83,7 +88,7 @@ impl TypeLike for HashMap {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
@@ -180,7 +185,7 @@ impl OperatorCompatiblity for HashMap {
 }
 
 impl CollectionType for HashMap {
-    fn concrete_types(&self) -> ConcreteTypesTuple {
-        ConcreteTypesTuple::new(vec![self.key_type.clone(), self.value_type.clone()])
+    fn concrete_types(&self) -> TurbofishTypes {
+        TurbofishTypes::new(vec![self.key_type.clone(), self.value_type.clone()])
     }
 }

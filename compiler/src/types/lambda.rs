@@ -6,20 +6,22 @@ use crate::core::string_interner::{Interner, StrId};
 use crate::parser::type_checker::{
     InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
 };
-use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::concrete::TurbofishTypes;
+use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::core::SymbolIndex;
 use crate::scope::symbol::function::CallablePrototypeData;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::traits::InstantiationContext;
 use crate::types::core::{CoreType, Type};
 use crate::types::helper::user_defined_ty_compare_fn;
 
 #[derive(Debug)]
 pub struct NamedLambdaCore {
     symbol_index: SymbolIndex<UserDefinedTypeData>,
-    concrete_types: Option<ConcreteTypesTuple>,
+    concrete_types: Option<TurbofishTypes>,
 }
 
 impl UserDefinedType for NamedLambdaCore {
@@ -27,7 +29,7 @@ impl UserDefinedType for NamedLambdaCore {
         self.symbol_index
     }
 
-    fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+    fn concrete_types(&self) -> Option<&TurbofishTypes> {
         self.concrete_types.as_ref()
     }
 
@@ -45,7 +47,7 @@ pub enum Lambda {
 impl Lambda {
     pub fn new_with_named(
         symbol_index: SymbolIndex<UserDefinedTypeData>,
-        concrete_types: Option<ConcreteTypesTuple>,
+        concrete_types: Option<TurbofishTypes>,
     ) -> Self {
         Lambda::Named(NamedLambdaCore {
             symbol_index,
@@ -151,7 +153,7 @@ impl TypeLike for Lambda {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &ConcretizationContext,
+        context: &TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         match other_ty.core_ty() {
@@ -163,7 +165,7 @@ impl TypeLike for Lambda {
                     let ty_cmp_func =
                         |ty1: &Type,
                          ty2: &Type,
-                         context: &ConcretizationContext,
+                         context: &TypeGenericsInstantiationContext,
                          namespace: &Namespace| {
                             ty1.is_structurally_eq(ty2, context, namespace)
                         };
@@ -181,7 +183,11 @@ impl TypeLike for Lambda {
         }
     }
 
-    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
+    fn concretize<'a, T: InstantiationContext<'a>>(
+        &self,
+        context: &T,
+        namespace: &Namespace,
+    ) -> Type {
         match self {
             Lambda::Named(named_lambda) => {
                 let Some(concrete_types) = &named_lambda.concrete_types else {
@@ -193,7 +199,7 @@ impl TypeLike for Lambda {
                 }
                 Type::new_with_lambda_named(
                     named_lambda.symbol_index,
-                    Some(ConcreteTypesTuple::new(concretized_concrete_types)),
+                    Some(TurbofishTypes::new(concretized_concrete_types)),
                 )
             }
             Lambda::Unnamed(prototype) => Type::new_with_lambda_unnamed(prototype.clone()),
@@ -212,7 +218,7 @@ impl TypeLike for Lambda {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,

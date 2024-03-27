@@ -3,7 +3,7 @@ use crate::types::traits::TypeLike;
 use crate::{
     core::string_interner::{Interner, StrId},
     scope::{
-        concrete::ConcreteTypesTuple, errors::GenericTypeArgsCheckError,
+        concrete::TurbofishTypes, errors::GenericTypeArgsCheckError,
         symbol::interfaces::InterfaceBounds,
     },
     types::core::Type,
@@ -143,7 +143,7 @@ impl GenericTypeParams {
 
     pub fn check_concrete_types_bounded_by(
         &self,
-        concrete_types: &ConcreteTypesTuple,
+        concrete_types: &TurbofishTypes,
         type_ranges: &Vec<TextRange>,
         interner: &Interner,
         namespace: &Namespace,

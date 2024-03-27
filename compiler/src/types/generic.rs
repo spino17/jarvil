@@ -1,11 +1,13 @@
 use super::core::{CoreType, Type};
 use super::traits::{OperatorCompatiblity, TypeLike};
+use crate::scope::concrete::TypeGenericsInstantiationContext;
+use crate::scope::traits::InstantiationContext;
 use crate::types::traits::UserDefinedType;
 use crate::{
     core::string_interner::{Interner, StrId},
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::{ConcreteTypesTuple, ConcretizationContext},
+        concrete::TurbofishTypes,
         namespace::Namespace,
         symbol::{
             core::SymbolIndex,
@@ -35,7 +37,7 @@ impl UserDefinedType for Generic {
         self.symbol_index
     }
 
-    fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+    fn concrete_types(&self) -> Option<&TurbofishTypes> {
         None
     }
 
@@ -55,7 +57,7 @@ impl TypeLike for Generic {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &ConcretizationContext,
+        context: &TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let is_other_ty_generic = match other_ty.core_ty() {
@@ -91,7 +93,7 @@ impl TypeLike for Generic {
             GenericTypeDeclarationPlaceCategory::InType => match is_other_ty_generic {
                 Some(_) => false,
                 None => {
-                    let concrete_types = match context.bounding_ty_concrete_types() {
+                    let concrete_types = match context.ty_generics_instantiation_args() {
                         Some(concrete_types) => concrete_types,
                         None => unreachable!(),
                     };
@@ -102,7 +104,11 @@ impl TypeLike for Generic {
         }
     }
 
-    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
+    fn concretize<'a, T: InstantiationContext<'a>>(
+        &self,
+        context: &T,
+        namespace: &Namespace,
+    ) -> Type {
         let ty_data = namespace
             .types_ref()
             .symbol_ref(self.symbol_index)
@@ -112,13 +118,13 @@ impl TypeLike for Generic {
         let category = generic_data.category();
         match category {
             GenericTypeDeclarationPlaceCategory::InType => {
-                match context.bounding_ty_concrete_types() {
+                match context.ty_generics_instantiation_args() {
                     Some(concrete_types) => concrete_types[index].clone(),
                     None => unreachable!(),
                 }
             }
             GenericTypeDeclarationPlaceCategory::InCallable => {
-                match context.func_local_concrete_types() {
+                match context.callable_generics_instantiation_args() {
                     Some(concrete_types) => concrete_types[index].clone(),
                     None => unreachable!(),
                 }
@@ -143,7 +149,7 @@ impl TypeLike for Generic {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,

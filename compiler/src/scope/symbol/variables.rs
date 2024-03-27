@@ -1,6 +1,6 @@
 use super::core::{SymbolDataEntry, SymbolIndex};
 use crate::core::string_interner::Interner;
-use crate::scope::concrete::ConcreteTypesTuple;
+use crate::scope::concrete::TurbofishTypes;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::mangled::MangledIdentifierName;
 use crate::scope::namespace::Namespace;
@@ -74,7 +74,7 @@ impl AbstractSymbol for VariableSymbolData {
 
     fn check_generic_type_args(
         &self,
-        concrete_types: Option<&ConcreteTypesTuple>,
+        concrete_types: Option<&TurbofishTypes>,
         _type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         _interner: &Interner,

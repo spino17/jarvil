@@ -2,7 +2,7 @@ use super::core::IdentDeclId;
 use super::function::{CallableData, PartialConcreteCallableDataRef};
 use super::interfaces::InterfaceData;
 use super::variables::VariableData;
-use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
@@ -24,7 +24,7 @@ impl FieldsMap {
     pub fn try_field<'a>(
         &'a self,
         field_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        global_concrete_types: Option<&'a TurbofishTypes>,
         namespace: &Namespace,
     ) -> Option<(Type, TextRange)> {
         let Some((ty, range)) = self.fields.get(field_name) else {
@@ -33,7 +33,7 @@ impl FieldsMap {
         if ty.is_concretization_required() {
             Some((
                 ty.concretize(
-                    &ConcretizationContext::new(global_concrete_types, None),
+                    &TypeGenericsInstantiationContext::new(global_concrete_types),
                     namespace,
                 ),
                 *range,
@@ -61,7 +61,7 @@ impl MethodsMap {
     pub fn try_method<'a>(
         &'a self,
         method_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        global_concrete_types: Option<&'a TurbofishTypes>,
     ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
         let Some((callable_data, range)) = self.methods.get(method_name) else {
             return None;

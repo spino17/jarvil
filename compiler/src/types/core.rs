@@ -9,13 +9,14 @@ use crate::constants::common::{UNKNOWN, UNSET};
 use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
-use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::core::SymbolIndex;
 use crate::scope::symbol::function::CallablePrototypeData;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::traits::InstantiationContext;
 use crate::types::traits::OperatorCompatiblity;
 use crate::types::{array::core::Array, atomic::Atomic};
 use std::fmt::Debug;
@@ -66,7 +67,7 @@ impl Type {
     // user-defined-types
     pub fn new_with_struct(
         symbol_index: SymbolIndex<UserDefinedTypeData>,
-        concrete_types: Option<ConcreteTypesTuple>,
+        concrete_types: Option<TurbofishTypes>,
     ) -> Type {
         Type(
             Rc::new(CoreType::Struct(Struct::new(symbol_index, concrete_types))),
@@ -76,7 +77,7 @@ impl Type {
 
     pub fn new_with_enum(
         symbol_index: SymbolIndex<UserDefinedTypeData>,
-        concrete_types: Option<ConcreteTypesTuple>,
+        concrete_types: Option<TurbofishTypes>,
     ) -> Type {
         Type(
             Rc::new(CoreType::Enum(Enum::new(symbol_index, concrete_types))),
@@ -86,7 +87,7 @@ impl Type {
 
     pub fn new_with_lambda_named(
         symbol_index: SymbolIndex<UserDefinedTypeData>,
-        concrete_types: Option<ConcreteTypesTuple>,
+        concrete_types: Option<TurbofishTypes>,
     ) -> Type {
         Type(
             Rc::new(CoreType::Lambda(Lambda::new_with_named(
@@ -288,7 +289,7 @@ impl TypeLike for Type {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &ConcretizationContext,
+        context: &TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         match self.0.as_ref() {
@@ -322,7 +323,11 @@ impl TypeLike for Type {
         }
     }
 
-    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
+    fn concretize<'a, T: InstantiationContext<'a>>(
+        &self,
+        context: &T,
+        namespace: &Namespace,
+    ) -> Type {
         match self.0.as_ref() {
             CoreType::Struct(struct_type) => struct_type.concretize(context, namespace),
             CoreType::Enum(enum_type) => enum_type.concretize(context, namespace),
@@ -370,7 +375,7 @@ impl TypeLike for Type {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,

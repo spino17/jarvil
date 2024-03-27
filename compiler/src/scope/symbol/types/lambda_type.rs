@@ -4,7 +4,7 @@ use crate::scope::traits::IsInitialized;
 use crate::{
     core::common::RefOrOwned,
     scope::{
-        concrete::ConcreteTypesTuple,
+        concrete::TurbofishTypes,
         symbol::function::{CallableData, CallableKind, CallablePrototypeData},
     },
     types::core::Type,
@@ -35,7 +35,7 @@ impl LambdaTypeData {
 
     pub fn prototype(
         &self,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         namespace: &Namespace,
     ) -> RefOrOwned<CallablePrototypeData> {
         self.meta_data

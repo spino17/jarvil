@@ -20,7 +20,7 @@ use crate::error::diagnostics::{
     MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
-use crate::scope::concrete::ConcreteTypesTuple;
+use crate::scope::concrete::TurbofishTypes;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::lookup::{LookupData, LookupResult};
 use crate::scope::mangled::MangledIdentifierName;
@@ -61,7 +61,7 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 pub enum ResolveResult<T: AbstractSymbol> {
-    Ok(LookupData<T>, Option<ConcreteTypesTuple>),
+    Ok(LookupData<T>, Option<TurbofishTypes>),
     InvalidGenericTypeArgsProvided(GenericTypeArgsCheckError),
     NotInitialized(TextRange, StrId),
     Unresolved,
@@ -317,7 +317,7 @@ impl Resolver {
         node: &OkIdentifierInUseNode,
         symbol_obj: &T,
         is_concrete_types_none_allowed: bool,
-    ) -> Result<(Option<ConcreteTypesTuple>, bool), GenericTypeArgsCheckError> {
+    ) -> Result<(Option<TurbofishTypes>, bool), GenericTypeArgsCheckError> {
         // (index to the registry, has_generics)
         let (concrete_types, ty_ranges, has_generics) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
@@ -841,7 +841,7 @@ impl Resolver {
     fn extract_angle_bracket_content_from_identifier_in_use(
         &mut self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
-    ) -> (Option<ConcreteTypesTuple>, Option<Vec<TextRange>>, bool) {
+    ) -> (Option<TurbofishTypes>, Option<Vec<TextRange>>, bool) {
         let Some((_, generic_type_args, _)) = &ok_identifier_in_use.core_ref().generic_type_args
         else {
             return (None, None, false);
@@ -858,7 +858,7 @@ impl Resolver {
             ty_ranges.push(generic_type_expr.range())
         }
         (
-            Some(ConcreteTypesTuple::new(concrete_types)),
+            Some(TurbofishTypes::new(concrete_types)),
             Some(ty_ranges),
             has_generics,
         )
@@ -868,7 +868,7 @@ impl Resolver {
         &mut self,
         ok_identifier_in_decl: &OkIdentifierInDeclNode,
         decl_place_category: GenericTypeDeclarationPlaceCategory,
-    ) -> (Option<GenericTypeParams>, Option<ConcreteTypesTuple>) {
+    ) -> (Option<GenericTypeParams>, Option<TurbofishTypes>) {
         let Some((_, generic_type_decls, _)) = &ok_identifier_in_decl.core_ref().generic_type_decls
         else {
             return (None, None);
@@ -956,7 +956,7 @@ impl Resolver {
         }
         (
             Some(GenericTypeParams::new(generic_type_params_vec)),
-            Some(ConcreteTypesTuple::new(concrete_types)),
+            Some(TurbofishTypes::new(concrete_types)),
         )
     }
 

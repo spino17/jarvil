@@ -1,10 +1,11 @@
 use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
-use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::traits::InstantiationContext;
 use crate::types::core::{CoreType, Type};
 use crate::types::traits::{CollectionType, OperatorCompatiblity};
 use crate::{constants::common::BOOL, types::traits::TypeLike};
@@ -54,7 +55,7 @@ impl TypeLike for Array {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &ConcretizationContext,
+        context: &TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let CoreType::Array(array_data) = other_ty.core_ty() else {
@@ -64,7 +65,11 @@ impl TypeLike for Array {
             .is_structurally_eq(&array_data.element_type, context, namespace)
     }
 
-    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
+    fn concretize<'a, T: InstantiationContext<'a>>(
+        &self,
+        context: &T,
+        namespace: &Namespace,
+    ) -> Type {
         Type::new_with_array(self.element_type.concretize(context, namespace))
     }
 
@@ -81,7 +86,7 @@ impl TypeLike for Array {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
@@ -152,7 +157,7 @@ impl OperatorCompatiblity for Array {
 }
 
 impl CollectionType for Array {
-    fn concrete_types(&self) -> ConcreteTypesTuple {
-        ConcreteTypesTuple::new(vec![self.element_type.clone()])
+    fn concrete_types(&self) -> TurbofishTypes {
+        TurbofishTypes::new(vec![self.element_type.clone()])
     }
 }

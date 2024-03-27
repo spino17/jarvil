@@ -5,7 +5,8 @@ use super::function::PartialConcreteCallableDataRef;
 use crate::core::string_interner::Interner;
 use crate::core::string_interner::StrId;
 use crate::scope::concrete::ConcreteSymbolIndex;
-use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::concrete::TurbofishTypes;
+use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
 use crate::scope::mangled::MangledIdentifierName;
@@ -52,7 +53,7 @@ impl InterfaceData {
     pub fn try_field<'a>(
         &'a self,
         field_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        global_concrete_types: Option<&'a TurbofishTypes>,
         namespace: &Namespace,
     ) -> Option<(Type, TextRange)> {
         self.fields
@@ -62,7 +63,7 @@ impl InterfaceData {
     pub fn try_method<'a>(
         &'a self,
         method_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        global_concrete_types: Option<&'a TurbofishTypes>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.methods.try_method(method_name, global_concrete_types)
     }
@@ -73,7 +74,7 @@ impl InterfaceData {
 
     pub fn partially_concrete_interface_methods<'a>(
         &'a self,
-        key: Option<&'a ConcreteTypesTuple>,
+        key: Option<&'a TurbofishTypes>,
     ) -> PartialConcreteInterfaceMethods {
         PartialConcreteInterfaceMethods::new(
             &self.methods,
@@ -97,7 +98,7 @@ pub struct InterfaceObject(ConcreteSymbolIndex<InterfaceData>);
 impl InterfaceObject {
     pub fn new(
         symbol_index: SymbolIndex<InterfaceData>,
-        concrete_types: Option<ConcreteTypesTuple>,
+        concrete_types: Option<TurbofishTypes>,
     ) -> Self {
         InterfaceObject(ConcreteSymbolIndex::new(symbol_index, concrete_types))
     }
@@ -106,7 +107,7 @@ impl InterfaceObject {
         self.0.symbol_index().ident_name()
     }
 
-    pub fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+    pub fn concrete_types(&self) -> Option<&TurbofishTypes> {
         self.0.concrete_types()
     }
 
@@ -247,11 +248,11 @@ pub enum PartialConcreteInterfaceMethodsCheckError {
 #[derive(Debug)]
 pub struct PartialConcreteInterfaceMethods<'a> {
     methods: &'a MethodsMap,
-    concrete_types: Option<&'a ConcreteTypesTuple>,
+    concrete_types: Option<&'a TurbofishTypes>,
 }
 
 impl<'a> PartialConcreteInterfaceMethods<'a> {
-    pub fn new(methods: &'a MethodsMap, concrete_types: Option<&'a ConcreteTypesTuple>) -> Self {
+    pub fn new(methods: &'a MethodsMap, concrete_types: Option<&'a TurbofishTypes>) -> Self {
         PartialConcreteInterfaceMethods {
             methods,
             concrete_types,
@@ -293,7 +294,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                             .structural_prototype()
                             .is_structurally_eq(
                                 &struct_method_callable_data.structural_prototype(),
-                                &ConcretizationContext::new(self.concrete_types, None),
+                                &TypeGenericsInstantiationContext::new(self.concrete_types),
                                 namespace,
                             )
                         {
@@ -319,7 +320,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                         .structural_prototype()
                         .is_structurally_eq(
                             &struct_method_callable_data.structural_prototype(),
-                            &ConcretizationContext::new(self.concrete_types, None),
+                            &TypeGenericsInstantiationContext::new(self.concrete_types),
                             namespace,
                         )
                     {
@@ -394,7 +395,7 @@ impl AbstractSymbol for InterfaceSymbolData {
 
     fn check_generic_type_args(
         &self,
-        concrete_types: Option<&ConcreteTypesTuple>,
+        concrete_types: Option<&TurbofishTypes>,
         type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         interner: &Interner,

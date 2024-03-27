@@ -1,6 +1,6 @@
 use super::enum_type::EnumTypeData;
 use crate::core::string_interner::Interner;
-use crate::scope::concrete::ConcreteTypesTuple;
+use crate::scope::concrete::TurbofishTypes;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
 use crate::scope::mangled::MangledIdentifierName;
@@ -143,7 +143,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
 
     fn check_generic_type_args(
         &self,
-        concrete_types: Option<&ConcreteTypesTuple>,
+        concrete_types: Option<&TurbofishTypes>,
         type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         interner: &Interner,

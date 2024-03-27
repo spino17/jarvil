@@ -7,14 +7,14 @@ use super::symbol::{
         generic_type::{GenericTypeData, GenericTypeParams},
     },
 };
-use super::{concrete::ConcreteTypesTuple, errors::GenericTypeArgsCheckError};
+use super::{concrete::TurbofishTypes, errors::GenericTypeArgsCheckError};
 use crate::core::string_interner::Interner;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use text_size::TextRange;
 
 pub fn check_concrete_types_bounded_by_interfaces(
     generic_type_decls: Option<&GenericTypeParams>,
-    concrete_types: Option<&ConcreteTypesTuple>,
+    concrete_types: Option<&TurbofishTypes>,
     type_ranges: Option<&Vec<TextRange>>,
     is_concrete_types_none_allowed: bool,
     interner: &Interner,

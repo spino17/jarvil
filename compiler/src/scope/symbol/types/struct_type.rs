@@ -1,5 +1,5 @@
 use crate::core::string_interner::StrId;
-use crate::scope::concrete::ConcreteTypesTuple;
+use crate::scope::concrete::TurbofishTypes;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::common::{FieldsMap, MethodsMap};
 use crate::scope::symbol::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
@@ -66,7 +66,7 @@ impl StructTypeData {
     pub fn try_field<'a>(
         &'a self,
         field_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        global_concrete_types: Option<&'a TurbofishTypes>,
         namespace: &Namespace,
     ) -> Option<(Type, TextRange)> {
         self.fields
@@ -76,7 +76,7 @@ impl StructTypeData {
     pub fn try_method<'a>(
         &'a self,
         method_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        global_concrete_types: Option<&'a TurbofishTypes>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.methods.try_method(method_name, global_concrete_types)
     }
@@ -84,7 +84,7 @@ impl StructTypeData {
     pub fn try_class_method<'a>(
         &'a self,
         class_method_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        global_concrete_types: Option<&'a TurbofishTypes>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.class_methods
             .try_method(class_method_name, global_concrete_types)

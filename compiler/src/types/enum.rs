@@ -7,26 +7,27 @@ use crate::{
     core::string_interner::{Interner, StrId},
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::{ConcreteTypesTuple, ConcretizationContext},
+        concrete::{TurbofishTypes, TypeGenericsInstantiationContext},
         namespace::Namespace,
         symbol::{
             core::SymbolIndex,
             interfaces::InterfaceBounds,
             types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
         },
+        traits::InstantiationContext,
     },
 };
 
 #[derive(Debug)]
 pub struct Enum {
     symbol_index: SymbolIndex<UserDefinedTypeData>,
-    concrete_types: Option<ConcreteTypesTuple>,
+    concrete_types: Option<TurbofishTypes>,
 }
 
 impl Enum {
     pub fn new(
         symbol_index: SymbolIndex<UserDefinedTypeData>,
-        concrete_types: Option<ConcreteTypesTuple>,
+        concrete_types: Option<TurbofishTypes>,
     ) -> Enum {
         Enum {
             symbol_index,
@@ -40,7 +41,7 @@ impl UserDefinedType for Enum {
         self.symbol_index
     }
 
-    fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+    fn concrete_types(&self) -> Option<&TurbofishTypes> {
         self.concrete_types.as_ref()
     }
 
@@ -55,14 +56,15 @@ impl TypeLike for Enum {
             return false;
         };
         let ty_cmp_func =
-            |ty1: &Type, ty2: &Type, _context: &ConcretizationContext, namespace: &Namespace| {
-                ty1.is_eq(ty2, namespace)
-            };
+            |ty1: &Type,
+             ty2: &Type,
+             _context: &TypeGenericsInstantiationContext,
+             namespace: &Namespace| { ty1.is_eq(ty2, namespace) };
         user_defined_ty_compare_fn(
             self,
             enum_data,
             ty_cmp_func,
-            &ConcretizationContext::default(),
+            &TypeGenericsInstantiationContext::default(),
             namespace,
         )
     }
@@ -70,20 +72,25 @@ impl TypeLike for Enum {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &ConcretizationContext,
+        context: &TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let CoreType::Enum(enum_data) = other_ty.core_ty() else {
             return false;
         };
         let ty_cmp_func =
-            |ty1: &Type, ty2: &Type, context: &ConcretizationContext, namespace: &Namespace| {
-                ty1.is_structurally_eq(ty2, context, namespace)
-            };
+            |ty1: &Type,
+             ty2: &Type,
+             context: &TypeGenericsInstantiationContext,
+             namespace: &Namespace| { ty1.is_structurally_eq(ty2, context, namespace) };
         user_defined_ty_compare_fn(self, enum_data, ty_cmp_func, context, namespace)
     }
 
-    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
+    fn concretize<'a, T: InstantiationContext<'a>>(
+        &self,
+        context: &T,
+        namespace: &Namespace,
+    ) -> Type {
         let Some(concrete_types) = &self.concrete_types else {
             return Type::new_with_enum(self.symbol_index, None);
         };
@@ -93,7 +100,7 @@ impl TypeLike for Enum {
         }
         Type::new_with_enum(
             self.symbol_index,
-            Some(ConcreteTypesTuple::new(concretized_concrete_types)),
+            Some(TurbofishTypes::new(concretized_concrete_types)),
         )
     }
 
@@ -109,7 +116,7 @@ impl TypeLike for Enum {
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,

@@ -9,11 +9,11 @@ use std::ops::Index;
 use std::slice::Iter;
 
 #[derive(Debug, Clone)]
-pub struct ConcreteTypesTuple(Vec<Type>);
+pub struct TurbofishTypes(Vec<Type>);
 
-impl ConcreteTypesTuple {
+impl TurbofishTypes {
     pub fn new(concrete_types: Vec<Type>) -> Self {
-        ConcreteTypesTuple(concrete_types)
+        TurbofishTypes(concrete_types)
     }
 
     pub fn core_ref(&self) -> &Vec<Type> {
@@ -43,7 +43,7 @@ impl ConcreteTypesTuple {
     }
 }
 
-impl Index<usize> for ConcreteTypesTuple {
+impl Index<usize> for TurbofishTypes {
     type Output = Type;
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
@@ -53,7 +53,7 @@ impl Index<usize> for ConcreteTypesTuple {
 #[derive(Debug)]
 pub struct ConcreteSymbolIndex<T: IsInitialized> {
     index: SymbolIndex<T>,
-    concrete_types: Option<ConcreteTypesTuple>, // This will be `None` for symbol data which does not have any generic type params
+    concrete_types: Option<TurbofishTypes>, // This will be `None` for symbol data which does not have any generic type params
 }
 
 impl<T: IsInitialized> Clone for ConcreteSymbolIndex<T> {
@@ -66,7 +66,7 @@ impl<T: IsInitialized> Clone for ConcreteSymbolIndex<T> {
 }
 
 impl<T: IsInitialized> ConcreteSymbolIndex<T> {
-    pub fn new(symbol_index: SymbolIndex<T>, concrete_types: Option<ConcreteTypesTuple>) -> Self {
+    pub fn new(symbol_index: SymbolIndex<T>, concrete_types: Option<TurbofishTypes>) -> Self {
         ConcreteSymbolIndex {
             index: symbol_index,
             concrete_types,
@@ -77,44 +77,18 @@ impl<T: IsInitialized> ConcreteSymbolIndex<T> {
         self.index
     }
 
-    pub fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+    pub fn concrete_types(&self) -> Option<&TurbofishTypes> {
         self.concrete_types.as_ref()
     }
 }
 
 #[derive(Debug, Default)]
-pub struct ConcretizationContext<'a> {
-    bounding_ty_concrete_types: Option<&'a ConcreteTypesTuple>,
-    func_local_concrete_types: Option<&'a ConcreteTypesTuple>,
-}
-
-impl<'a> ConcretizationContext<'a> {
-    pub fn new(
-        bounding_ty_concrete_types: Option<&'a ConcreteTypesTuple>,
-        function_local_concrete_types: Option<&'a ConcreteTypesTuple>,
-    ) -> Self {
-        ConcretizationContext {
-            bounding_ty_concrete_types,
-            func_local_concrete_types: function_local_concrete_types,
-        }
-    }
-
-    pub fn bounding_ty_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
-        self.bounding_ty_concrete_types
-    }
-
-    pub fn func_local_concrete_types(&self) -> Option<&ConcreteTypesTuple> {
-        self.func_local_concrete_types
-    }
-}
-
-#[derive(Debug, Default)]
 pub struct TypeGenericsInstantiationContext<'a> {
-    args: Option<&'a ConcreteTypesTuple>,
+    args: Option<&'a TurbofishTypes>,
 }
 
 impl<'a> TypeGenericsInstantiationContext<'a> {
-    pub fn new(args: Option<&'a ConcreteTypesTuple>) -> Self {
+    pub fn new(args: Option<&'a TurbofishTypes>) -> Self {
         return TypeGenericsInstantiationContext { args };
     }
 }
@@ -124,18 +98,18 @@ impl<'a> InstantiationContext<'a> for TypeGenericsInstantiationContext<'a> {
         self.args.is_none()
     }
 
-    fn ty_generics_instantiation_args(&self) -> Option<&'a ConcreteTypesTuple> {
+    fn ty_generics_instantiation_args(&self) -> Option<&'a TurbofishTypes> {
         self.args
     }
 }
 
 #[derive(Debug, Default)]
 pub struct FunctionGenericsInstantiationContext<'a> {
-    args: Option<&'a ConcreteTypesTuple>,
+    args: Option<&'a TurbofishTypes>,
 }
 
 impl<'a> FunctionGenericsInstantiationContext<'a> {
-    pub fn new(args: Option<&'a ConcreteTypesTuple>) -> Self {
+    pub fn new(args: Option<&'a TurbofishTypes>) -> Self {
         return FunctionGenericsInstantiationContext { args };
     }
 }
@@ -145,21 +119,21 @@ impl<'a> InstantiationContext<'a> for FunctionGenericsInstantiationContext<'a> {
         self.args.is_none()
     }
 
-    fn callable_generics_instantiation_args(&self) -> Option<&'a ConcreteTypesTuple> {
+    fn callable_generics_instantiation_args(&self) -> Option<&'a TurbofishTypes> {
         self.args
     }
 }
 
 #[derive(Debug, Default)]
 pub struct MethodGenericsInstantiationContext<'a> {
-    bounding_ty_args: Option<&'a ConcreteTypesTuple>,
-    local_args: Option<&'a ConcreteTypesTuple>,
+    bounding_ty_args: Option<&'a TurbofishTypes>,
+    local_args: Option<&'a TurbofishTypes>,
 }
 
 impl<'a> MethodGenericsInstantiationContext<'a> {
     pub fn new(
-        bounding_ty_args: Option<&'a ConcreteTypesTuple>,
-        local_args: Option<&'a ConcreteTypesTuple>,
+        bounding_ty_args: Option<&'a TurbofishTypes>,
+        local_args: Option<&'a TurbofishTypes>,
     ) -> Self {
         return MethodGenericsInstantiationContext {
             bounding_ty_args,
@@ -173,11 +147,11 @@ impl<'a> InstantiationContext<'a> for MethodGenericsInstantiationContext<'a> {
         self.bounding_ty_args.is_none() && self.local_args.is_none()
     }
 
-    fn ty_generics_instantiation_args(&self) -> Option<&'a ConcreteTypesTuple> {
+    fn ty_generics_instantiation_args(&self) -> Option<&'a TurbofishTypes> {
         self.bounding_ty_args
     }
 
-    fn callable_generics_instantiation_args(&self) -> Option<&'a ConcreteTypesTuple> {
+    fn callable_generics_instantiation_args(&self) -> Option<&'a TurbofishTypes> {
         self.local_args
     }
 }

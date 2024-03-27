@@ -1,5 +1,7 @@
 use super::core::{SymbolDataEntry, SymbolIndex};
-use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::concrete::{
+    MethodGenericsInstantiationContext, TurbofishTypes, TypeGenericsInstantiationContext,
+};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
 use crate::scope::mangled::MangledIdentifierName;
@@ -55,11 +57,11 @@ impl CallablePrototypeData {
         &self.return_type
     }
 
-    fn compare<F: Fn(&Type, &Type, &ConcretizationContext, &Namespace) -> bool>(
+    fn compare<F: Fn(&Type, &Type, &TypeGenericsInstantiationContext, &Namespace) -> bool>(
         &self,
         other: &CallablePrototypeData,
         cmp_func: F,
-        context: &ConcretizationContext,
+        context: &TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let (self_param_types, self_return_type) = (&self.params, &self.return_type);
@@ -88,12 +90,12 @@ impl CallablePrototypeData {
     pub fn is_eq(&self, other: &CallablePrototypeData, namespace: &Namespace) -> bool {
         let cmp_func = |ty1: &Type,
                         ty2: &Type,
-                        _context: &ConcretizationContext,
+                        _context: &TypeGenericsInstantiationContext,
                         namespace: &Namespace| ty1.is_eq(ty2, namespace);
         self.compare(
             other,
             cmp_func,
-            &ConcretizationContext::default(),
+            &TypeGenericsInstantiationContext::default(),
             namespace,
         )
     }
@@ -101,13 +103,14 @@ impl CallablePrototypeData {
     pub fn is_structurally_eq(
         &self,
         other: &CallablePrototypeData,
-        context: &ConcretizationContext,
+        context: &TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let cmp_func =
-            |ty1: &Type, ty2: &Type, context: &ConcretizationContext, namespace: &Namespace| {
-                ty1.is_structurally_eq(ty2, context, namespace)
-            };
+            |ty1: &Type,
+             ty2: &Type,
+             context: &TypeGenericsInstantiationContext,
+             namespace: &Namespace| { ty1.is_structurally_eq(ty2, context, namespace) };
         self.compare(other, cmp_func, context, namespace)
     }
 
@@ -115,7 +118,7 @@ impl CallablePrototypeData {
         &self,
         other: &CallablePrototypeData,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
@@ -232,14 +235,17 @@ impl CallableData {
 
     pub fn concretized_return_ty(
         &self,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
-        local_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
+        local_concrete_types: Option<&TurbofishTypes>,
         namespace: &Namespace,
     ) -> RefOrOwned<Type> {
         let unconcrete_return_ty = self.prototype.return_ty();
         if unconcrete_return_ty.is_concretization_required() {
             RefOrOwned::Owned(unconcrete_return_ty.concretize(
-                &ConcretizationContext::new(global_concrete_types, local_concrete_types),
+                &MethodGenericsInstantiationContext::new(
+                    global_concrete_types,
+                    local_concrete_types,
+                ),
                 namespace,
             ))
         } else {
@@ -249,15 +255,16 @@ impl CallableData {
 
     pub fn concretized_prototype(
         &self,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
-        local_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
+        local_concrete_types: Option<&TurbofishTypes>,
         namespace: &Namespace,
     ) -> RefOrOwned<'_, CallablePrototypeData> {
         if global_concrete_types.is_none() && local_concrete_types.is_none() {
             debug_assert!(self.prototype.is_concretization_required.is_none());
             return RefOrOwned::Ref(&self.prototype);
         }
-        let context = ConcretizationContext::new(global_concrete_types, local_concrete_types);
+        let context =
+            MethodGenericsInstantiationContext::new(global_concrete_types, local_concrete_types);
         let Some((generics_containing_params_indexes, is_concretization_required_for_return_type)) =
             &self.prototype.is_concretization_required
         else {
@@ -306,13 +313,13 @@ impl From<GenericTypeArgsCheckError> for PartialCallableDataPrototypeCheckError 
 #[derive(Debug)]
 pub struct PartialConcreteCallableDataRef<'a> {
     callable_data: &'a CallableData,
-    concrete_types: Option<&'a ConcreteTypesTuple>,
+    concrete_types: Option<&'a TurbofishTypes>,
 }
 
 impl<'a> PartialConcreteCallableDataRef<'a> {
     pub fn new(
         callable_data: &'a CallableData,
-        concrete_types: Option<&'a ConcreteTypesTuple>,
+        concrete_types: Option<&'a TurbofishTypes>,
     ) -> Self {
         PartialConcreteCallableDataRef {
             callable_data,
@@ -324,7 +331,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
     pub fn is_received_params_valid(
         &self,
         type_checker: &TypeChecker,
-        local_concrete_types: Option<ConcreteTypesTuple>,
+        local_concrete_types: Option<TurbofishTypes>,
         local_concrete_ty_ranges: Option<Vec<TextRange>>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PartialCallableDataPrototypeCheckError> {
@@ -408,7 +415,7 @@ impl AbstractSymbol for FunctionSymbolData {
 
     fn check_generic_type_args(
         &self,
-        concrete_types: Option<&ConcreteTypesTuple>,
+        concrete_types: Option<&TurbofishTypes>,
         type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         interner: &Interner,
