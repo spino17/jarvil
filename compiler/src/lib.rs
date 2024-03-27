@@ -10,7 +10,6 @@ use miette::Report;
 use parser::parser::JarvilParser;
 use parser::resolver::Resolver;
 use parser::type_checker::TypeChecker;
-use std::fs;
 
 pub mod ast;
 pub mod code;
