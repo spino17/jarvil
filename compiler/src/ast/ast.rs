@@ -420,8 +420,6 @@ pub struct CoreBoundedMethodWrapperNode {
 pub struct CoreLambdaDeclarationNode {
     pub lambda_keyword: TokenNode,
     pub body: CallableBodyNode,
-    #[serde(skip_serializing)]
-    pub name: IdentifierInDeclNode,
 }
 
 #[derive(Debug, Serialize)]
