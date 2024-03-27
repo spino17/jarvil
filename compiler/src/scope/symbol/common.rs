@@ -51,13 +51,13 @@ impl MethodsMap {
     pub fn try_method<'a>(
         &'a self,
         method_name: &StrId,
-        context: &TypeGenericsInstantiationContext<'a>,
+        context: TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
         let Some((callable_data, range)) = self.methods.get(method_name) else {
             return None;
         };
         Some((
-            PartialConcreteCallableDataRef::new(callable_data, context.clone()),
+            PartialConcreteCallableDataRef::new(callable_data, context),
             *range,
         ))
     }

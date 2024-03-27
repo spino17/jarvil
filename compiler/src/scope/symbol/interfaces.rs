@@ -62,7 +62,7 @@ impl InterfaceData {
     pub fn try_method<'a>(
         &'a self,
         method_name: &StrId,
-        context: &TypeGenericsInstantiationContext<'a>,
+        context: TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.methods.try_method(method_name, context)
     }
@@ -73,15 +73,9 @@ impl InterfaceData {
 
     pub fn partially_concrete_interface_methods<'a>(
         &'a self,
-        key: Option<&'a TurbofishTypes>,
+        context: TypeGenericsInstantiationContext<'a>,
     ) -> PartialConcreteInterfaceMethods {
-        PartialConcreteInterfaceMethods::new(
-            &self.methods,
-            match key {
-                Some(concrete_types) => Some(concrete_types),
-                None => None,
-            },
-        )
+        PartialConcreteInterfaceMethods::new(&self.methods, context)
     }
 }
 
@@ -247,15 +241,12 @@ pub enum PartialConcreteInterfaceMethodsCheckError {
 #[derive(Debug)]
 pub struct PartialConcreteInterfaceMethods<'a> {
     methods: &'a MethodsMap,
-    concrete_types: Option<&'a TurbofishTypes>,
+    context: TypeGenericsInstantiationContext<'a>,
 }
 
 impl<'a> PartialConcreteInterfaceMethods<'a> {
-    pub fn new(methods: &'a MethodsMap, concrete_types: Option<&'a TurbofishTypes>) -> Self {
-        PartialConcreteInterfaceMethods {
-            methods,
-            concrete_types,
-        }
+    pub fn new(methods: &'a MethodsMap, context: TypeGenericsInstantiationContext<'a>) -> Self {
+        PartialConcreteInterfaceMethods { methods, context }
     }
 
     fn compare_interface_method_with_struct_method(
@@ -293,7 +284,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                             .structural_prototype()
                             .is_structurally_eq(
                                 &struct_method_callable_data.structural_prototype(),
-                                TypeGenericsInstantiationContext::new(self.concrete_types),
+                                self.context,
                                 namespace,
                             )
                         {
@@ -319,7 +310,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                         .structural_prototype()
                         .is_structurally_eq(
                             &struct_method_callable_data.structural_prototype(),
-                            TypeGenericsInstantiationContext::new(self.concrete_types),
+                            self.context,
                             namespace,
                         )
                     {

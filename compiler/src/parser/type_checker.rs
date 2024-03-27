@@ -757,7 +757,7 @@ impl TypeChecker {
         let class_method_name =
             property_name.token_value(&self.code_handler, self.semantic_db.interner());
         let context = TypeGenericsInstantiationContext::new(concrete_types);
-        match struct_data.try_class_method(&class_method_name, &context) {
+        match struct_data.try_class_method(&class_method_name, context) {
             Some((partial_concrete_callable_data, _)) => {
                 let (concrete_types, ty_ranges, _) =
                     self.extract_angle_bracket_content_from_identifier_in_use(property_name);
@@ -1178,7 +1178,7 @@ impl TypeChecker {
             }
             None => {
                 // if field is not there then check in methods
-                match struct_data.try_method(&method_name, &context) {
+                match struct_data.try_method(&method_name, context) {
                     Some((partial_concrete_callable_data, _)) => {
                         let (concrete_types, ty_ranges, _) = self
                             .extract_angle_bracket_content_from_identifier_in_use(
@@ -1256,7 +1256,7 @@ impl TypeChecker {
                             .interface_symbol_ref(concrete_symbol_index.symbol_index());
                         let concrete_types = concrete_symbol_index.concrete_types();
                         let context = TypeGenericsInstantiationContext::new(concrete_types);
-                        match interface_data.try_method(&method_name, &context) {
+                        match interface_data.try_method(&method_name, context) {
                             Some((partial_concrete_callable_data, _)) => {
                                 let (concrete_types, ty_ranges, _) = self
                                     .extract_angle_bracket_content_from_identifier_in_use(
@@ -2052,8 +2052,9 @@ impl TypeChecker {
             let interface_data = self
                 .semantic_db
                 .interface_symbol_ref(interface_concrete_symbol_index.symbol_index());
+            let context = TypeGenericsInstantiationContext::new(concrete_types);
             let partial_concrete_interface_methods =
-                interface_data.partially_concrete_interface_methods(concrete_types);
+                interface_data.partially_concrete_interface_methods(context);
             if let Err((missing_interface_method_names, errors)) =
                 partial_concrete_interface_methods.is_struct_implements_interface_methods(
                     struct_methods,

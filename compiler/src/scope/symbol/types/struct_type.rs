@@ -1,5 +1,5 @@
 use crate::core::string_interner::StrId;
-use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
+use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::common::{FieldsMap, MethodsMap};
 use crate::scope::symbol::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
@@ -75,7 +75,7 @@ impl StructTypeData {
     pub fn try_method<'a>(
         &'a self,
         method_name: &StrId,
-        context: &TypeGenericsInstantiationContext<'a>,
+        context: TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.methods.try_method(method_name, context)
     }
@@ -83,7 +83,7 @@ impl StructTypeData {
     pub fn try_class_method<'a>(
         &'a self,
         class_method_name: &StrId,
-        context: &TypeGenericsInstantiationContext<'a>,
+        context: TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.class_methods.try_method(class_method_name, context)
     }
