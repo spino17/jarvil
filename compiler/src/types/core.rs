@@ -328,6 +328,9 @@ impl TypeLike for Type {
         context: &T,
         namespace: &Namespace,
     ) -> Type {
+        if context.is_empty() {
+            return self.clone();
+        }
         match self.0.as_ref() {
             CoreType::Struct(struct_type) => struct_type.concretize(context, namespace),
             CoreType::Enum(enum_type) => enum_type.concretize(context, namespace),

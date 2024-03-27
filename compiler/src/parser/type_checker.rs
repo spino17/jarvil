@@ -553,15 +553,11 @@ impl TypeChecker {
                     params,
                     GenericTypeDeclarationPlaceCategory::InCallable,
                 )?;
-                let concrete_return_ty = func_data.concretized_return_ty(
+                Ok(func_data.concretized_return_ty(
                     None,
                     Some(&concrete_types),
                     self.semantic_db.namespace_ref(),
-                );
-                match concrete_return_ty {
-                    RefOrOwned::Ref(ty) => Ok(ty.clone()),
-                    RefOrOwned::Owned(ty) => Ok(ty),
-                }
+                ))
             }
         }
     }

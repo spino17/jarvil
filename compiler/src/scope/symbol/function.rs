@@ -238,19 +238,11 @@ impl CallableData {
         global_concrete_types: Option<&TurbofishTypes>,
         local_concrete_types: Option<&TurbofishTypes>,
         namespace: &Namespace,
-    ) -> RefOrOwned<Type> {
-        let unconcrete_return_ty = self.prototype.return_ty();
-        if unconcrete_return_ty.is_concretization_required() {
-            RefOrOwned::Owned(unconcrete_return_ty.concretize(
-                &MethodGenericsInstantiationContext::new(
-                    global_concrete_types,
-                    local_concrete_types,
-                ),
-                namespace,
-            ))
-        } else {
-            RefOrOwned::Ref(unconcrete_return_ty)
-        }
+    ) -> Type {
+        self.prototype.return_ty().concretize(
+            &MethodGenericsInstantiationContext::new(global_concrete_types, local_concrete_types),
+            namespace,
+        )
     }
 
     pub fn concretized_prototype(
@@ -372,14 +364,11 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         received_params,
                         GenericTypeDeclarationPlaceCategory::InCallable,
                     )?;
-                    Ok(self
-                        .callable_data
-                        .concretized_return_ty(
-                            self.concrete_types,
-                            Some(&local_concrete_types),
-                            type_checker.semantic_db().namespace_ref(),
-                        )
-                        .cloned())
+                    Ok(self.callable_data.concretized_return_ty(
+                        self.concrete_types,
+                        Some(&local_concrete_types),
+                        type_checker.semantic_db().namespace_ref(),
+                    ))
                 }
                 None => {
                     let concrete_prototype = self.callable_data.concretized_prototype(

@@ -46,14 +46,10 @@ impl EnumTypeData {
         for (curr_variant_name, ty, _) in &self.variants {
             if *curr_variant_name == variant_name {
                 let Some(ty) = ty else { return Some(None) };
-                if ty.is_concretization_required() {
-                    return Some(Some(ty.concretize(
-                        &TypeGenericsInstantiationContext::new(global_concrete_types),
-                        namespace,
-                    )));
-                } else {
-                    return Some(Some(ty.clone()));
-                }
+                return Some(Some(ty.concretize(
+                    &TypeGenericsInstantiationContext::new(global_concrete_types),
+                    namespace,
+                )));
             }
         }
         None

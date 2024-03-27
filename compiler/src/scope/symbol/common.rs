@@ -30,17 +30,13 @@ impl FieldsMap {
         let Some((ty, range)) = self.fields.get(field_name) else {
             return None;
         };
-        if ty.is_concretization_required() {
-            Some((
-                ty.concretize(
-                    &TypeGenericsInstantiationContext::new(global_concrete_types),
-                    namespace,
-                ),
-                *range,
-            ))
-        } else {
-            Some((ty.clone(), *range))
-        }
+        Some((
+            ty.concretize(
+                &TypeGenericsInstantiationContext::new(global_concrete_types),
+                namespace,
+            ),
+            *range,
+        ))
     }
 }
 
