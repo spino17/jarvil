@@ -15,23 +15,21 @@ pub fn unbounded_generic_ty_in_type_with_declaration_index(
     index: usize,
     interner: &Interner,
 ) -> Type {
-    let ty = match index {
+    match index {
         0 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("T"))),
         1 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("U"))),
         _ => unreachable!(),
-    };
-    ty
+    }
 }
 
 pub fn unbounded_generic_ty_in_func_with_declaration_index(
     index: usize,
     interner: &Interner,
 ) -> Type {
-    let ty = match index {
+    match index {
         0 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("V"))),
         _ => unreachable!(),
-    };
-    ty
+    }
 }
 
 pub fn try_infer_types_from_tuple(
