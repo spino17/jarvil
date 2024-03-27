@@ -1,7 +1,7 @@
 use crate::lexer::lexer::Lexer;
 use crate::parser::parser::Parser;
 use ast::ast::BlockNode;
-use ast::print::json_serialize_ast;
+use ast::print::serialize_ast;
 use code::{JarvilCode, JarvilCodeHandler};
 use codegen::python::PythonCodeGenerator;
 use error::diagnostics::Diagnostics;
@@ -52,7 +52,7 @@ pub fn build_ast(mut code: JarvilCode) -> (BlockNode, Vec<Diagnostics>, JarvilCo
     (ast, errors, code)
 }
 
-pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> {
+pub fn build_code(code: JarvilCode, code_str: String) -> (Result<String, Report>, String) {
     let (ast, mut errors, code_handler) = build_ast(code);
 
     // name-resolver
@@ -60,21 +60,20 @@ pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> 
     let (semantic_db, mut semantic_errors, code_handler) = resolver.resolve_ast(&ast);
     errors.append(&mut semantic_errors);
 
-    // TODO - remove this after testing
-    let ast_str = json_serialize_ast(&ast, &code_handler, semantic_db.interner()).unwrap();
-    fs::write("ast.json", ast_str).unwrap();
-
     // type-checker
     let type_checker = TypeChecker::new(code_handler, semantic_db);
     let (semantic_db, code_handler) = type_checker.check_ast(&ast, &mut errors);
 
+    // TODO - remove this after testing
+    let ast_str = serialize_ast(&ast, &code_handler, semantic_db.interner()).unwrap();
+
     if !errors.is_empty() {
         let err = &errors[0];
-        return Err(attach_source_code(err.report(), code_str));
+        return (Err(attach_source_code(err.report(), code_str)), ast_str);
     }
 
     // Python code-generation
     let py_generator = PythonCodeGenerator::new(code_handler, semantic_db);
     let py_code = py_generator.generate_python_code(&ast);
-    Ok(py_code)
+    (Ok(py_code), ast_str)
 }

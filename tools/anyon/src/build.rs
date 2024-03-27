@@ -62,10 +62,16 @@ impl AbstractCommand for BuildCommand {
             "{}/__transpiled_{}_py_code__.py",
             curr_dir_path, code_file_name
         );
+        let ast_file_path = format!("{}/__ast_{}.json", curr_dir_path, code_file_name);
 
         let code_str = fs::read_to_string(jarvil_code_file_path)?;
         let code = JarvilCode::new(&code_str);
-        let py_code = build_code(code, code_str)?;
+        let (build_result, ast_str) = build_code(code, code_str);
+        fs::write(&ast_file_path, ast_str)?;
+        let py_code = match build_result {
+            Ok(py_code) => py_code,
+            Err(err) => return Err(err.into()),
+        };
         fs::write(&transpiled_py_code_file_path, py_code)?;
         // format the Python code using `black` if available
         let _ = Command::new("python3")
