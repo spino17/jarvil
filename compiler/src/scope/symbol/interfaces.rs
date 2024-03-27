@@ -342,11 +342,10 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
             Option<Vec<(&StrId, PartialConcreteInterfaceMethodsCheckError)>>,
         ),
     > {
-        let struct_methods_map_ref = struct_methods.methods_ref();
+        let struct_methods_map_ref = struct_methods.core_ref();
         let mut missing_interface_method_names: Vec<&StrId> = vec![];
         let mut errors: Vec<(&StrId, PartialConcreteInterfaceMethodsCheckError)> = vec![];
-        for (interface_method_name, (interface_method_callable_data, _)) in
-            self.methods.methods_ref()
+        for (interface_method_name, (interface_method_callable_data, _)) in self.methods.core_ref()
         {
             match struct_methods_map_ref.get(interface_method_name) {
                 Some((struct_method_callable_data, range)) => {

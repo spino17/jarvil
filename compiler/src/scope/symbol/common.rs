@@ -54,7 +54,7 @@ impl MethodsMap {
         MethodsMap { methods }
     }
 
-    pub fn methods_ref(&self) -> &FxHashMap<StrId, (CallableData, TextRange)> {
+    pub fn core_ref(&self) -> &FxHashMap<StrId, (CallableData, TextRange)> {
         &self.methods
     }
 
