@@ -1,12 +1,10 @@
+use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
 use crate::scope::traits::IsInitialized;
 use crate::{
     core::common::RefOrOwned,
-    scope::{
-        concrete::TurbofishTypes,
-        symbol::function::{CallableData, CallableKind, CallablePrototypeData},
-    },
+    scope::symbol::function::{CallableData, CallableKind, CallablePrototypeData},
     types::core::Type,
 };
 
@@ -35,11 +33,11 @@ impl LambdaTypeData {
 
     pub fn prototype(
         &self,
-        global_concrete_types: Option<&TurbofishTypes>,
         namespace: &Namespace,
+        context: &TypeGenericsInstantiationContext,
     ) -> RefOrOwned<CallablePrototypeData> {
         self.meta_data
-            .concretized_prototype(None, global_concrete_types, namespace)
+            .concretized_prototype(namespace, &context.into_method_context())
     }
 
     pub fn generic_type_decls(&self) -> Option<&GenericTypeParams> {

@@ -25,7 +25,10 @@ use crate::error::diagnostics::{
     UnexpectedValueProvidedToEnumVariantError,
 };
 use crate::error::helper::IdentifierKind;
-use crate::scope::concrete::{ConcreteSymbolIndex, TurbofishTypes};
+use crate::scope::concrete::{
+    ConcreteSymbolIndex, FunctionGenericsInstantiationContext, MethodGenericsInstantiationContext,
+    TurbofishTypes, TypeGenericsInstantiationContext,
+};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::symbol::core::{ConcreteSymbolDataEntry, SymbolDataEntry};
 use crate::scope::symbol::function::{CallableData, PartialCallableDataPrototypeCheckError};
@@ -510,10 +513,10 @@ impl TypeChecker {
         let prototype_result = match concrete_types {
             Some(concrete_types) => {
                 // CASE 1
+                let context = FunctionGenericsInstantiationContext::new(Some(concrete_types));
                 let concrete_prototype = func_data.concretized_prototype(
-                    None,
-                    Some(concrete_types),
                     self.semantic_db.namespace_ref(),
+                    &context.into_method_context(),
                 );
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
@@ -530,9 +533,8 @@ impl TypeChecker {
                     // CASE 4
                     None => CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                         func_data.concretized_prototype(
-                            None,
-                            None,
                             self.semantic_db.namespace_ref(),
+                            &MethodGenericsInstantiationContext::default(),
                         ),
                     ),
                 }
@@ -605,10 +607,10 @@ impl TypeChecker {
         let prototype_result = match concrete_types {
             Some(concrete_types) => {
                 // CASE 1
+                let context = TypeGenericsInstantiationContext::new(Some(concrete_types));
                 let concrete_prototype = constructor_meta_data.concretized_prototype(
-                    Some(concrete_types),
-                    None,
                     self.semantic_db.namespace_ref(),
+                    &context.into_method_context(),
                 );
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
@@ -626,9 +628,8 @@ impl TypeChecker {
                         // CASE 4
                         CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                             constructor_meta_data.concretized_prototype(
-                                None,
-                                None,
                                 self.semantic_db.namespace_ref(),
+                                &MethodGenericsInstantiationContext::default(),
                             ),
                         )
                     }
@@ -755,7 +756,8 @@ impl TypeChecker {
         };
         let class_method_name =
             property_name.token_value(&self.code_handler, self.semantic_db.interner());
-        match struct_data.try_class_method(&class_method_name, concrete_types) {
+        let context = TypeGenericsInstantiationContext::new(concrete_types);
+        match struct_data.try_class_method(&class_method_name, &context) {
             Some((partial_concrete_callable_data, _)) => {
                 let (concrete_types, ty_ranges, _) =
                     self.extract_angle_bracket_content_from_identifier_in_use(property_name);
@@ -829,10 +831,11 @@ impl TypeChecker {
             return Type::new_with_unknown();
         }
         let concrete_types = concrete_symbol_index.concrete_types();
+        let context = TypeGenericsInstantiationContext::new(concrete_types);
         match enum_data.try_type_for_variant(
             variant_name,
-            concrete_types,
             self.semantic_db.namespace_ref(),
+            &context,
         ) {
             Some(expected_ty) => match params {
                 Some((_, params, rparen)) => match params {
@@ -1062,10 +1065,11 @@ impl TypeChecker {
                 let concrete_types = struct_ty.concrete_types();
                 let ty_data = self.semantic_db.ty_symbol_ref(struct_ty.symbol_index());
                 let struct_data = ty_data.struct_data_ref();
+                let context = TypeGenericsInstantiationContext::new(concrete_types);
                 match struct_data.try_field(
                     &property_name_str,
-                    concrete_types,
                     self.semantic_db.namespace_ref(),
+                    &context,
                 ) {
                     Some((type_obj, _)) => Ok(type_obj),
                     None => Err(Diagnostics::PropertyDoesNotExist(
@@ -1148,12 +1152,9 @@ impl TypeChecker {
         let concrete_types = struct_ty.concrete_types();
         let ty_data = self.semantic_db.ty_symbol_ref(struct_ty.symbol_index());
         let struct_data = ty_data.struct_data_ref();
+        let context = TypeGenericsInstantiationContext::new(concrete_types);
         // first check if it's a property
-        match struct_data.try_field(
-            &method_name,
-            concrete_types,
-            self.semantic_db.namespace_ref(),
-        ) {
+        match struct_data.try_field(&method_name, self.semantic_db.namespace_ref(), &context) {
             Some((propetry_ty, _)) => {
                 if method_name_ok_identifier
                     .core_ref()
@@ -1177,7 +1178,7 @@ impl TypeChecker {
             }
             None => {
                 // if field is not there then check in methods
-                match struct_data.try_method(&method_name, concrete_types) {
+                match struct_data.try_method(&method_name, &context) {
                     Some((partial_concrete_callable_data, _)) => {
                         let (concrete_types, ty_ranges, _) = self
                             .extract_angle_bracket_content_from_identifier_in_use(
@@ -1254,7 +1255,8 @@ impl TypeChecker {
                             .semantic_db
                             .interface_symbol_ref(concrete_symbol_index.symbol_index());
                         let concrete_types = concrete_symbol_index.concrete_types();
-                        match interface_data.try_method(&method_name, concrete_types) {
+                        let context = TypeGenericsInstantiationContext::new(concrete_types);
+                        match interface_data.try_method(&method_name, &context) {
                             Some((partial_concrete_callable_data, _)) => {
                                 let (concrete_types, ty_ranges, _) = self
                                     .extract_angle_bracket_content_from_identifier_in_use(
@@ -2124,6 +2126,7 @@ impl TypeChecker {
         let mut checked_variants: FxHashSet<StrId> = FxHashSet::default();
         let expr_enum_name = enum_ty.name();
         let concrete_types = enum_ty.concrete_types();
+        let context = TypeGenericsInstantiationContext::new(concrete_types);
         let ty_data = self.semantic_db.ty_symbol_ref(enum_ty.symbol_index());
         let enum_data = ty_data.enum_data_ref();
         let mut symbol_index_ty_vec = vec![];
@@ -2162,8 +2165,8 @@ impl TypeChecker {
                             .token_value(&self.code_handler, self.semantic_db.interner());
                         match enum_data.try_type_for_variant(
                             variant_name_str,
-                            concrete_types,
                             self.semantic_db.namespace_ref(),
+                            &context,
                         ) {
                             Some(expected_ty) => {
                                 checked_variants.insert(variant_name_str);

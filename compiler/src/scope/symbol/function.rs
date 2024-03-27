@@ -8,7 +8,7 @@ use crate::scope::mangled::MangledIdentifierName;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
-use crate::scope::traits::AbstractSymbol;
+use crate::scope::traits::{AbstractSymbol, InstantiationContext};
 use crate::types::core::Type;
 use crate::{
     ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode},
@@ -247,16 +247,13 @@ impl CallableData {
 
     pub fn concretized_prototype(
         &self,
-        global_concrete_types: Option<&TurbofishTypes>,
-        local_concrete_types: Option<&TurbofishTypes>,
         namespace: &Namespace,
+        context: &MethodGenericsInstantiationContext,
     ) -> RefOrOwned<'_, CallablePrototypeData> {
-        if global_concrete_types.is_none() && local_concrete_types.is_none() {
+        if context.is_empty() {
             debug_assert!(self.prototype.is_concretization_required.is_none());
             return RefOrOwned::Ref(&self.prototype);
         }
-        let context =
-            MethodGenericsInstantiationContext::new(global_concrete_types, local_concrete_types);
         let Some((generics_containing_params_indexes, is_concretization_required_for_return_type)) =
             &self.prototype.is_concretization_required
         else {
@@ -265,10 +262,10 @@ impl CallableData {
         let mut concrete_params = self.prototype.params.clone();
         let mut concrete_return_type = self.prototype.return_type.clone();
         for index in generics_containing_params_indexes {
-            concrete_params[*index] = self.prototype.params[*index].concretize(&context, namespace);
+            concrete_params[*index] = self.prototype.params[*index].concretize(context, namespace);
         }
         if *is_concretization_required_for_return_type {
-            concrete_return_type = self.prototype.return_type.concretize(&context, namespace);
+            concrete_return_type = self.prototype.return_type.concretize(context, namespace);
         }
         RefOrOwned::Owned(CallablePrototypeData::new(
             concrete_params,
@@ -340,10 +337,13 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         type_checker.semantic_db().interner(),
                         type_checker.semantic_db().namespace_ref(),
                     )?;
-                    let concrete_prototype = self.callable_data.concretized_prototype(
+                    let context = MethodGenericsInstantiationContext::new(
                         self.concrete_types,
                         Some(&local_concrete_types),
+                    );
+                    let concrete_prototype = self.callable_data.concretized_prototype(
                         type_checker.semantic_db().namespace_ref(),
+                        &context,
                     );
                     let return_ty = concrete_prototype
                         .is_received_params_valid(type_checker, received_params)?;
@@ -371,10 +371,11 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                     ))
                 }
                 None => {
+                    let context =
+                        MethodGenericsInstantiationContext::new(self.concrete_types, None);
                     let concrete_prototype = self.callable_data.concretized_prototype(
-                        self.concrete_types,
-                        None,
                         type_checker.semantic_db().namespace_ref(),
+                        &context,
                     );
                     let return_ty = concrete_prototype
                         .is_received_params_valid(type_checker, received_params)?;

@@ -53,19 +53,18 @@ impl InterfaceData {
     pub fn try_field<'a>(
         &'a self,
         field_name: &StrId,
-        global_concrete_types: Option<&'a TurbofishTypes>,
         namespace: &Namespace,
+        context: &TypeGenericsInstantiationContext<'a>,
     ) -> Option<(Type, TextRange)> {
-        self.fields
-            .try_field(field_name, global_concrete_types, namespace)
+        self.fields.try_field(field_name, namespace, context)
     }
 
     pub fn try_method<'a>(
         &'a self,
         method_name: &StrId,
-        global_concrete_types: Option<&'a TurbofishTypes>,
+        context: &TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
-        self.methods.try_method(method_name, global_concrete_types)
+        self.methods.try_method(method_name, context)
     }
 
     pub fn has_method(&self, method_name: &StrId) -> bool {

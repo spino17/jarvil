@@ -20,7 +20,7 @@ use crate::error::diagnostics::{
     MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
 };
 use crate::error::helper::IdentifierKind as IdentKind;
-use crate::scope::concrete::TurbofishTypes;
+use crate::scope::concrete::{MethodGenericsInstantiationContext, TurbofishTypes};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::lookup::{LookupData, LookupResult};
 use crate::scope::mangled::MangledIdentifierName;
@@ -186,9 +186,8 @@ impl Resolver {
             Some(symbol_index) => {
                 let func_meta_data = self.semantic_db.function_symbol_ref(symbol_index);
                 let prototype = func_meta_data.concretized_prototype(
-                    None,
-                    None,
                     self.semantic_db.namespace_ref(),
+                    &MethodGenericsInstantiationContext::default(),
                 );
                 let params = prototype.params();
                 let return_type = prototype.return_ty();
@@ -1760,7 +1759,7 @@ impl Resolver {
             generic_type_decls = self
                 .declare_angle_bracket_content_from_identifier_in_decl(
                     ok_identifier,
-                    GenericTypeDeclarationPlaceCategory::InCallable,
+                    GenericTypeDeclarationPlaceCategory::InType,
                 )
                 .0;
         }

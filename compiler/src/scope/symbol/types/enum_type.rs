@@ -3,9 +3,7 @@ use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
 use crate::scope::traits::IsInitialized;
 use crate::types::core::Type;
-use crate::{
-    core::string_interner::StrId, scope::concrete::TurbofishTypes, types::traits::TypeLike,
-};
+use crate::{core::string_interner::StrId, types::traits::TypeLike};
 use text_size::TextRange;
 
 #[derive(Debug, Default)]
@@ -40,16 +38,13 @@ impl EnumTypeData {
     pub fn try_type_for_variant<'a>(
         &'a self,
         variant_name: StrId,
-        global_concrete_types: Option<&'a TurbofishTypes>,
         namespace: &Namespace,
+        context: &TypeGenericsInstantiationContext,
     ) -> Option<Option<Type>> {
         for (curr_variant_name, ty, _) in &self.variants {
             if *curr_variant_name == variant_name {
                 let Some(ty) = ty else { return Some(None) };
-                return Some(Some(ty.concretize(
-                    &TypeGenericsInstantiationContext::new(global_concrete_types),
-                    namespace,
-                )));
+                return Some(Some(ty.concretize(context, namespace)));
             }
         }
         None

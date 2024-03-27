@@ -1,5 +1,5 @@
 use crate::core::string_interner::StrId;
-use crate::scope::concrete::TurbofishTypes;
+use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::common::{FieldsMap, MethodsMap};
 use crate::scope::symbol::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
@@ -66,28 +66,26 @@ impl StructTypeData {
     pub fn try_field<'a>(
         &'a self,
         field_name: &StrId,
-        global_concrete_types: Option<&'a TurbofishTypes>,
         namespace: &Namespace,
+        context: &TypeGenericsInstantiationContext,
     ) -> Option<(Type, TextRange)> {
-        self.fields
-            .try_field(field_name, global_concrete_types, namespace)
+        self.fields.try_field(field_name, namespace, context)
     }
 
     pub fn try_method<'a>(
         &'a self,
         method_name: &StrId,
-        global_concrete_types: Option<&'a TurbofishTypes>,
+        context: &TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
-        self.methods.try_method(method_name, global_concrete_types)
+        self.methods.try_method(method_name, context)
     }
 
     pub fn try_class_method<'a>(
         &'a self,
         class_method_name: &StrId,
-        global_concrete_types: Option<&'a TurbofishTypes>,
+        context: &TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
-        self.class_methods
-            .try_method(class_method_name, global_concrete_types)
+        self.class_methods.try_method(class_method_name, context)
     }
 
     pub fn methods_ref(&self) -> &MethodsMap {

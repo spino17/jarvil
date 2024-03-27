@@ -1,5 +1,6 @@
 use super::traits::CollectionType;
 use crate::core::string_interner::Interner;
+use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
 use crate::types::array::core::Array;
 use crate::types::hashmap::core::HashMap;
@@ -26,7 +27,8 @@ impl<T: CollectionType> CoreNonStructMethodsHandler<T> {
             return None;
         };
         let concrete_types = ty.concrete_types();
-        match callable_data.concretized_prototype(Some(&concrete_types), None, namespace) {
+        let context = TypeGenericsInstantiationContext::new(Some(&concrete_types));
+        match callable_data.concretized_prototype(namespace, &context.into_method_context()) {
             RefOrOwned::Ref(_) => unreachable!(),
             RefOrOwned::Owned(prototype) => Some(prototype),
         }

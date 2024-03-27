@@ -1,3 +1,4 @@
+use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
 use crate::types::traits::TypeLike;
 use crate::{
@@ -62,8 +63,9 @@ impl GenericTypeData {
                 .interfaces_ref()
                 .symbol_ref(concrete_symbol_index.symbol_index())
                 .data_ref();
-            let concrete_types = concrete_symbol_index.concrete_types();
-            match interface_data.try_field(field_name, concrete_types, namespace) {
+            let context =
+                TypeGenericsInstantiationContext::new(concrete_symbol_index.concrete_types());
+            match interface_data.try_field(field_name, namespace, &context) {
                 Some((ty, decl_range)) => {
                     property_containing_interface_objs
                         .push(interface_obj.to_string(interner, namespace));

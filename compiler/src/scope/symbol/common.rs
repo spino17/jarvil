@@ -5,6 +5,7 @@ use super::variables::VariableData;
 use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
+use crate::scope::traits::InstantiationContext;
 use crate::types::core::Type;
 use crate::{core::string_interner::StrId, types::traits::TypeLike};
 use rustc_hash::FxHashMap;
@@ -24,19 +25,13 @@ impl FieldsMap {
     pub fn try_field<'a>(
         &'a self,
         field_name: &StrId,
-        global_concrete_types: Option<&'a TurbofishTypes>,
         namespace: &Namespace,
+        context: &TypeGenericsInstantiationContext,
     ) -> Option<(Type, TextRange)> {
         let Some((ty, range)) = self.fields.get(field_name) else {
             return None;
         };
-        Some((
-            ty.concretize(
-                &TypeGenericsInstantiationContext::new(global_concrete_types),
-                namespace,
-            ),
-            *range,
-        ))
+        Some((ty.concretize(context, namespace), *range))
     }
 }
 
@@ -57,7 +52,7 @@ impl MethodsMap {
     pub fn try_method<'a>(
         &'a self,
         method_name: &StrId,
-        global_concrete_types: Option<&'a TurbofishTypes>,
+        context: &TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
         let Some((callable_data, range)) = self.methods.get(method_name) else {
             return None;
@@ -65,7 +60,7 @@ impl MethodsMap {
         Some((
             PartialConcreteCallableDataRef::new(
                 callable_data,
-                match global_concrete_types {
+                match context.ty_generics_instantiation_args() {
                     Some(concrete_types) => Some(concrete_types),
                     None => None,
                 },

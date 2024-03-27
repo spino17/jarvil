@@ -91,6 +91,13 @@ impl<'a> TypeGenericsInstantiationContext<'a> {
     pub fn new(args: Option<&'a TurbofishTypes>) -> Self {
         return TypeGenericsInstantiationContext { args };
     }
+
+    pub fn into_method_context(&self) -> MethodGenericsInstantiationContext<'a> {
+        MethodGenericsInstantiationContext {
+            bounding_ty_args: self.args,
+            local_args: None,
+        }
+    }
 }
 
 impl<'a> InstantiationContext<'a> for TypeGenericsInstantiationContext<'a> {
@@ -111,6 +118,13 @@ pub struct FunctionGenericsInstantiationContext<'a> {
 impl<'a> FunctionGenericsInstantiationContext<'a> {
     pub fn new(args: Option<&'a TurbofishTypes>) -> Self {
         return FunctionGenericsInstantiationContext { args };
+    }
+
+    pub fn into_method_context(&self) -> MethodGenericsInstantiationContext<'a> {
+        MethodGenericsInstantiationContext {
+            bounding_ty_args: None,
+            local_args: self.args,
+        }
     }
 }
 
