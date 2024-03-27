@@ -516,7 +516,7 @@ impl TypeChecker {
                 let context = FunctionGenericsInstantiationContext::new(Some(concrete_types));
                 let concrete_prototype = func_data.concretized_prototype(
                     self.semantic_db.namespace_ref(),
-                    &context.into_method_context(),
+                    context.into_method_context(),
                 );
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
@@ -534,7 +534,7 @@ impl TypeChecker {
                     None => CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                         func_data.concretized_prototype(
                             self.semantic_db.namespace_ref(),
-                            &MethodGenericsInstantiationContext::default(),
+                            MethodGenericsInstantiationContext::default(),
                         ),
                     ),
                 }
@@ -558,7 +558,7 @@ impl TypeChecker {
                 let context = FunctionGenericsInstantiationContext::new(Some(&concrete_types));
                 Ok(func_data.concretized_return_ty(
                     self.semantic_db.namespace_ref(),
-                    &context.into_method_context(),
+                    context.into_method_context(),
                 ))
             }
         }
@@ -610,7 +610,7 @@ impl TypeChecker {
                 let context = TypeGenericsInstantiationContext::new(Some(concrete_types));
                 let concrete_prototype = constructor_meta_data.concretized_prototype(
                     self.semantic_db.namespace_ref(),
-                    &context.into_method_context(),
+                    context.into_method_context(),
                 );
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
@@ -629,7 +629,7 @@ impl TypeChecker {
                         CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                             constructor_meta_data.concretized_prototype(
                                 self.semantic_db.namespace_ref(),
-                                &MethodGenericsInstantiationContext::default(),
+                                MethodGenericsInstantiationContext::default(),
                             ),
                         )
                     }
@@ -835,7 +835,7 @@ impl TypeChecker {
         match enum_data.try_type_for_variant(
             variant_name,
             self.semantic_db.namespace_ref(),
-            &context,
+            context,
         ) {
             Some(expected_ty) => match params {
                 Some((_, params, rparen)) => match params {
@@ -1069,7 +1069,7 @@ impl TypeChecker {
                 match struct_data.try_field(
                     &property_name_str,
                     self.semantic_db.namespace_ref(),
-                    &context,
+                    context,
                 ) {
                     Some((type_obj, _)) => Ok(type_obj),
                     None => Err(Diagnostics::PropertyDoesNotExist(
@@ -1154,7 +1154,7 @@ impl TypeChecker {
         let struct_data = ty_data.struct_data_ref();
         let context = TypeGenericsInstantiationContext::new(concrete_types);
         // first check if it's a property
-        match struct_data.try_field(&method_name, self.semantic_db.namespace_ref(), &context) {
+        match struct_data.try_field(&method_name, self.semantic_db.namespace_ref(), context) {
             Some((propetry_ty, _)) => {
                 if method_name_ok_identifier
                     .core_ref()
@@ -2166,7 +2166,7 @@ impl TypeChecker {
                         match enum_data.try_type_for_variant(
                             variant_name_str,
                             self.semantic_db.namespace_ref(),
-                            &context,
+                            context,
                         ) {
                             Some(expected_ty) => {
                                 checked_variants.insert(variant_name_str);

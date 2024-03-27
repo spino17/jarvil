@@ -187,7 +187,7 @@ impl Resolver {
                 let func_meta_data = self.semantic_db.function_symbol_ref(symbol_index);
                 let prototype = func_meta_data.concretized_prototype(
                     self.semantic_db.namespace_ref(),
-                    &MethodGenericsInstantiationContext::default(),
+                    MethodGenericsInstantiationContext::default(),
                 );
                 let params = prototype.params();
                 let return_type = prototype.return_ty();

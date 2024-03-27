@@ -57,11 +57,11 @@ impl CallablePrototypeData {
         &self.return_type
     }
 
-    fn compare<F: Fn(&Type, &Type, &TypeGenericsInstantiationContext, &Namespace) -> bool>(
+    fn compare<F: Fn(&Type, &Type, TypeGenericsInstantiationContext, &Namespace) -> bool>(
         &self,
         other: &CallablePrototypeData,
         cmp_func: F,
-        context: &TypeGenericsInstantiationContext,
+        context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let (self_param_types, self_return_type) = (&self.params, &self.return_type);
@@ -90,12 +90,12 @@ impl CallablePrototypeData {
     pub fn is_eq(&self, other: &CallablePrototypeData, namespace: &Namespace) -> bool {
         let cmp_func = |ty1: &Type,
                         ty2: &Type,
-                        _context: &TypeGenericsInstantiationContext,
+                        _context: TypeGenericsInstantiationContext,
                         namespace: &Namespace| ty1.is_eq(ty2, namespace);
         self.compare(
             other,
             cmp_func,
-            &TypeGenericsInstantiationContext::default(),
+            TypeGenericsInstantiationContext::default(),
             namespace,
         )
     }
@@ -103,13 +103,13 @@ impl CallablePrototypeData {
     pub fn is_structurally_eq(
         &self,
         other: &CallablePrototypeData,
-        context: &TypeGenericsInstantiationContext,
+        context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let cmp_func =
             |ty1: &Type,
              ty2: &Type,
-             context: &TypeGenericsInstantiationContext,
+             context: TypeGenericsInstantiationContext,
              namespace: &Namespace| { ty1.is_structurally_eq(ty2, context, namespace) };
         self.compare(other, cmp_func, context, namespace)
     }
@@ -236,7 +236,7 @@ impl CallableData {
     pub fn concretized_return_ty(
         &self,
         namespace: &Namespace,
-        context: &MethodGenericsInstantiationContext,
+        context: MethodGenericsInstantiationContext,
     ) -> Type {
         self.prototype.return_ty().concretize(context, namespace)
     }
@@ -244,7 +244,7 @@ impl CallableData {
     pub fn concretized_prototype(
         &self,
         namespace: &Namespace,
-        context: &MethodGenericsInstantiationContext,
+        context: MethodGenericsInstantiationContext,
     ) -> RefOrOwned<'_, CallablePrototypeData> {
         if context.is_empty() {
             debug_assert!(self.prototype.is_concretization_required.is_none());
@@ -337,10 +337,9 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         self.context.ty_generics_instantiation_args(),
                         Some(&local_concrete_types),
                     );
-                    let concrete_prototype = self.callable_data.concretized_prototype(
-                        type_checker.semantic_db().namespace_ref(),
-                        &context,
-                    );
+                    let concrete_prototype = self
+                        .callable_data
+                        .concretized_prototype(type_checker.semantic_db().namespace_ref(), context);
                     let return_ty = concrete_prototype
                         .is_received_params_valid(type_checker, received_params)?;
                     Ok(return_ty)
@@ -364,20 +363,18 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         self.context.ty_generics_instantiation_args(),
                         Some(&local_concrete_types),
                     );
-                    Ok(self.callable_data.concretized_return_ty(
-                        type_checker.semantic_db().namespace_ref(),
-                        &context,
-                    ))
+                    Ok(self
+                        .callable_data
+                        .concretized_return_ty(type_checker.semantic_db().namespace_ref(), context))
                 }
                 None => {
                     let context = MethodGenericsInstantiationContext::new(
                         self.context.ty_generics_instantiation_args(),
                         None,
                     );
-                    let concrete_prototype = self.callable_data.concretized_prototype(
-                        type_checker.semantic_db().namespace_ref(),
-                        &context,
-                    );
+                    let concrete_prototype = self
+                        .callable_data
+                        .concretized_prototype(type_checker.semantic_db().namespace_ref(), context);
                     let return_ty = concrete_prototype
                         .is_received_params_valid(type_checker, received_params)?;
                     Ok(return_ty)

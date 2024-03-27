@@ -58,13 +58,13 @@ impl TypeLike for Enum {
         let ty_cmp_func =
             |ty1: &Type,
              ty2: &Type,
-             _context: &TypeGenericsInstantiationContext,
+             _context: TypeGenericsInstantiationContext,
              namespace: &Namespace| { ty1.is_eq(ty2, namespace) };
         user_defined_ty_compare_fn(
             self,
             enum_data,
             ty_cmp_func,
-            &TypeGenericsInstantiationContext::default(),
+            TypeGenericsInstantiationContext::default(),
             namespace,
         )
     }
@@ -72,7 +72,7 @@ impl TypeLike for Enum {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &TypeGenericsInstantiationContext,
+        context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let CoreType::Enum(enum_data) = other_ty.core_ty() else {
@@ -81,14 +81,14 @@ impl TypeLike for Enum {
         let ty_cmp_func =
             |ty1: &Type,
              ty2: &Type,
-             context: &TypeGenericsInstantiationContext,
+             context: TypeGenericsInstantiationContext,
              namespace: &Namespace| { ty1.is_structurally_eq(ty2, context, namespace) };
         user_defined_ty_compare_fn(self, enum_data, ty_cmp_func, context, namespace)
     }
 
-    fn concretize<'a, T: InstantiationContext<'a>>(
+    fn concretize<'a, T: InstantiationContext<'a> + Copy>(
         &self,
-        context: &T,
+        context: T,
         namespace: &Namespace,
     ) -> Type {
         let Some(concrete_types) = &self.concrete_types else {

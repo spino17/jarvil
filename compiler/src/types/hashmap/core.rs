@@ -52,7 +52,7 @@ impl TypeLike for HashMap {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &TypeGenericsInstantiationContext,
+        context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let CoreType::HashMap(hashmap_data) = other_ty.core_ty() else {
@@ -65,9 +65,9 @@ impl TypeLike for HashMap {
                 .is_structurally_eq(&hashmap_data.value_type, context, namespace)
     }
 
-    fn concretize<'a, T: InstantiationContext<'a>>(
+    fn concretize<'a, T: InstantiationContext<'a> + Copy>(
         &self,
-        context: &T,
+        context: T,
         namespace: &Namespace,
     ) -> Type {
         let concrete_key_ty = self.key_type.concretize(context, namespace);

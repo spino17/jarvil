@@ -54,7 +54,7 @@ impl InterfaceData {
         &'a self,
         field_name: &StrId,
         namespace: &Namespace,
-        context: &TypeGenericsInstantiationContext<'a>,
+        context: TypeGenericsInstantiationContext<'a>,
     ) -> Option<(Type, TextRange)> {
         self.fields.try_field(field_name, namespace, context)
     }
@@ -293,7 +293,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                             .structural_prototype()
                             .is_structurally_eq(
                                 &struct_method_callable_data.structural_prototype(),
-                                &TypeGenericsInstantiationContext::new(self.concrete_types),
+                                TypeGenericsInstantiationContext::new(self.concrete_types),
                                 namespace,
                             )
                         {
@@ -319,7 +319,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                         .structural_prototype()
                         .is_structurally_eq(
                             &struct_method_callable_data.structural_prototype(),
-                            &TypeGenericsInstantiationContext::new(self.concrete_types),
+                            TypeGenericsInstantiationContext::new(self.concrete_types),
                             namespace,
                         )
                     {

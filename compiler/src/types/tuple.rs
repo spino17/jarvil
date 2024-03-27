@@ -76,7 +76,7 @@ impl TypeLike for Tuple {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &TypeGenericsInstantiationContext,
+        context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let CoreType::Tuple(tuple_data) = other_ty.core_ty() else {
@@ -94,9 +94,9 @@ impl TypeLike for Tuple {
         true
     }
 
-    fn concretize<'a, T: InstantiationContext<'a>>(
+    fn concretize<'a, T: InstantiationContext<'a> + Copy>(
         &self,
-        context: &T,
+        context: T,
         namespace: &Namespace,
     ) -> Type {
         let mut concrete_types = vec![];

@@ -15,12 +15,12 @@ pub trait TypeLike {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &TypeGenericsInstantiationContext,
+        context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool;
-    fn concretize<'a, T: InstantiationContext<'a>>(
+    fn concretize<'a, T: InstantiationContext<'a> + Copy>(
         &self,
-        context: &T,
+        context: T,
         namespace: &Namespace,
     ) -> Type;
     fn try_infer_type_or_check_equivalence(

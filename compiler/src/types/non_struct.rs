@@ -28,7 +28,7 @@ impl<T: CollectionType> CoreNonStructMethodsHandler<T> {
         };
         let concrete_types = ty.concrete_types();
         let context = TypeGenericsInstantiationContext::new(Some(&concrete_types));
-        match callable_data.concretized_prototype(namespace, &context.into_method_context()) {
+        match callable_data.concretized_prototype(namespace, context.into_method_context()) {
             RefOrOwned::Ref(_) => unreachable!(),
             RefOrOwned::Owned(prototype) => Some(prototype),
         }

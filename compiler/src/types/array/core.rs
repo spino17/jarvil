@@ -55,7 +55,7 @@ impl TypeLike for Array {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &TypeGenericsInstantiationContext,
+        context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let CoreType::Array(array_data) = other_ty.core_ty() else {
@@ -65,9 +65,9 @@ impl TypeLike for Array {
             .is_structurally_eq(&array_data.element_type, context, namespace)
     }
 
-    fn concretize<'a, T: InstantiationContext<'a>>(
+    fn concretize<'a, T: InstantiationContext<'a> + Copy>(
         &self,
-        context: &T,
+        context: T,
         namespace: &Namespace,
     ) -> Type {
         Type::new_with_array(self.element_type.concretize(context, namespace))

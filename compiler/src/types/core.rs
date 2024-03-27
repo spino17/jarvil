@@ -289,7 +289,7 @@ impl TypeLike for Type {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &TypeGenericsInstantiationContext,
+        context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         match self.0.as_ref() {
@@ -323,9 +323,9 @@ impl TypeLike for Type {
         }
     }
 
-    fn concretize<'a, T: InstantiationContext<'a>>(
+    fn concretize<'a, T: InstantiationContext<'a> + Copy>(
         &self,
-        context: &T,
+        context: T,
         namespace: &Namespace,
     ) -> Type {
         if context.is_empty() {

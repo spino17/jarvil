@@ -64,12 +64,12 @@ pub fn try_infer_types_from_tuple(
 
 pub fn user_defined_ty_compare_fn<
     T: UserDefinedType,
-    F: Fn(&Type, &Type, &TypeGenericsInstantiationContext, &Namespace) -> bool,
+    F: Fn(&Type, &Type, TypeGenericsInstantiationContext, &Namespace) -> bool,
 >(
     base: &T,
     other: &T,
     ty_cmp_func: F,
-    context: &TypeGenericsInstantiationContext,
+    context: TypeGenericsInstantiationContext,
     namespace: &Namespace,
 ) -> bool {
     if base.name() != other.name() {

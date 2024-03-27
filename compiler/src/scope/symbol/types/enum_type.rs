@@ -39,7 +39,7 @@ impl EnumTypeData {
         &'a self,
         variant_name: StrId,
         namespace: &Namespace,
-        context: &TypeGenericsInstantiationContext,
+        context: TypeGenericsInstantiationContext,
     ) -> Option<Option<Type>> {
         for (curr_variant_name, ty, _) in &self.variants {
             if *curr_variant_name == variant_name {

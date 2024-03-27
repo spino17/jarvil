@@ -34,10 +34,10 @@ impl LambdaTypeData {
     pub fn prototype(
         &self,
         namespace: &Namespace,
-        context: &TypeGenericsInstantiationContext,
+        context: TypeGenericsInstantiationContext,
     ) -> RefOrOwned<CallablePrototypeData> {
         self.meta_data
-            .concretized_prototype(namespace, &context.into_method_context())
+            .concretized_prototype(namespace, context.into_method_context())
     }
 
     pub fn generic_type_decls(&self) -> Option<&GenericTypeParams> {

@@ -64,7 +64,7 @@ impl TypeLike for Atomic {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        _context: &TypeGenericsInstantiationContext,
+        _context: TypeGenericsInstantiationContext,
         _namespace: &Namespace,
     ) -> bool {
         let CoreType::Atomic(atomic_data) = other_ty.core_ty() else {
@@ -78,9 +78,9 @@ impl TypeLike for Atomic {
         }
     }
 
-    fn concretize<'a, T: InstantiationContext<'a>>(
+    fn concretize<'a, T: InstantiationContext<'a> + Copy>(
         &self,
-        _context: &T,
+        _context: T,
         _namespace: &Namespace,
     ) -> Type {
         unreachable!()

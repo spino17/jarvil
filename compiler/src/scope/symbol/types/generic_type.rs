@@ -65,7 +65,7 @@ impl GenericTypeData {
                 .data_ref();
             let context =
                 TypeGenericsInstantiationContext::new(concrete_symbol_index.concrete_types());
-            match interface_data.try_field(field_name, namespace, &context) {
+            match interface_data.try_field(field_name, namespace, context) {
                 Some((ty, decl_range)) => {
                     property_containing_interface_objs
                         .push(interface_obj.to_string(interner, namespace));

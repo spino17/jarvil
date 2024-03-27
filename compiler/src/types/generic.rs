@@ -57,7 +57,7 @@ impl TypeLike for Generic {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &TypeGenericsInstantiationContext,
+        context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let is_other_ty_generic = match other_ty.core_ty() {
@@ -104,9 +104,9 @@ impl TypeLike for Generic {
         }
     }
 
-    fn concretize<'a, T: InstantiationContext<'a>>(
+    fn concretize<'a, T: InstantiationContext<'a> + Copy>(
         &self,
-        context: &T,
+        context: T,
         namespace: &Namespace,
     ) -> Type {
         let ty_data = namespace

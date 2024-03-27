@@ -67,7 +67,7 @@ impl StructTypeData {
         &'a self,
         field_name: &StrId,
         namespace: &Namespace,
-        context: &TypeGenericsInstantiationContext,
+        context: TypeGenericsInstantiationContext,
     ) -> Option<(Type, TextRange)> {
         self.fields.try_field(field_name, namespace, context)
     }
