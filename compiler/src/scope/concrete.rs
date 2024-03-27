@@ -98,6 +98,16 @@ impl<'a> TypeGenericsInstantiationContext<'a> {
             local_args: None,
         }
     }
+
+    pub fn attach_local_method_context(
+        &self,
+        local_args: Option<&'a TurbofishTypes>,
+    ) -> MethodGenericsInstantiationContext<'a> {
+        MethodGenericsInstantiationContext {
+            bounding_ty_args: self.args,
+            local_args,
+        }
+    }
 }
 
 impl<'a> InstantiationContext<'a> for TypeGenericsInstantiationContext<'a> {

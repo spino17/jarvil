@@ -309,10 +309,9 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         type_checker.semantic_db().interner(),
                         type_checker.semantic_db().namespace_ref(),
                     )?;
-                    let context = MethodGenericsInstantiationContext::new(
-                        self.context.ty_generics_instantiation_args(),
-                        Some(&local_concrete_types),
-                    );
+                    let context = self
+                        .context
+                        .attach_local_method_context(Some(&local_concrete_types));
                     let concrete_prototype = self
                         .callable_data
                         .concretized_prototype(type_checker.semantic_db().namespace_ref(), context);
@@ -335,22 +334,18 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         received_params,
                         GenericTypeDeclarationPlaceCategory::InCallable,
                     )?;
-                    let context = MethodGenericsInstantiationContext::new(
-                        self.context.ty_generics_instantiation_args(),
-                        Some(&local_concrete_types),
-                    );
+                    let context = self
+                        .context
+                        .attach_local_method_context(Some(&local_concrete_types));
                     Ok(self
                         .callable_data
                         .concretized_return_ty(type_checker.semantic_db().namespace_ref(), context))
                 }
                 None => {
-                    let context = MethodGenericsInstantiationContext::new(
-                        self.context.ty_generics_instantiation_args(),
-                        None,
+                    let concrete_prototype = self.callable_data.concretized_prototype(
+                        type_checker.semantic_db().namespace_ref(),
+                        self.context.into_method_context(),
                     );
-                    let concrete_prototype = self
-                        .callable_data
-                        .concretized_prototype(type_checker.semantic_db().namespace_ref(), context);
                     let return_ty = concrete_prototype
                         .is_received_params_valid(type_checker, received_params)?;
                     Ok(return_ty)
