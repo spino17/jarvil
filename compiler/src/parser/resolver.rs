@@ -328,8 +328,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             concrete_types.as_ref(),
             ty_ranges.as_ref(),
             is_concrete_types_none_allowed,
-            self.semantic_db.interner(),
-            self.semantic_db.namespace_ref(),
+            self.semantic_db.err_logging_context(),
         )?;
         let concrete_symbol_entry =
             ConcreteSymbolDataEntry::new(symbol_obj.entry(), concrete_types.clone());
@@ -1176,8 +1175,8 @@ impl<'ctx> JarvilResolver<'ctx> {
                             .is_eq(&lambda_ty, self.semantic_db.namespace_ref())
                         {
                             let err = InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError::new(
-                                ty_from_optional_annotation.to_string(self.semantic_db.interner(), self.semantic_db.namespace_ref()),
-                                lambda_ty.to_string(self.semantic_db.interner(), self.semantic_db.namespace_ref()),
+                                ty_from_optional_annotation.to_string(self.semantic_db.err_logging_context()),
+                                lambda_ty.to_string(self.semantic_db.err_logging_context()),
                                 range
                             );
                             self.errors.log_error(Diagnostics::InferredLambdaVariableTypeMismatchedWithTypeFromAnnotation(err));

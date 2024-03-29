@@ -1,6 +1,6 @@
-use super::core::Type;
+use super::core::{Type, TypeStringifyContext};
 use crate::constants::common::BOOL;
-use crate::core::string_interner::{Interner, StrId};
+use crate::core::string_interner::StrId;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
@@ -37,7 +37,7 @@ pub trait TypeLike {
         interface_bounds: &InterfaceBounds,
         namespace: &Namespace,
     ) -> bool;
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String;
+    fn to_string(&self, context: TypeStringifyContext) -> String;
 }
 
 pub trait UserDefinedType {

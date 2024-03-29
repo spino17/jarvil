@@ -1,8 +1,9 @@
+use super::core::TypeStringifyContext;
 use super::traits::OperatorCompatiblity;
 use super::traits::TypeLike;
 use super::traits::UserDefinedType;
 use crate::ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode};
-use crate::core::string_interner::{Interner, StrId};
+use crate::core::string_interner::StrId;
 use crate::parser::type_checker::{
     InferredConcreteTypesEntry, JarvilTypeChecker, PrototypeEquivalenceCheckError,
 };
@@ -275,14 +276,16 @@ impl TypeLike for Lambda {
         }
     }
 
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
+    fn to_string(&self, context: TypeStringifyContext) -> String {
         match self {
             Lambda::Named(named_lambda) => {
-                let mut s = interner.lookup(named_lambda.symbol_index.identifier_name());
+                let mut s = context
+                    .interner()
+                    .lookup(named_lambda.symbol_index.identifier_name());
                 match &named_lambda.concrete_types {
                     Some(concrete_types) => {
                         s.push('<');
-                        s.push_str(&concrete_types.to_string(interner, namespace));
+                        s.push_str(&concrete_types.to_string(context));
                         s.push('>');
                         s
                     }
@@ -298,13 +301,13 @@ impl TypeLike for Lambda {
                     if flag {
                         params_str.push_str(", ")
                     }
-                    params_str.push_str(&param.to_string(interner, namespace));
+                    params_str.push_str(&param.to_string(context));
                     flag = true;
                 }
                 format!(
                     "lambda({}) -> {}",
                     params_str,
-                    self_return_type.to_string(interner, namespace)
+                    self_return_type.to_string(context)
                 )
             }
         }

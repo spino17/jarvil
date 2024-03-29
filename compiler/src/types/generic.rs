@@ -1,10 +1,10 @@
-use super::core::{CoreType, Type};
+use super::core::{CoreType, Type, TypeStringifyContext};
 use super::traits::{OperatorCompatiblity, TypeLike};
 use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::traits::InstantiationContext;
 use crate::types::traits::UserDefinedType;
 use crate::{
-    core::string_interner::{Interner, StrId},
+    core::string_interner::StrId,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::TurbofishTypes,
@@ -190,8 +190,9 @@ impl TypeLike for Generic {
         }
     }
 
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let ty_data = namespace
+    fn to_string(&self, context: TypeStringifyContext) -> String {
+        let ty_data = context
+            .namespace()
             .types_ref()
             .symbol_ref(self.symbol_index)
             .data_ref();
@@ -199,8 +200,8 @@ impl TypeLike for Generic {
         let interface_bounds = generic_data.interface_bounds();
         format!(
             "{}{}",
-            interner.lookup(self.name()),
-            interface_bounds.to_string(interner, namespace)
+            context.interner().lookup(self.name()),
+            interface_bounds.to_string(context)
         )
     }
 }

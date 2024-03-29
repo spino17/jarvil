@@ -1,4 +1,3 @@
-use crate::core::string_interner::Interner;
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
@@ -6,7 +5,7 @@ use crate::scope::namespace::Namespace;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::traits::InstantiationContext;
-use crate::types::core::{CoreType, Type};
+use crate::types::core::{CoreType, Type, TypeStringifyContext};
 use crate::types::traits::{CollectionType, OperatorCompatiblity};
 use crate::{constants::common::BOOL, types::traits::TypeLike};
 
@@ -104,8 +103,8 @@ impl TypeLike for Array {
         )
     }
 
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        format!("[{}]", self.element_type.to_string(interner, namespace))
+    fn to_string(&self, context: TypeStringifyContext) -> String {
+        format!("[{}]", self.element_type.to_string(context))
     }
 }
 

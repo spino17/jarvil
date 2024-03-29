@@ -1,9 +1,7 @@
-use super::namespace::Namespace;
 use super::symbol::core::SymbolIndex;
 use super::traits::InstantiationContext;
-use crate::core::string_interner::Interner;
 use crate::scope::traits::IsInitialized;
-use crate::types::core::Type;
+use crate::types::core::{Type, TypeStringifyContext};
 use crate::types::traits::TypeLike;
 use std::ops::Index;
 use std::slice::Iter;
@@ -28,16 +26,13 @@ impl TurbofishTypes {
         self.0.len()
     }
 
-    pub fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
+    pub fn to_string(&self, context: TypeStringifyContext) -> String {
         let mut s = "".to_string();
         let concrete_types = &self.0;
         let len = concrete_types.len();
-        s.push_str(&concrete_types[0].to_string(interner, namespace));
+        s.push_str(&concrete_types[0].to_string(context));
         for i in 1..len {
-            s.push_str(&format!(
-                ", {}",
-                concrete_types[i].to_string(interner, namespace)
-            ));
+            s.push_str(&format!(", {}", concrete_types[i].to_string(context)));
         }
         s
     }

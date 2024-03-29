@@ -1,10 +1,10 @@
 use super::{
+    core::TypeStringifyContext,
     helper::try_infer_types_from_tuple,
     traits::{OperatorCompatiblity, TypeLike},
 };
 use crate::{
     constants::common::BOOL,
-    core::string_interner::Interner,
     lexer::token::BinaryOperatorKind,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
@@ -140,13 +140,10 @@ impl TypeLike for Tuple {
         )
     }
 
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let mut str = self.sub_types[0].to_string(interner, namespace);
+    fn to_string(&self, context: TypeStringifyContext) -> String {
+        let mut str = self.sub_types[0].to_string(context);
         for i in 1..self.sub_types.len() {
-            str.push_str(&format!(
-                ", {}",
-                self.sub_types[i].to_string(interner, namespace)
-            ));
+            str.push_str(&format!(", {}", self.sub_types[i].to_string(context)));
         }
         format!("({})", str)
     }

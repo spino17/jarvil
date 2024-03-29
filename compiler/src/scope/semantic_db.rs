@@ -17,7 +17,7 @@ use crate::{
         OkIdentifierInUseNode, OkSelfKeywordNode, TypeExpressionNode,
     },
     core::string_interner::Interner,
-    types::core::Type,
+    types::core::{Type, TypeStringifyContext},
 };
 use crate::{builtin::builtin_functions, scope::mangled::MangledIdentifierName};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -63,6 +63,10 @@ impl SemanticStateDatabase {
             block_non_locals: FxHashMap::default(),
             bounded_method_kind: FxHashMap::default(),
         }
+    }
+
+    pub fn err_logging_context(&self) -> TypeStringifyContext {
+        TypeStringifyContext::new(&self.interner, &self.namespace)
     }
 
     pub fn namespace_ref(&self) -> &Namespace {

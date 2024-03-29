@@ -1,6 +1,5 @@
 use crate::{
     constants::common::BOOL,
-    core::string_interner::Interner,
     lexer::token::BinaryOperatorKind,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
@@ -12,7 +11,7 @@ use crate::{
         traits::InstantiationContext,
     },
     types::{
-        core::{CoreType, Type},
+        core::{CoreType, Type, TypeStringifyContext},
         traits::{CollectionType, OperatorCompatiblity, TypeLike},
     },
 };
@@ -115,11 +114,11 @@ impl TypeLike for HashMap {
         Ok(())
     }
 
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
+    fn to_string(&self, context: TypeStringifyContext) -> String {
         format!(
             "{{{} : {}}}",
-            self.key_type.to_string(interner, namespace),
-            self.value_type.to_string(interner, namespace)
+            self.key_type.to_string(context),
+            self.value_type.to_string(context)
         )
     }
 }

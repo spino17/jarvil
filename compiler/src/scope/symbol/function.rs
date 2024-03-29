@@ -8,8 +8,9 @@ use crate::scope::mangled::MangledIdentifierName;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
 use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::traits::IsInitialized;
 use crate::scope::traits::{AbstractSymbol, InstantiationContext};
-use crate::types::core::Type;
+use crate::types::core::{Type, TypeStringifyContext};
 use crate::{
     ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode},
     core::common::RefOrOwned,
@@ -18,7 +19,6 @@ use crate::{
     },
     types::traits::TypeLike,
 };
-use crate::{core::string_interner::Interner, scope::traits::IsInitialized};
 use std::vec;
 use text_size::TextRange;
 
@@ -306,8 +306,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                             Some(type_ranges) => type_ranges,
                             None => unreachable!(),
                         },
-                        type_checker.semantic_db().interner(),
-                        type_checker.semantic_db().namespace_ref(),
+                        type_checker.err_logging_context(),
                     )?;
                     let context = self
                         .context
@@ -377,19 +376,21 @@ impl AbstractSymbol for FunctionSymbolData {
         concrete_types: Option<&TurbofishTypes>,
         type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
-        interner: &Interner,
-        namespace: &Namespace,
+        context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(is_concrete_types_none_allowed);
-        let function_data = namespace.functions_ref().symbol_ref(self.0).data_ref();
+        let function_data = context
+            .namespace()
+            .functions_ref()
+            .symbol_ref(self.0)
+            .data_ref();
         let generic_type_decls = function_data.generics();
         check_concrete_types_bounded_by_interfaces(
             generic_type_decls,
             concrete_types,
             type_ranges,
             true,
-            interner,
-            namespace,
+            context,
         )
     }
 

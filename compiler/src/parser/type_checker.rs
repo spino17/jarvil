@@ -41,6 +41,7 @@ use crate::scope::symbol::types::generic_type::{
 use crate::scope::symbol::types::struct_type::StructTypeData;
 use crate::scope::symbol::variables::VariableData;
 use crate::types::array::core::Array;
+use crate::types::core::TypeStringifyContext;
 use crate::types::generic::Generic;
 use crate::types::hashmap::core::HashMap;
 use crate::types::non_struct::NonStructMethodsHandler;
@@ -210,6 +211,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         &self.semantic_db
     }
 
+    pub fn err_logging_context(&self) -> TypeStringifyContext {
+        self.semantic_db.err_logging_context()
+    }
+
     pub fn check_ast(mut self, ast: &BlockNode) -> SemanticStateDatabase {
         let core_block = ast.0.as_ref();
         for stmt in &core_block.stmts {
@@ -374,14 +379,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 .is_type_bounded_by_interfaces(interface_bounds, self.semantic_db.namespace_ref())
             {
                 error_strs.push((
-                    inferred_ty.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
-                    interface_bounds.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
+                    inferred_ty.to_string(self.err_logging_context()),
+                    interface_bounds.to_string(self.err_logging_context()),
                 ));
             }
         }
@@ -427,14 +426,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             let expected_param_type = &expected_param_data[index];
             if !param_type_obj.is_eq(expected_param_type, self.semantic_db.namespace_ref()) {
                 mismatch_types_vec.push((
-                    expected_param_type.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
-                    param_type_obj.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
+                    expected_param_type.to_string(self.err_logging_context()),
+                    param_type_obj.to_string(self.err_logging_context()),
                     index + 1,
                     received_param.range(),
                 ));
@@ -536,10 +529,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 Ok(return_ty)
             }
             _ => Err(AtomStartTypeCheckError::IdentifierNotCallable(
-                lambda_type.to_string(
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ),
+                lambda_type.to_string(self.err_logging_context()),
             )),
         }
     }
@@ -820,14 +810,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             let expr_ty = self.check_expr(expr);
                             if !expr_ty.is_eq(&expected_ty, self.semantic_db.namespace_ref()) {
                                 let err = IncorrectExpressionTypeError::new(
-                                    expected_ty.to_string(
-                                        self.semantic_db.interner(),
-                                        self.semantic_db.namespace_ref(),
-                                    ),
-                                    expr_ty.to_string(
-                                        self.semantic_db.interner(),
-                                        self.semantic_db.namespace_ref(),
-                                    ),
+                                    expected_ty.to_string(self.err_logging_context()),
+                                    expr_ty.to_string(self.err_logging_context()),
                                     expr.range(),
                                 );
                                 self.errors
@@ -862,10 +846,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 None => {
                     if let Some(expected_ty) = expected_ty {
                         let err = ExpectedValueForEnumVariantError::new(
-                            expected_ty.to_string(
-                                self.semantic_db.interner(),
-                                self.semantic_db.namespace_ref(),
-                            ),
+                            expected_ty.to_string(self.err_logging_context()),
                             property_name.range(),
                         );
                         self.errors
@@ -1043,10 +1024,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     None => Err(Diagnostics::PropertyDoesNotExist(
                         PropertyDoesNotExistError::new(
                             PropertyKind::Field,
-                            atom_type_obj.to_string(
-                                self.semantic_db.interner(),
-                                self.semantic_db.namespace_ref(),
-                            ),
+                            atom_type_obj.to_string(self.err_logging_context()),
                             property.range(),
                             atom.range(),
                         ),
@@ -1056,11 +1034,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             CoreType::Generic(generic_ty) => {
                 let ty_data = self.semantic_db.ty_symbol_ref(generic_ty.symbol_index());
                 let generic_data = ty_data.generic_data_ref();
-                match generic_data.try_field(
-                    &property_name_str,
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ) {
+                match generic_data.try_field(&property_name_str, self.err_logging_context()) {
                     GenericTypePropertyQueryResult::Ok((type_obj, _)) => Ok(type_obj),
                     GenericTypePropertyQueryResult::AmbigiousPropertyResolution(
                         property_containing_interface_objs,
@@ -1074,10 +1048,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     GenericTypePropertyQueryResult::None => Err(Diagnostics::PropertyDoesNotExist(
                         PropertyDoesNotExistError::new(
                             PropertyKind::Field,
-                            atom_type_obj.to_string(
-                                self.semantic_db.interner(),
-                                self.semantic_db.namespace_ref(),
-                            ),
+                            atom_type_obj.to_string(self.err_logging_context()),
                             property.range(),
                             atom.range(),
                         ),
@@ -1087,10 +1058,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             _ => Err(Diagnostics::PropertyDoesNotExist(
                 PropertyDoesNotExistError::new(
                     PropertyKind::Field,
-                    atom_type_obj.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
+                    atom_type_obj.to_string(self.err_logging_context()),
                     property.range(),
                     atom.range(),
                 ),
@@ -1177,11 +1145,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let ty_data = self.semantic_db.ty_symbol_ref(generic_ty.symbol_index());
         let generic_data = ty_data.generic_data_ref();
         let interface_bounds = generic_data.interface_bounds();
-        match generic_data.try_field(
-            &method_name,
-            self.semantic_db.interner(),
-            self.semantic_db.namespace_ref(),
-        ) {
+        match generic_data.try_field(&method_name, self.err_logging_context()) {
             GenericTypePropertyQueryResult::Ok((propetry_ty, _)) => {
                 if method_name_ok_identifier
                     .core_ref()
@@ -1210,11 +1174,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             )),
             GenericTypePropertyQueryResult::None => {
                 // if field is not there then check in methods
-                match generic_data.has_method(
-                    &method_name,
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ) {
+                match generic_data.has_method(&method_name, self.err_logging_context()) {
                     GenericTypePropertyQueryResult::Ok(interface_index) => {
                         let interface_obj =
                             interface_bounds.interface_obj_at_index(interface_index);
@@ -1344,10 +1304,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     MethodAccessTypeCheckError::MethodNotFound => {
                         let err = PropertyDoesNotExistError::new(
                             PropertyKind::Method,
-                            atom_type_obj.to_string(
-                                self.semantic_db.interner(),
-                                self.semantic_db.namespace_ref(),
-                            ),
+                            atom_type_obj.to_string(self.err_logging_context()),
                             method.range(),
                             atom.range(),
                         );
@@ -1356,10 +1313,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     }
                     MethodAccessTypeCheckError::FieldNotCallable(ty) => {
                         let err = FieldNotCallableError::new(
-                            ty.to_string(
-                                self.semantic_db.interner(),
-                                self.semantic_db.namespace_ref(),
-                            ),
+                            ty.to_string(self.err_logging_context()),
                             ok_identifier.range(),
                         );
                         self.errors.log_error(Diagnostics::FieldNotCallable(err));
@@ -1490,14 +1444,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             Some(ty) => (ty, Some(atom_type_obj)),
             None => {
                 let err = ExpressionIndexingNotValidError::new(
-                    atom_type_obj.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
-                    index_type_obj.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
+                    atom_type_obj.to_string(self.err_logging_context()),
+                    index_type_obj.to_string(self.err_logging_context()),
                     atom.range(),
                     index_expr.range(),
                 );
@@ -1556,14 +1504,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             let ty = self.check_expr(expr);
             if !ty.is_eq(&first_expr_ty, self.semantic_db.namespace_ref()) {
                 let err = IncorrectExpressionTypeError::new(
-                    first_expr_ty.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
-                    ty.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
+                    first_expr_ty.to_string(self.err_logging_context()),
+                    ty.to_string(self.err_logging_context()),
                     expr.range(),
                 );
                 self.errors
@@ -1598,14 +1540,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             let value_ty = self.check_expr(&core_key_value_pair.value_expr);
             if !key_ty.is_eq(&first_key_ty, self.semantic_db.namespace_ref()) {
                 let err = IncorrectExpressionTypeError::new(
-                    first_key_ty.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
-                    key_ty.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
+                    first_key_ty.to_string(self.err_logging_context()),
+                    key_ty.to_string(self.err_logging_context()),
                     core_key_value_pair.key_expr.range(),
                 );
                 self.errors
@@ -1613,14 +1549,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             }
             if !value_ty.is_eq(&first_value_ty, self.semantic_db.namespace_ref()) {
                 let err = IncorrectExpressionTypeError::new(
-                    first_value_ty.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
-                    value_ty.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
+                    first_value_ty.to_string(self.err_logging_context()),
+                    value_ty.to_string(self.err_logging_context()),
                     core_key_value_pair.value_expr.range(),
                 );
                 self.errors
@@ -1683,10 +1613,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     operand_type
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
-                        operand_type.to_string(
-                            self.semantic_db.interner(),
-                            self.semantic_db.namespace_ref(),
-                        ),
+                        operand_type.to_string(self.err_logging_context()),
                         "numeric (`int`, `float`)",
                         "`+` or `-`",
                         unary_expr.range(),
@@ -1702,10 +1629,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     operand_type
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
-                        operand_type.to_string(
-                            self.semantic_db.interner(),
-                            self.semantic_db.namespace_ref(),
-                        ),
+                        operand_type.to_string(self.err_logging_context()),
                         "boolean",
                         "`not`",
                         unary_expr.range(),
@@ -1740,14 +1664,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             Some(type_obj) => type_obj,
             None => {
                 let err = BinaryOperatorInvalidOperandsError::new(
-                    l_type.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
-                    r_type.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
+                    l_type.to_string(self.err_logging_context()),
+                    r_type.to_string(self.err_logging_context()),
                     left_expr.range(),
                     right_expr.range(),
                     operator.range(),
@@ -1787,14 +1705,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 },
                 None => {
                     let err = BinaryOperatorInvalidOperandsError::new(
-                        l_type.to_string(
-                            self.semantic_db.interner(),
-                            self.semantic_db.namespace_ref(),
-                        ),
-                        r_type.to_string(
-                            self.semantic_db.interner(),
-                            self.semantic_db.namespace_ref(),
-                        ),
+                        l_type.to_string(self.err_logging_context()),
+                        r_type.to_string(self.err_logging_context()),
                         left_expr.range(),
                         right_expr.range(),
                         operator.range(),
@@ -1831,10 +1743,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     if let Some(interior_atom_type) = interior_atom_type {
                         if interior_atom_type.is_immutable() {
                             let err = ImmutableTypeNotAssignableError::new(
-                                interior_atom_type.to_string(
-                                    self.semantic_db.interner(),
-                                    self.semantic_db.namespace_ref(),
-                                ),
+                                interior_atom_type.to_string(self.err_logging_context()),
                                 l_index_expr.core_ref().atom.range(),
                             );
                             self.errors
@@ -1862,14 +1771,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
         if !l_type.is_eq(&r_type, self.semantic_db.namespace_ref()) {
             let err = MismatchedTypesOnLeftRightError::new(
-                l_type.to_string(
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ),
-                r_type.to_string(
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ),
+                l_type.to_string(self.err_logging_context()),
+                r_type.to_string(self.err_logging_context()),
                 range,
                 r_assign.range(),
             );
@@ -1917,14 +1820,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 .set_data_type(&r_type);
         } else if !variable_ty.is_eq(&r_type, self.semantic_db.namespace_ref()) {
             let err = RightSideExpressionTypeMismatchedWithTypeFromAnnotationError::new(
-                variable_ty.to_string(
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ),
-                r_type.to_string(
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ),
+                variable_ty.to_string(self.err_logging_context()),
+                r_type.to_string(self.err_logging_context()),
                 core_variable_decl.name.range(),
                 r_variable_decl.range(),
             );
@@ -1998,14 +1895,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let expected_type_obj = &self.context.func_stack[func_stack_len - 1];
         if !expr_type_obj.is_eq(expected_type_obj, self.semantic_db.namespace_ref()) {
             let err = MismatchedReturnTypeError::new(
-                expected_type_obj.to_string(
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ),
-                expr_type_obj.to_string(
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ),
+                expected_type_obj.to_string(self.err_logging_context()),
+                expr_type_obj.to_string(self.err_logging_context()),
                 core_return_stmt.return_keyword.range(),
             );
             self.errors
@@ -2052,10 +1943,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 let err = InterfaceMethodsInStructCheckError::new(
                     missing_interface_method_names,
                     errors,
-                    interface_obj.to_string(
-                        self.semantic_db.interner(),
-                        self.semantic_db.namespace_ref(),
-                    ),
+                    interface_obj.to_string(self.err_logging_context()),
                     *range,
                     self.semantic_db.interner(),
                 );
@@ -2072,10 +1960,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         if !ty.is_bool() {
             let err = IncorrectExpressionTypeError::new(
                 "bool".to_string(),
-                ty.to_string(
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ),
+                ty.to_string(self.err_logging_context()),
                 condition_expr.range(),
             );
             self.errors
@@ -2104,10 +1989,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let CoreType::Enum(enum_ty) = expr_ty.core_ty() else {
             let err = IncorrectExpressionTypeError::new(
                 "<enum>".to_string(),
-                expr_ty.to_string(
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ),
+                expr_ty.to_string(self.err_logging_context()),
                 expr.range(),
             );
             self.errors
@@ -2198,10 +2080,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                     None => {
                                         if let Some(expected_ty) = expected_ty {
                                             let err = ExpectedValueForEnumVariantError::new(
-                                                expected_ty.to_string(
-                                                    self.semantic_db.interner(),
-                                                    self.semantic_db.namespace_ref(),
-                                                ),
+                                                expected_ty.to_string(self.err_logging_context()),
                                                 variant_name.range(),
                                             );
                                             self.errors.log_error(
@@ -2278,10 +2157,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         if !ty.is_bool() {
             let err = IncorrectExpressionTypeError::new(
                 "bool".to_string(),
-                ty.to_string(
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ),
+                ty.to_string(self.err_logging_context()),
                 condition_expr.range(),
             );
             self.errors
@@ -2330,10 +2206,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             };
         } else {
             let err = NonIterableExpressionError::new(
-                iterable_expr_ty.to_string(
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
-                ),
+                iterable_expr_ty.to_string(self.err_logging_context()),
                 iterable_expr.range(),
             );
             self.errors
@@ -2449,8 +2322,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     range,
                     err_strs,
                     concrete_types,
-                    self.semantic_db.interner(),
-                    self.semantic_db.namespace_ref(),
+                    self.err_logging_context(),
                 );
                 self.errors
                     .log_error(Diagnostics::InferredTypesNotBoundedByInterfaces(err));

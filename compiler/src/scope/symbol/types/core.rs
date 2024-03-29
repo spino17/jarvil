@@ -1,5 +1,4 @@
 use super::enum_type::EnumTypeData;
-use crate::core::string_interner::Interner;
 use crate::scope::concrete::TurbofishTypes;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
@@ -11,6 +10,7 @@ use crate::scope::{
     symbol::types::generic_type::GenericTypeData, symbol::types::lambda_type::LambdaTypeData,
     symbol::types::struct_type::StructTypeData,
 };
+use crate::types::core::TypeStringifyContext;
 use text_size::TextRange;
 
 #[derive(Debug)]
@@ -146,10 +146,14 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
         concrete_types: Option<&TurbofishTypes>,
         type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
-        interner: &Interner,
-        namespace: &Namespace,
+        context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
-        match namespace.types_ref().symbol_ref(self.0).data_ref() {
+        match context
+            .namespace()
+            .types_ref()
+            .symbol_ref(self.0)
+            .data_ref()
+        {
             UserDefinedTypeData::Struct(struct_data) => {
                 let generic_type_decls = struct_data.generics();
                 check_concrete_types_bounded_by_interfaces(
@@ -157,8 +161,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
                     concrete_types,
                     type_ranges,
                     is_concrete_types_none_allowed,
-                    interner,
-                    namespace,
+                    context,
                 )
             }
             UserDefinedTypeData::Lambda(lambda_data) => {
@@ -168,8 +171,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
                     concrete_types,
                     type_ranges,
                     false,
-                    interner,
-                    namespace,
+                    context,
                 )
             }
             UserDefinedTypeData::Enum(enum_data) => {
@@ -179,8 +181,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
                     concrete_types,
                     type_ranges,
                     false,
-                    interner,
-                    namespace,
+                    context,
                 )
             }
             UserDefinedTypeData::Generic(_) => {

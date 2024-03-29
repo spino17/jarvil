@@ -431,19 +431,42 @@ impl TypeLike for Type {
         }
     }
 
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
+    fn to_string(&self, context: TypeStringifyContext) -> String {
         match self.0.as_ref() {
-            CoreType::Atomic(atomic_type) => atomic_type.to_string(interner, namespace),
-            CoreType::Struct(struct_type) => struct_type.to_string(interner, namespace),
-            CoreType::Enum(enum_type) => enum_type.to_string(interner, namespace),
-            CoreType::Lambda(lambda_type) => lambda_type.to_string(interner, namespace),
-            CoreType::Array(array_type) => array_type.to_string(interner, namespace),
-            CoreType::Tuple(tuple_type) => tuple_type.to_string(interner, namespace),
-            CoreType::HashMap(hashmap_type) => hashmap_type.to_string(interner, namespace),
-            CoreType::Generic(generic_type) => generic_type.to_string(interner, namespace),
+            CoreType::Atomic(atomic_type) => atomic_type.to_string(context),
+            CoreType::Struct(struct_type) => struct_type.to_string(context),
+            CoreType::Enum(enum_type) => enum_type.to_string(context),
+            CoreType::Lambda(lambda_type) => lambda_type.to_string(context),
+            CoreType::Array(array_type) => array_type.to_string(context),
+            CoreType::Tuple(tuple_type) => tuple_type.to_string(context),
+            CoreType::HashMap(hashmap_type) => hashmap_type.to_string(context),
+            CoreType::Generic(generic_type) => generic_type.to_string(context),
             CoreType::Unknown => UNKNOWN.to_string(),
             CoreType::Void => "()".to_string(),
             CoreType::Unset => UNSET.to_string(),
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct TypeStringifyContext<'short> {
+    interner: &'short Interner,
+    namespace: &'short Namespace,
+}
+
+impl<'short> TypeStringifyContext<'short> {
+    pub fn new(interner_ref: &'short Interner, namespace_ref: &'short Namespace) -> Self {
+        TypeStringifyContext {
+            interner: interner_ref,
+            namespace: namespace_ref,
+        }
+    }
+
+    pub fn interner(&self) -> &'short Interner {
+        self.interner
+    }
+
+    pub fn namespace(&self) -> &'short Namespace {
+        self.namespace
     }
 }

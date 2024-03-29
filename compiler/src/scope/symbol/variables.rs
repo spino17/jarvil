@@ -1,11 +1,10 @@
 use super::core::{SymbolDataEntry, SymbolIndex};
-use crate::core::string_interner::Interner;
 use crate::scope::concrete::TurbofishTypes;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::mangled::MangledIdentifierName;
 use crate::scope::namespace::Namespace;
 use crate::scope::traits::{AbstractSymbol, IsInitialized};
-use crate::types::core::Type;
+use crate::types::core::{Type, TypeStringifyContext};
 use text_size::TextRange;
 
 #[derive(Debug)]
@@ -77,8 +76,7 @@ impl AbstractSymbol for VariableSymbolData {
         concrete_types: Option<&TurbofishTypes>,
         _type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
-        _interner: &Interner,
-        _namespace: &Namespace,
+        _context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(!is_concrete_types_none_allowed);
         if concrete_types.is_some() {

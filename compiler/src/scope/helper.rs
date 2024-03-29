@@ -10,6 +10,7 @@ use super::symbol::{
 use super::{concrete::TurbofishTypes, errors::GenericTypeArgsCheckError};
 use crate::core::string_interner::Interner;
 use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::types::core::TypeStringifyContext;
 use text_size::TextRange;
 
 pub fn check_concrete_types_bounded_by_interfaces(
@@ -17,8 +18,7 @@ pub fn check_concrete_types_bounded_by_interfaces(
     concrete_types: Option<&TurbofishTypes>,
     type_ranges: Option<&Vec<TextRange>>,
     is_concrete_types_none_allowed: bool,
-    interner: &Interner,
-    namespace: &Namespace,
+    context: TypeStringifyContext,
 ) -> Result<(), GenericTypeArgsCheckError> {
     match concrete_types {
         Some(concrete_types) => match generic_type_decls {
@@ -28,8 +28,7 @@ pub fn check_concrete_types_bounded_by_interfaces(
                     Some(type_ranges) => type_ranges,
                     None => unreachable!(),
                 },
-                interner,
-                namespace,
+                context,
             ),
             None => Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected),
         },

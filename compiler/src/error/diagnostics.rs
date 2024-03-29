@@ -1,5 +1,5 @@
 use super::helper::{range_to_span, IdentifierKind, PropertyKind};
-use crate::scope::namespace::Namespace;
+use crate::types::core::TypeStringifyContext;
 use crate::types::traits::TypeLike;
 use crate::{
     core::string_interner::{Interner, StrId},
@@ -1310,17 +1310,13 @@ impl InferredTypesNotBoundedByInterfacesError {
         range: TextRange,
         err_strs: Vec<(String, String)>,
         concrete_types: Vec<Type>,
-        interner: &Interner,
-        namespace: &Namespace,
+        context: TypeStringifyContext,
     ) -> Self {
         let mut concrete_types_str = "<".to_string();
         let concrete_types_len = concrete_types.len();
-        concrete_types_str.push_str(&concrete_types[0].to_string(interner, namespace));
+        concrete_types_str.push_str(&concrete_types[0].to_string(context));
         for i in 1..concrete_types_len {
-            concrete_types_str.push_str(&format!(
-                ", {}",
-                concrete_types[i].to_string(interner, namespace)
-            ));
+            concrete_types_str.push_str(&format!(", {}", concrete_types[i].to_string(context)));
         }
         concrete_types_str.push('>');
         let mut err_msg = format!(

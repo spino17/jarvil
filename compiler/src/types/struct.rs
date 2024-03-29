@@ -1,7 +1,7 @@
-use super::core::{CoreType, Type};
+use super::core::{CoreType, Type, TypeStringifyContext};
 use super::helper::{try_infer_types_from_tuple, user_defined_ty_compare_fn};
 use super::traits::{OperatorCompatiblity, TypeLike, UserDefinedType};
-use crate::core::string_interner::{Interner, StrId};
+use crate::core::string_interner::StrId;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
@@ -143,13 +143,13 @@ impl TypeLike for Struct {
         )
     }
 
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let mut s = interner.lookup(self.name());
+    fn to_string(&self, context: TypeStringifyContext) -> String {
+        let mut s = context.interner().lookup(self.name());
         let Some(concrete_types) = &self.concrete_types else {
             return s;
         };
         s.push('<');
-        s.push_str(&concrete_types.to_string(interner, namespace));
+        s.push_str(&concrete_types.to_string(context));
         s.push('>');
         s
     }

@@ -2,8 +2,8 @@ use super::concrete::TurbofishTypes;
 use super::errors::GenericTypeArgsCheckError;
 use super::namespace::Namespace;
 use super::symbol::core::{SymbolDataEntry, SymbolIndex};
-use crate::core::string_interner::Interner;
 use crate::scope::mangled::MangledIdentifierName;
+use crate::types::core::TypeStringifyContext;
 use text_size::TextRange;
 
 pub trait IsInitialized {
@@ -21,8 +21,7 @@ pub trait AbstractSymbol {
         concrete_types: Option<&TurbofishTypes>,
         type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
-        interner: &Interner,
-        namespace: &Namespace,
+        context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError>;
     fn mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<Self::SymbolTy>;
 }

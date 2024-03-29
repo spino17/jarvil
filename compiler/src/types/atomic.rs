@@ -1,6 +1,6 @@
+use super::core::TypeStringifyContext;
 use super::traits::{OperatorCompatiblity, TypeLike};
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
-use crate::core::string_interner::Interner;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
@@ -106,7 +106,7 @@ impl TypeLike for Atomic {
         unreachable!()
     }
 
-    fn to_string(&self, _interner: &Interner, _namespace: &Namespace) -> String {
+    fn to_string(&self, _context: TypeStringifyContext) -> String {
         match self {
             Atomic::Int => String::from(INT),
             Atomic::Float => String::from(FLOAT),

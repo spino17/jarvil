@@ -2,7 +2,6 @@ use super::core::SymbolDataEntry;
 use super::core::SymbolIndex;
 use super::function::CallableData;
 use super::function::PartialConcreteCallableDataRef;
-use crate::core::string_interner::Interner;
 use crate::core::string_interner::StrId;
 use crate::scope::concrete::ConcreteSymbolIndex;
 use crate::scope::concrete::TurbofishTypes;
@@ -17,6 +16,7 @@ use crate::scope::symbol::types::generic_type::GenericTypeParams;
 use crate::scope::traits::AbstractSymbol;
 use crate::scope::traits::IsInitialized;
 use crate::types::core::Type;
+use crate::types::core::TypeStringifyContext;
 use crate::types::traits::TypeLike;
 use rustc_hash::FxHashMap;
 use std::slice::Iter;
@@ -129,12 +129,12 @@ impl InterfaceObject {
         true
     }
 
-    pub fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let mut s = interner.lookup(self.name());
+    pub fn to_string(&self, context: TypeStringifyContext) -> String {
+        let mut s = context.interner().lookup(self.name());
         match self.concrete_types() {
             Some(concrete_types) => {
                 s.push('<');
-                s.push_str(&concrete_types.to_string(interner, namespace));
+                s.push_str(&concrete_types.to_string(context));
                 s.push('>');
                 s
             }
@@ -215,15 +215,15 @@ impl InterfaceBounds {
         self.is_subset(other, namespace) && other.is_subset(self, namespace)
     }
 
-    pub fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
+    pub fn to_string(&self, context: TypeStringifyContext) -> String {
         let mut s = "{".to_string();
         let len = self.interfaces.len();
         if len > 0 {
-            s.push_str(&self.interfaces[0].0.to_string(interner, namespace));
+            s.push_str(&self.interfaces[0].0.to_string(context));
         }
         for i in 1..len {
             s.push_str(" + ");
-            s.push_str(&self.interfaces[i].0.to_string(interner, namespace));
+            s.push_str(&self.interfaces[i].0.to_string(context));
         }
         s.push('}');
         s
@@ -388,19 +388,21 @@ impl AbstractSymbol for InterfaceSymbolData {
         concrete_types: Option<&TurbofishTypes>,
         type_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
-        interner: &Interner,
-        namespace: &Namespace,
+        context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(!is_concrete_types_none_allowed);
-        let interface_data = namespace.interfaces_ref().symbol_ref(self.0).data_ref();
+        let interface_data = context
+            .namespace()
+            .interfaces_ref()
+            .symbol_ref(self.0)
+            .data_ref();
         let generic_type_decls = interface_data.generics();
         check_concrete_types_bounded_by_interfaces(
             generic_type_decls,
             concrete_types,
             type_ranges,
             false,
-            interner,
-            namespace,
+            context,
         )
     }
 

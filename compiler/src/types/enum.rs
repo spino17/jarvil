@@ -1,10 +1,10 @@
 use super::{
-    core::{CoreType, Type},
+    core::{CoreType, Type, TypeStringifyContext},
     helper::{try_infer_types_from_tuple, user_defined_ty_compare_fn},
     traits::{OperatorCompatiblity, TypeLike, UserDefinedType},
 };
 use crate::{
-    core::string_interner::{Interner, StrId},
+    core::string_interner::StrId,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::{TurbofishTypes, TypeGenericsInstantiationContext},
@@ -144,13 +144,13 @@ impl TypeLike for Enum {
         )
     }
 
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let mut s = interner.lookup(self.name());
+    fn to_string(&self, context: TypeStringifyContext) -> String {
+        let mut s = context.interner().lookup(self.name());
         let Some(concrete_types) = &self.concrete_types else {
             return s;
         };
         s.push('<');
-        s.push_str(&concrete_types.to_string(interner, namespace));
+        s.push_str(&concrete_types.to_string(context));
         s.push('>');
         s
     }
