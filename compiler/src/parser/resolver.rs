@@ -607,7 +607,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
-    pub fn type_obj_from_user_defined_type_expr<'a>(
+    pub fn ty_from_user_defined_type_expr<'a>(
         &mut self,
         user_defined_ty_expr: &'a UserDefinedTypeNode,
         scope_index: ScopeIndex,
@@ -739,9 +739,9 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn type_obj_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
-        let ty_obj = match type_expr.type_obj_before_resolved(self, self.scope_index) {
-            TypeResolveKind::Resolved(type_obj) => type_obj,
+    pub fn ty_from_expression(&mut self, type_expr: &TypeExpressionNode) -> Type {
+        let ty = match type_expr.ty_before_resolved(self, self.scope_index) {
+            TypeResolveKind::Resolved(ty) => ty,
             TypeResolveKind::Invalid => Type::new_with_unknown(),
             TypeResolveKind::Unresolved(unresolved) => {
                 for unresolved_identifier in unresolved {
@@ -790,9 +790,8 @@ impl<'ctx> JarvilResolver<'ctx> {
                 Type::new_with_unknown()
             }
         };
-        self.semantic_db
-            .set_type_expr_obj_mapping(type_expr, &ty_obj);
-        ty_obj
+        self.semantic_db.set_type_expr_obj_mapping(type_expr, &ty);
+        ty
     }
 
     fn interface_obj_from_expression(
@@ -819,7 +818,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         let mut concrete_types: Vec<Type> = vec![];
         let mut ty_ranges: Vec<TextRange> = vec![];
         for generic_type_expr in generic_type_args.iter() {
-            let ty = self.type_obj_from_expression(generic_type_expr);
+            let ty = self.ty_from_expression(generic_type_expr);
             concrete_types.push(ty);
             ty_ranges.push(generic_type_expr.range())
         }
@@ -964,7 +963,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         let return_type: Type = match return_type {
             Some((_, return_type_expr)) => {
                 return_type_range = Some(return_type_expr.range());
-                self.type_obj_from_expression(return_type_expr)
+                self.ty_from_expression(return_type_expr)
             }
             None => Type::new_with_void(),
         };
@@ -978,7 +977,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 };
                 let param_name =
                     ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
-                let param_type = self.type_obj_from_expression(&core_param.data_type);
+                let param_type = self.ty_from_expression(&core_param.data_type);
                 let unique_id = self
                     .semantic_db
                     .unique_key_generator_mut_ref()
@@ -1150,7 +1149,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         let ty_from_optional_annotation = core_variable_decl
             .ty_annotation
             .as_ref()
-            .map(|(_, ty_expr)| (self.type_obj_from_expression(ty_expr), ty_expr.range()));
+            .map(|(_, ty_expr)| (self.ty_from_expression(ty_expr), ty_expr.range()));
         // Except `CoreRAssignmentNode::LAMBDA`, type of the variable is set in the `type_checker.rs`. For `CoreRAssignmentNode::LAMBDA`,
         // it's type is set to the variable symbol_data here itself.
         match core_variable_decl.r_node.core_ref() {
@@ -1359,7 +1358,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier
                             .token_value(&self.code_handler, self.semantic_db.interner());
-                        let ty = self.type_obj_from_expression(&name_type_spec.data_type);
+                        let ty = self.ty_from_expression(&name_type_spec.data_type);
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
@@ -1598,14 +1597,14 @@ impl<'ctx> JarvilResolver<'ctx> {
             let core_enum_variant_decl = enum_variant_decl.core_ref();
             let variant_name = &core_enum_variant_decl.variant;
             let ty = &core_enum_variant_decl.ty;
-            let mut variant_ty_obj: Option<Type> = None;
+            let mut variant_ty: Option<Type> = None;
             let CoreIdentifierInDeclNode::Ok(ok_identifier) = variant_name.core_ref() else {
                 continue;
             };
             let variant_name =
                 ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
             if let Some((_, ty_expr, _)) = ty {
-                variant_ty_obj = Some(self.type_obj_from_expression(ty_expr));
+                variant_ty = Some(self.ty_from_expression(ty_expr));
             }
             match variants_map.get(&variant_name) {
                 Some(previous_decl_range) => {
@@ -1619,7 +1618,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
                 None => {
-                    variants.push((variant_name, variant_ty_obj, ok_identifier.range()));
+                    variants.push((variant_name, variant_ty, ok_identifier.range()));
                     variants_map.insert(variant_name, ok_identifier.range());
                 }
             }
@@ -1651,13 +1650,13 @@ impl<'ctx> JarvilResolver<'ctx> {
                 .0;
         }
         let return_type: Type = match return_type {
-            Some((_, return_type_expr)) => self.type_obj_from_expression(return_type_expr),
+            Some((_, return_type_expr)) => self.ty_from_expression(return_type_expr),
             None => Type::new_with_void(),
         };
         if let Some(type_tuple) = type_tuple {
             let type_tuple_iter = type_tuple.iter();
             for data_type in type_tuple_iter {
-                let ty = self.type_obj_from_expression(data_type);
+                let ty = self.ty_from_expression(data_type);
                 types_vec.push(ty);
             }
         }
@@ -1754,7 +1753,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier
                             .token_value(&self.code_handler, self.semantic_db.interner());
-                        let ty = self.type_obj_from_expression(&name_type_spec.data_type);
+                        let ty = self.ty_from_expression(&name_type_spec.data_type);
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
@@ -2070,7 +2069,7 @@ impl<'ctx> Visitor for JarvilResolver<'ctx> {
                 None
             }
             ASTNode::TypeExpression(type_expr) => {
-                self.type_obj_from_expression(type_expr);
+                self.ty_from_expression(type_expr);
                 None
             }
             ASTNode::MatchCase(match_case) => {

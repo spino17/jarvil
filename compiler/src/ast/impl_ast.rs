@@ -1190,26 +1190,22 @@ impl TypeExpressionNode {
         TypeExpressionNode(node)
     }
 
-    pub fn type_obj_before_resolved(
+    pub fn ty_before_resolved(
         &self,
         resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
     ) -> TypeResolveKind {
         match self.core_ref() {
             CoreTypeExpressionNode::Atomic(atomic) => {
-                atomic.type_obj_before_resolved(resolver.code_handler(), resolver.interner())
+                atomic.ty_before_resolved(resolver.code_handler(), resolver.interner())
             }
-            CoreTypeExpressionNode::Array(array) => {
-                array.type_obj_before_resolved(resolver, scope_index)
-            }
-            CoreTypeExpressionNode::Tuple(tuple) => {
-                tuple.type_obj_before_resolved(resolver, scope_index)
-            }
+            CoreTypeExpressionNode::Array(array) => array.ty_before_resolved(resolver, scope_index),
+            CoreTypeExpressionNode::Tuple(tuple) => tuple.ty_before_resolved(resolver, scope_index),
             CoreTypeExpressionNode::HashMap(hashmap) => {
-                hashmap.type_obj_before_resolved(resolver, scope_index)
+                hashmap.ty_before_resolved(resolver, scope_index)
             }
             CoreTypeExpressionNode::UserDefined(user_defined) => {
-                user_defined.type_obj_before_resolved(resolver, scope_index)
+                user_defined.ty_before_resolved(resolver, scope_index)
             }
             CoreTypeExpressionNode::MissingTokens(_) => TypeResolveKind::Invalid,
         }
@@ -1240,15 +1236,15 @@ impl AtomicTypeNode {
         AtomicTypeNode(node)
     }
 
-    pub fn type_obj_before_resolved(
+    pub fn ty_before_resolved(
         &self,
         code: &JarvilCodeHandler,
         interner: &Interner,
     ) -> TypeResolveKind {
-        self.type_obj_after_resolved(code, interner)
+        self.ty_after_resolved(code, interner)
     }
 
-    pub fn type_obj_after_resolved(
+    pub fn ty_after_resolved(
         &self,
         code: &JarvilCodeHandler,
         interner: &Interner,
@@ -1282,7 +1278,7 @@ impl ArrayTypeNode {
         ArrayTypeNode(node)
     }
 
-    pub fn type_obj_before_resolved(
+    pub fn ty_before_resolved(
         &self,
         resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
@@ -1290,7 +1286,7 @@ impl ArrayTypeNode {
         match self
             .core_ref()
             .sub_type
-            .type_obj_before_resolved(resolver, scope_index)
+            .ty_before_resolved(resolver, scope_index)
         {
             TypeResolveKind::Resolved(element_type) => {
                 return TypeResolveKind::Resolved(Type::new_with_array(element_type))
@@ -1328,7 +1324,7 @@ impl TupleTypeNode {
         TupleTypeNode(node)
     }
 
-    pub fn type_obj_before_resolved(
+    pub fn ty_before_resolved(
         &self,
         resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
@@ -1336,8 +1332,8 @@ impl TupleTypeNode {
         let mut unresolved_identifiers: Vec<UnresolvedIdentifier> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
         for ty in self.core_ref().types.iter() {
-            match ty.type_obj_before_resolved(resolver, scope_index) {
-                TypeResolveKind::Resolved(type_obj) => resolved_types.push(type_obj),
+            match ty.ty_before_resolved(resolver, scope_index) {
+                TypeResolveKind::Resolved(ty) => resolved_types.push(ty),
                 TypeResolveKind::Unresolved(mut unresolved) => {
                     unresolved_identifiers.append(&mut unresolved);
                 }
@@ -1428,7 +1424,7 @@ impl HashMapTypeNode {
         }
     }
 
-    pub fn type_obj_before_resolved(
+    pub fn ty_before_resolved(
         &self,
         resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
@@ -1436,11 +1432,11 @@ impl HashMapTypeNode {
         let key_result = self
             .core_ref()
             .key_type
-            .type_obj_before_resolved(resolver, scope_index);
+            .ty_before_resolved(resolver, scope_index);
         let value_result = self
             .core_ref()
             .value_type
-            .type_obj_before_resolved(resolver, scope_index);
+            .ty_before_resolved(resolver, scope_index);
         return self.aggregate_key_value_result(key_result, value_result);
     }
 
@@ -1462,12 +1458,12 @@ impl UserDefinedTypeNode {
         UserDefinedTypeNode(node)
     }
 
-    pub fn type_obj_before_resolved(
+    pub fn ty_before_resolved(
         &self,
         resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
     ) -> TypeResolveKind {
-        resolver.type_obj_from_user_defined_type_expr(self, scope_index)
+        resolver.ty_from_user_defined_type_expr(self, scope_index)
     }
 
     impl_core_ref!(CoreUserDefinedTypeNode);

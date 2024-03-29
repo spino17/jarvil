@@ -121,12 +121,11 @@ impl SemanticStateDatabase {
         &mut self.self_keyword_binding_table
     }
 
-    pub fn set_type_expr_obj_mapping(&mut self, ty_expr: &TypeExpressionNode, ty_obj: &Type) {
-        self.type_expr_obj_table
-            .insert(ty_expr.clone(), ty_obj.clone());
+    pub fn set_type_expr_obj_mapping(&mut self, ty_expr: &TypeExpressionNode, ty: &Type) {
+        self.type_expr_obj_table.insert(ty_expr.clone(), ty.clone());
     }
 
-    pub fn type_obj_from_expr(&self, ty_expr: &TypeExpressionNode) -> Type {
+    pub fn ty_from_expr(&self, ty_expr: &TypeExpressionNode) -> Type {
         match self.type_expr_obj_table.get(ty_expr) {
             Some(ty) => ty.clone(),
             None => unreachable!(),
