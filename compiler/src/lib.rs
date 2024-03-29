@@ -1,14 +1,13 @@
-use crate::lexer::lexer::Lexer;
+use crate::lexer::lexer::JarvilLexer;
 use ast::ast::BlockNode;
 use ast::print::serialize_ast;
 use code::{JarvilCode, JarvilCodeHandler};
 use codegen::python::PythonCodeGenerator;
-use error::diagnostics::Diagnostics;
-use lexer::lexer::CoreLexer;
+use error::error::JarvilProgramAnalysisErrors;
 use miette::Report;
 use parser::parser::JarvilParser;
-use parser::resolver::Resolver;
-use parser::type_checker::TypeChecker;
+use parser::resolver::JarvilResolver;
+use parser::type_checker::JarvilTypeChecker;
 
 pub mod ast;
 pub mod builtin;
@@ -33,37 +32,35 @@ fn attach_source_code(err: Report, source: String) -> Report {
     }
 }
 
-pub fn build_ast(code: &mut JarvilCode) -> (BlockNode, Vec<Diagnostics>, JarvilCodeHandler) {
-    let core_lexer = CoreLexer::new();
-    let (token_vec, mut errors, code_lines) = core_lexer.tokenize(code);
+pub fn build_ast<'ctx>(
+    code: &'ctx mut JarvilCode,
+    errors: &'ctx JarvilProgramAnalysisErrors,
+) -> (BlockNode, JarvilCodeHandler<'ctx>) {
+    let core_lexer = JarvilLexer::new(errors);
+    let (token_vec, code_lines) = core_lexer.tokenize(code);
     let code_handler = JarvilCodeHandler::new(code, code_lines);
-    let parser = JarvilParser::new(&code_handler);
-    let (ast, mut parse_errors) = parser.parse(token_vec);
-    errors.append(&mut parse_errors);
-    (ast, errors, code_handler)
+    let parser = JarvilParser::new(&code_handler, &errors);
+    let ast = parser.parse(token_vec);
+    (ast, code_handler)
 }
 
 pub fn build_code(mut code: JarvilCode) -> (Result<String, Report>, String) {
-    let (ast, mut errors, code_handler) = build_ast(&mut code);
+    let errors = JarvilProgramAnalysisErrors::default();
+    let (ast, code_handler) = build_ast(&mut code, &errors);
 
     // name resolution
-    let resolver = Resolver::new(&code_handler);
-    let (semantic_db, mut semantic_errors) = resolver.resolve_ast(&ast);
-    errors.append(&mut semantic_errors);
+    let resolver = JarvilResolver::new(&code_handler, &errors);
+    let semantic_db = resolver.resolve_ast(&ast);
 
     // type checking
-    let type_checker = TypeChecker::new(&code_handler, semantic_db);
-    let semantic_db = type_checker.check_ast(&ast, &mut errors);
+    let type_checker = JarvilTypeChecker::new(&code_handler, &errors, semantic_db);
+    let semantic_db = type_checker.check_ast(&ast);
 
     // ast json serialization
     let ast_str = serialize_ast(&ast, &code_handler, semantic_db.interner()).unwrap();
 
-    if !errors.is_empty() {
-        let err = &errors[0];
-        return (
-            Err(attach_source_code(err.report(), code.to_string())),
-            ast_str,
-        );
+    if let Some(report) = errors.first_error_report() {
+        return (Err(attach_source_code(report, code.to_string())), ast_str);
     }
 
     // Python code-generation

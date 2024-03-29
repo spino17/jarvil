@@ -19,6 +19,7 @@ use crate::error::diagnostics::{
     InvalidLoopControlFlowStatementFoundError, MainFunctionNotFoundError,
     MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
 };
+use crate::error::error::JarvilProgramAnalysisErrors;
 use crate::error::helper::IdentifierKind as IdentKind;
 use crate::scope::concrete::{MethodGenericsInstantiationContext, TurbofishTypes};
 use crate::scope::errors::GenericTypeArgsCheckError;
@@ -134,21 +135,24 @@ pub struct Context {
     block_context_stack: Vec<BlockContext>,
 }
 
-pub struct Resolver<'ctx> {
+pub struct JarvilResolver<'ctx> {
     scope_index: ScopeIndex,
     code_handler: &'ctx JarvilCodeHandler<'ctx>,
-    errors: Vec<Diagnostics>,
+    errors: &'ctx JarvilProgramAnalysisErrors,
     context: Context,
     indent_level: usize,
     semantic_db: SemanticStateDatabase,
 }
 
-impl<'ctx> Resolver<'ctx> {
-    pub fn new(code_handler: &'ctx JarvilCodeHandler<'ctx>) -> Self {
-        Resolver {
+impl<'ctx> JarvilResolver<'ctx> {
+    pub fn new(
+        code_handler: &'ctx JarvilCodeHandler<'ctx>,
+        errors: &'ctx JarvilProgramAnalysisErrors,
+    ) -> Self {
+        JarvilResolver {
             scope_index: ScopeIndex::global(),
             code_handler,
-            errors: vec![],
+            errors,
             context: Context {
                 class_context_stack: vec![],
                 block_context_stack: vec![BlockContext {
@@ -170,7 +174,7 @@ impl<'ctx> Resolver<'ctx> {
         self.semantic_db.interner()
     }
 
-    pub fn resolve_ast(mut self, ast: &BlockNode) -> (SemanticStateDatabase, Vec<Diagnostics>) {
+    pub fn resolve_ast(mut self, ast: &BlockNode) -> SemanticStateDatabase {
         let code_block = ast.0.as_ref();
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
@@ -193,15 +197,17 @@ impl<'ctx> Resolver<'ctx> {
                     let span = symbol_index
                         .declaration_line_number(self.semantic_db.namespace_ref().functions_ref());
                     let err = MainFunctionWrongTypeError::new(span);
-                    self.errors.push(Diagnostics::MainFunctionWrongType(err));
+                    self.errors
+                        .log_error(Diagnostics::MainFunctionWrongType(err));
                 }
             }
             None => {
                 let err = MainFunctionNotFoundError::new();
-                self.errors.push(Diagnostics::MainFunctionNotFound(err));
+                self.errors
+                    .log_error(Diagnostics::MainFunctionNotFound(err));
             }
         }
-        (self.semantic_db, self.errors)
+        self.semantic_db
     }
 
     pub fn open_block(&mut self, block_kind: BlockKind) {
@@ -370,7 +376,7 @@ impl<'ctx> Resolver<'ctx> {
                                 identifier.core_ref().name.range(),
                                 ident_kind,
                             );
-                            self.errors.push(err);
+                            self.errors.log_error(err);
                         }
                         ResolveResult::InvalidGenericTypeArgsProvided(err)
                     }
@@ -385,14 +391,15 @@ impl<'ctx> Resolver<'ctx> {
                         identifier.range(),
                     );
                     self.errors
-                        .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
+                        .log_error(Diagnostics::IdentifierUsedBeforeInitialized(err));
                 }
                 ResolveResult::NotInitialized(decl_range, name)
             }
             LookupResult::Unresolved => {
                 if log_error {
                     let err = IdentifierNotDeclaredError::new(ident_kind, identifier.range());
-                    self.errors.push(Diagnostics::IdentifierNotDeclared(err));
+                    self.errors
+                        .log_error(Diagnostics::IdentifierNotDeclared(err));
                 }
                 ResolveResult::Unresolved
             }
@@ -745,7 +752,8 @@ impl<'ctx> Resolver<'ctx> {
                                 IdentKind::UserDefinedType,
                                 identifier.range(),
                             );
-                            self.errors.push(Diagnostics::IdentifierNotDeclared(err));
+                            self.errors
+                                .log_error(Diagnostics::IdentifierNotDeclared(err));
                         }
                         UnresolvedIdentifier::GenericResolvedToOutsideScope(
                             identifier,
@@ -756,7 +764,7 @@ impl<'ctx> Resolver<'ctx> {
                                 decl_range,
                             );
                             self.errors
-                                .push(Diagnostics::GenericTypeResolvedToOutsideScope(err));
+                                .log_error(Diagnostics::GenericTypeResolvedToOutsideScope(err));
                         }
                         UnresolvedIdentifier::NotInitialized(identifier, decl_range) => {
                             let name = identifier
@@ -768,7 +776,7 @@ impl<'ctx> Resolver<'ctx> {
                                 identifier.range(),
                             );
                             self.errors
-                                .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
+                                .log_error(Diagnostics::IdentifierUsedBeforeInitialized(err));
                         }
                         UnresolvedIdentifier::InvalidGenericTypeArgsProvided(identifier, err) => {
                             let err = err_for_generic_type_args(
@@ -776,7 +784,7 @@ impl<'ctx> Resolver<'ctx> {
                                 identifier.core_ref().name.range(),
                                 IdentKind::UserDefinedType,
                             );
-                            self.errors.push(err);
+                            self.errors.log_error(err);
                         }
                     }
                 }
@@ -869,7 +877,7 @@ impl<'ctx> Resolver<'ctx> {
                         interface_expr.range(),
                     );
                     self.errors
-                        .push(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
+                        .log_error(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
                 }
             }
             let unique_id = self
@@ -905,7 +913,7 @@ impl<'ctx> Resolver<'ctx> {
                         ok_identifier_in_decl.range(),
                     );
                     self.errors
-                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                        .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
             }
         }
@@ -1000,7 +1008,7 @@ impl<'ctx> Resolver<'ctx> {
                             ok_identifier.range(),
                         );
                         self.errors
-                            .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                            .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                     }
                 }
             }
@@ -1136,7 +1144,7 @@ impl<'ctx> Resolver<'ctx> {
                         ok_identifier.range(),
                     );
                     self.errors
-                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                        .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
             }
         }
@@ -1172,7 +1180,7 @@ impl<'ctx> Resolver<'ctx> {
                                 lambda_ty.to_string(self.semantic_db.interner(), self.semantic_db.namespace_ref()),
                                 range
                             );
-                            self.errors.push(Diagnostics::InferredLambdaVariableTypeMismatchedWithTypeFromAnnotation(err));
+                            self.errors.log_error(Diagnostics::InferredLambdaVariableTypeMismatchedWithTypeFromAnnotation(err));
                         }
                         ty_from_optional_annotation
                     }
@@ -1221,7 +1229,7 @@ impl<'ctx> Resolver<'ctx> {
                         ok_identifier.range(),
                     );
                     self.errors
-                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                        .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
             }
         }
@@ -1257,7 +1265,7 @@ impl<'ctx> Resolver<'ctx> {
                         ok_identifier.range(),
                     );
                     self.errors
-                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                        .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
             }
         };
@@ -1320,7 +1328,7 @@ impl<'ctx> Resolver<'ctx> {
                     interface_expr.range(),
                 );
                 self.errors
-                    .push(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
+                    .log_error(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
             }
             if interfaces.len() > 0 {
                 implementing_interfaces = Some(interfaces);
@@ -1362,7 +1370,7 @@ impl<'ctx> Resolver<'ctx> {
                                     ok_identifier.range(),
                                 );
                                 self.errors
-                                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                                    .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                             }
                             None => {
                                 fields_map.insert(field_name, (ty, ok_identifier.range()));
@@ -1391,7 +1399,7 @@ impl<'ctx> Resolver<'ctx> {
                                 let err = GenericTypesDeclarationInsideConstructorFoundError::new(
                                     generic_type_decls.range(),
                                 );
-                                self.errors.push(
+                                self.errors.log_error(
                                     Diagnostics::GenericTypesDeclarationInsideConstructorFound(err),
                                 );
                             }
@@ -1435,15 +1443,16 @@ impl<'ctx> Resolver<'ctx> {
                                         ok_bounded_method_name.range(),
                                     );
                                     self.errors
-                                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                                        .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                                 }
                                 None => {
                                     if let Some(return_type_range) = return_type_range {
                                         let err = NonVoidConstructorReturnTypeError::new(
                                             return_type_range,
                                         );
-                                        self.errors
-                                            .push(Diagnostics::NonVoidConstructorReturnType(err));
+                                        self.errors.log_error(
+                                            Diagnostics::NonVoidConstructorReturnType(err),
+                                        );
                                     }
                                     constructor =
                                         Some((method_meta_data, ok_bounded_method_name.range()));
@@ -1454,7 +1463,7 @@ impl<'ctx> Resolver<'ctx> {
                                 }
                             }
                         } else {
-                            match Resolver::is_already_a_method(
+                            match JarvilResolver::is_already_a_method(
                                 &methods,
                                 &class_methods,
                                 &method_name_str,
@@ -1467,7 +1476,7 @@ impl<'ctx> Resolver<'ctx> {
                                         ok_bounded_method_name.range(),
                                     );
                                     self.errors
-                                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                                        .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                                 }
                                 None => {
                                     let is_containing_self =
@@ -1516,14 +1525,14 @@ impl<'ctx> Resolver<'ctx> {
                             self.semantic_db.interner(),
                         );
                         self.errors
-                            .push(Diagnostics::FieldsNotInitializedInConstructor(err));
+                            .log_error(Diagnostics::FieldsNotInitializedInConstructor(err));
                     }
                 }
                 None => {
                     let err =
                         ConstructorNotFoundInsideStructDeclarationError::new(ok_identifier.range());
                     self.errors
-                        .push(Diagnostics::ConstructorNotFoundInsideStructDeclaration(err));
+                        .log_error(Diagnostics::ConstructorNotFoundInsideStructDeclaration(err));
                 }
             }
             if let Some(symbol_obj) = &symbol_obj {
@@ -1553,7 +1562,7 @@ impl<'ctx> Resolver<'ctx> {
                         ok_identifier_in_decl.range(),
                     );
                     self.errors
-                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                        .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
             }
         }
@@ -1608,7 +1617,7 @@ impl<'ctx> Resolver<'ctx> {
                         ok_identifier.range(),
                     );
                     self.errors
-                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                        .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
                 None => {
                     variants.push((variant_name, variant_ty_obj, ok_identifier.range()));
@@ -1686,7 +1695,7 @@ impl<'ctx> Resolver<'ctx> {
                     ok_identifier.range(),
                 );
                 self.errors
-                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                    .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
             }
         }
     }
@@ -1708,7 +1717,7 @@ impl<'ctx> Resolver<'ctx> {
                         ok_identifier_in_decl.range(),
                     );
                     self.errors
-                        .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                        .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
             }
         }
@@ -1756,7 +1765,7 @@ impl<'ctx> Resolver<'ctx> {
                                     ok_identifier.range(),
                                 );
                                 self.errors
-                                    .push(Diagnostics::IdentifierAlreadyDeclared(err));
+                                    .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                             }
                             None => {
                                 fields_map.insert(field_name, (ty, ok_identifier.range()));
@@ -1776,7 +1785,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ok_identifier.core_ref().name.range(),
                             );
                             self.errors
-                                .push(Diagnostics::InitMethodNotAllowedInsideConstructor(err));
+                                .log_error(Diagnostics::InitMethodNotAllowedInsideConstructor(err));
                         } else {
                             let prototype = &core_interface_method_wrapper.prototype;
                             self.open_block(BlockKind::Method);
@@ -1891,7 +1900,7 @@ impl<'ctx> Resolver<'ctx> {
             }
             None => {
                 let err = SelfNotFoundError::new(ok_self_keyword.range());
-                self.errors.push(Diagnostics::SelfNotFound(err));
+                self.errors.log_error(Diagnostics::SelfNotFound(err));
             }
         }
     }
@@ -1910,7 +1919,7 @@ impl<'ctx> Resolver<'ctx> {
                         ok_identifier.core_ref().name.range(),
                         IdentKind::Function,
                     );
-                    self.errors.push(err);
+                    self.errors.log_error(err);
                 }
                 ResolveResult::Unresolved => {
                     match self.try_resolving_user_defined_type(ok_identifier, false, true) {
@@ -1923,7 +1932,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ok_identifier.range(),
                             );
                             self.errors
-                                .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
+                                .log_error(Diagnostics::IdentifierUsedBeforeInitialized(err));
                         }
                         ResolveResult::InvalidGenericTypeArgsProvided(err) => {
                             let err = err_for_generic_type_args(
@@ -1931,7 +1940,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ok_identifier.core_ref().name.range(),
                                 IdentKind::UserDefinedType,
                             );
-                            self.errors.push(err);
+                            self.errors.log_error(err);
                         }
                         ResolveResult::Unresolved => {
                             match self.try_resolving_variable(ok_identifier, false) {
@@ -1953,15 +1962,17 @@ impl<'ctx> Resolver<'ctx> {
                                         decl_range,
                                         ok_identifier.range(),
                                     );
-                                    self.errors
-                                        .push(Diagnostics::IdentifierUsedBeforeInitialized(err));
+                                    self.errors.log_error(
+                                        Diagnostics::IdentifierUsedBeforeInitialized(err),
+                                    );
                                 }
                                 ResolveResult::Unresolved => {
                                     let err = IdentifierNotFoundInAnyNamespaceError::new(
                                         ok_identifier.range(),
                                     );
-                                    self.errors
-                                        .push(Diagnostics::IdentifierNotFoundInAnyNamespace(err));
+                                    self.errors.log_error(
+                                        Diagnostics::IdentifierNotFoundInAnyNamespace(err),
+                                    );
                                 }
                                 ResolveResult::InvalidGenericTypeArgsProvided(err) => {
                                     let err = err_for_generic_type_args(
@@ -1969,7 +1980,7 @@ impl<'ctx> Resolver<'ctx> {
                                         ok_identifier.core_ref().name.range(),
                                         IdentKind::Variable,
                                     );
-                                    self.errors.push(err);
+                                    self.errors.log_error(err);
                                 }
                             }
                         }
@@ -2023,7 +2034,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 }
 
-impl<'ctx> Visitor for Resolver<'ctx> {
+impl<'ctx> Visitor for JarvilResolver<'ctx> {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Block(block) => {
@@ -2080,7 +2091,7 @@ impl<'ctx> Visitor for Resolver<'ctx> {
                     let err =
                         InvalidLoopControlFlowStatementFoundError::new(break_stmt.range(), "break");
                     self.errors
-                        .push(Diagnostics::InvalidLoopControlFlowStatementFound(err));
+                        .log_error(Diagnostics::InvalidLoopControlFlowStatementFound(err));
                 }
                 None
             }
@@ -2091,7 +2102,7 @@ impl<'ctx> Visitor for Resolver<'ctx> {
                         "continue",
                     );
                     self.errors
-                        .push(Diagnostics::InvalidLoopControlFlowStatementFound(err));
+                        .log_error(Diagnostics::InvalidLoopControlFlowStatementFound(err));
                 }
                 None
             }

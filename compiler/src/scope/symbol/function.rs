@@ -14,7 +14,7 @@ use crate::{
     ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode},
     core::common::RefOrOwned,
     parser::type_checker::{
-        InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
+        InferredConcreteTypesEntry, JarvilTypeChecker, PrototypeEquivalenceCheckError,
     },
     types::traits::TypeLike,
 };
@@ -148,7 +148,7 @@ impl CallablePrototypeData {
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
-        type_checker: &TypeChecker,
+        type_checker: &JarvilTypeChecker,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PrototypeEquivalenceCheckError> {
         let expected_params = &self.params;
@@ -291,7 +291,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
-        type_checker: &TypeChecker,
+        type_checker: &JarvilTypeChecker,
         local_concrete_types: Option<TurbofishTypes>,
         local_concrete_ty_ranges: Option<Vec<TextRange>>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,

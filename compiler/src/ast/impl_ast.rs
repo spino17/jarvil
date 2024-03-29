@@ -49,7 +49,7 @@ use crate::ast::traits::Node;
 use crate::code::JarvilCodeHandler;
 use crate::core::string_interner::{Interner, StrId};
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
-use crate::parser::resolver::{BlockKind, Resolver};
+use crate::parser::resolver::{BlockKind, JarvilResolver};
 use crate::scope::scope::ScopeIndex;
 use crate::types::core::Type;
 use serde::Serialize;
@@ -1192,7 +1192,7 @@ impl TypeExpressionNode {
 
     pub fn type_obj_before_resolved(
         &self,
-        resolver: &mut Resolver,
+        resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
     ) -> TypeResolveKind {
         match self.core_ref() {
@@ -1284,7 +1284,7 @@ impl ArrayTypeNode {
 
     pub fn type_obj_before_resolved(
         &self,
-        resolver: &mut Resolver,
+        resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
     ) -> TypeResolveKind {
         match self
@@ -1330,7 +1330,7 @@ impl TupleTypeNode {
 
     pub fn type_obj_before_resolved(
         &self,
-        resolver: &mut Resolver,
+        resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
     ) -> TypeResolveKind {
         let mut unresolved_identifiers: Vec<UnresolvedIdentifier> = vec![];
@@ -1430,7 +1430,7 @@ impl HashMapTypeNode {
 
     pub fn type_obj_before_resolved(
         &self,
-        resolver: &mut Resolver,
+        resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
     ) -> TypeResolveKind {
         let key_result = self
@@ -1464,7 +1464,7 @@ impl UserDefinedTypeNode {
 
     pub fn type_obj_before_resolved(
         &self,
-        resolver: &mut Resolver,
+        resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
     ) -> TypeResolveKind {
         resolver.type_obj_from_user_defined_type_expr(self, scope_index)

@@ -24,6 +24,7 @@ use crate::error::diagnostics::{
     RightSideExpressionTypeMismatchedWithTypeFromAnnotationError, TypeInferenceFailedError,
     UnexpectedValueProvidedToEnumVariantError,
 };
+use crate::error::error::JarvilProgramAnalysisErrors;
 use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::{
     ConcreteSymbolIndex, FunctionGenericsInstantiationContext, MethodGenericsInstantiationContext,
@@ -89,7 +90,6 @@ use crate::{
     },
 };
 use rustc_hash::FxHashSet;
-use std::cell::UnsafeCell;
 use text_size::TextRange;
 
 #[derive(Debug)]
@@ -182,23 +182,24 @@ pub enum TupleIndexCheckResult {
     NegativeIndexOutOfBound,
 }
 
-pub struct TypeChecker<'ctx> {
+pub struct JarvilTypeChecker<'ctx> {
     code_handler: &'ctx JarvilCodeHandler<'ctx>,
-    errors: UnsafeCell<Vec<Diagnostics>>,
+    errors: &'ctx JarvilProgramAnalysisErrors,
     context: Context,
     non_struct_methods_handler: NonStructMethodsHandler,
     semantic_db: SemanticStateDatabase,
 }
 
-impl<'ctx> TypeChecker<'ctx> {
+impl<'ctx> JarvilTypeChecker<'ctx> {
     pub fn new(
         code_handler: &'ctx JarvilCodeHandler<'ctx>,
+        errors: &'ctx JarvilProgramAnalysisErrors,
         semantic_db: SemanticStateDatabase,
     ) -> Self {
         let non_struct_methods_handler = NonStructMethodsHandler::new(semantic_db.interner());
-        TypeChecker {
+        JarvilTypeChecker {
             code_handler,
-            errors: UnsafeCell::new(vec![]),
+            errors,
             context: Context { func_stack: vec![] },
             non_struct_methods_handler,
             semantic_db,
@@ -209,31 +210,11 @@ impl<'ctx> TypeChecker<'ctx> {
         &self.semantic_db
     }
 
-    pub fn log_error(&self, err: Diagnostics) {
-        // This method is unsafe! in favour of performance. This code is safe
-        // if we guarentee that there will only be one mutable reference to the
-        // `errors`. This condition currently holds true as throughout the AST
-        // pass we are only pushing `err` to it with no other mutable or immutable
-        // references.
-        unsafe {
-            let errors_ref = &mut *self.errors.get();
-            errors_ref.push(err);
-        };
-    }
-
-    pub fn check_ast(
-        mut self,
-        ast: &BlockNode,
-        global_errors: &mut Vec<Diagnostics>,
-    ) -> SemanticStateDatabase {
+    pub fn check_ast(mut self, ast: &BlockNode) -> SemanticStateDatabase {
         let core_block = ast.0.as_ref();
         for stmt in &core_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        unsafe {
-            let errors_ref = &mut *self.errors.get();
-            global_errors.append(errors_ref);
-        };
         self.semantic_db
     }
 
@@ -684,11 +665,13 @@ impl<'ctx> TypeChecker<'ctx> {
                             self.semantic_db.interner().lookup(struct_name),
                             func_name.range(),
                         );
-                        self.log_error(Diagnostics::ConstructorNotFoundForType(err));
+                        self.errors
+                            .log_error(Diagnostics::ConstructorNotFoundForType(err));
                     }
                     AtomStartTypeCheckError::IdentifierNotCallable(ty_str) => {
                         let err = IdentifierNotCallableError::new(ty_str, func_name.range());
-                        self.log_error(Diagnostics::IdentifierNotCallable(err));
+                        self.errors
+                            .log_error(Diagnostics::IdentifierNotCallable(err));
                     }
                     AtomStartTypeCheckError::PrototypeEquivalenceCheckFailed(
                         prototype_equivalence_err,
@@ -725,7 +708,8 @@ impl<'ctx> TypeChecker<'ctx> {
             None => {
                 let err =
                     ClassMethodExpectedParenthesisError::new(property_name.range().end().into());
-                self.log_error(Diagnostics::ClassMethodExpectedParenthesis(err));
+                self.errors
+                    .log_error(Diagnostics::ClassMethodExpectedParenthesis(err));
                 return Type::new_with_unknown();
             }
         };
@@ -762,7 +746,7 @@ impl<'ctx> TypeChecker<'ctx> {
                                     ty_node.core_ref().name.range(),
                                     IdentifierKind::Method
                                 );
-                                    self.log_error(err);
+                                    self.errors.log_error(err);
                                 }
                             }
                         Type::new_with_unknown()
@@ -774,7 +758,8 @@ impl<'ctx> TypeChecker<'ctx> {
                     self.semantic_db.interner().lookup(ty_name),
                     property_name.range(),
                 );
-                self.log_error(Diagnostics::ClassmethodDoesNotExist(err));
+                self.errors
+                    .log_error(Diagnostics::ClassmethodDoesNotExist(err));
                 Type::new_with_unknown()
             }
         }
@@ -802,7 +787,8 @@ impl<'ctx> TypeChecker<'ctx> {
                 IdentifierKind::Variant,
                 property_name.range(),
             );
-            self.log_error(Diagnostics::GenericTypeArgsNotExpected(err));
+            self.errors
+                .log_error(Diagnostics::GenericTypeArgsNotExpected(err));
             return Type::new_with_unknown();
         }
         let concrete_types = concrete_symbol_index.concrete_types();
@@ -828,7 +814,7 @@ impl<'ctx> TypeChecker<'ctx> {
                                         }
                                     },
                                 );
-                                self.log_error(Diagnostics::MissingToken(err));
+                                self.errors.log_error(Diagnostics::MissingToken(err));
                                 return Type::new_with_unknown();
                             }
                             let expr_ty = self.check_expr(expr);
@@ -844,7 +830,8 @@ impl<'ctx> TypeChecker<'ctx> {
                                     ),
                                     expr.range(),
                                 );
-                                self.log_error(Diagnostics::IncorrectExpressionType(err));
+                                self.errors
+                                    .log_error(Diagnostics::IncorrectExpressionType(err));
                                 return Type::new_with_unknown();
                             }
                         }
@@ -853,7 +840,8 @@ impl<'ctx> TypeChecker<'ctx> {
                                 self.semantic_db.interner().lookup(variant_name).to_string(),
                                 params.range(),
                             );
-                            self.log_error(Diagnostics::UnexpectedValueProvidedToEnumVariant(err));
+                            self.errors
+                                .log_error(Diagnostics::UnexpectedValueProvidedToEnumVariant(err));
                             return Type::new_with_unknown();
                         }
                     },
@@ -867,7 +855,7 @@ impl<'ctx> TypeChecker<'ctx> {
                                 }
                             },
                         );
-                        self.log_error(Diagnostics::MissingToken(err));
+                        self.errors.log_error(Diagnostics::MissingToken(err));
                         return Type::new_with_unknown();
                     }
                 },
@@ -880,7 +868,8 @@ impl<'ctx> TypeChecker<'ctx> {
                             ),
                             property_name.range(),
                         );
-                        self.log_error(Diagnostics::ExpectedValueForEnumVariant(err));
+                        self.errors
+                            .log_error(Diagnostics::ExpectedValueForEnumVariant(err));
                         return Type::new_with_unknown();
                     }
                 }
@@ -890,7 +879,8 @@ impl<'ctx> TypeChecker<'ctx> {
                     self.semantic_db.interner().lookup(ty_name).to_string(),
                     property_name.range(),
                 );
-                self.log_error(Diagnostics::EnumVariantDoesNotExist(err));
+                self.errors
+                    .log_error(Diagnostics::EnumVariantDoesNotExist(err));
                 return Type::new_with_unknown();
             }
         }
@@ -940,7 +930,8 @@ impl<'ctx> TypeChecker<'ctx> {
                     UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => {
                         let err =
                             PropertyNotSupportedError::new("classmethod".to_string(), ty.range());
-                        self.log_error(Diagnostics::PropertyNotSupported(err));
+                        self.errors
+                            .log_error(Diagnostics::PropertyNotSupported(err));
                         Type::new_with_unknown()
                     }
                 }
@@ -1011,7 +1002,8 @@ impl<'ctx> TypeChecker<'ctx> {
             }
             _ => {
                 let err = ExpressionNotCallableError::new(atom.range());
-                self.log_error(Diagnostics::ExpressionNotCallable(err));
+                self.errors
+                    .log_error(Diagnostics::ExpressionNotCallable(err));
                 (Type::new_with_unknown(), Some(atom_type_obj))
             }
         }
@@ -1030,7 +1022,8 @@ impl<'ctx> TypeChecker<'ctx> {
                 IdentifierKind::Field,
                 ok_identifier.core_ref().name.range(),
             );
-            self.log_error(Diagnostics::GenericTypeArgsNotExpected(err));
+            self.errors
+                .log_error(Diagnostics::GenericTypeArgsNotExpected(err));
             return (Type::new_with_unknown(), Some(atom_type_obj));
         }
         let property_name_str =
@@ -1106,7 +1099,7 @@ impl<'ctx> TypeChecker<'ctx> {
         match result {
             Ok(property_ty) => (property_ty, Some(atom_type_obj)),
             Err(err) => {
-                self.log_error(err);
+                self.errors.log_error(err);
                 (Type::new_with_unknown(), Some(atom_type_obj))
             }
         }
@@ -1358,7 +1351,8 @@ impl<'ctx> TypeChecker<'ctx> {
                             method.range(),
                             atom.range(),
                         );
-                        self.log_error(Diagnostics::PropertyDoesNotExist(err));
+                        self.errors
+                            .log_error(Diagnostics::PropertyDoesNotExist(err));
                     }
                     MethodAccessTypeCheckError::FieldNotCallable(ty) => {
                         let err = FieldNotCallableError::new(
@@ -1368,7 +1362,7 @@ impl<'ctx> TypeChecker<'ctx> {
                             ),
                             ok_identifier.range(),
                         );
-                        self.log_error(Diagnostics::FieldNotCallable(err));
+                        self.errors.log_error(Diagnostics::FieldNotCallable(err));
                     }
                     MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
                         generic_type_args_check_err,
@@ -1379,7 +1373,7 @@ impl<'ctx> TypeChecker<'ctx> {
                             ok_identifier.core_ref().name.range(),
                             kind,
                         );
-                        self.log_error(err);
+                        self.errors.log_error(err);
                     }
                     MethodAccessTypeCheckError::PrototypeEquivalenceCheckFailed(
                         prototype_check_err,
@@ -1397,9 +1391,9 @@ impl<'ctx> TypeChecker<'ctx> {
                             method_containing_interface_objs,
                             PropertyKind::Method,
                         );
-                        self.log_error(Diagnostics::PropertyResolvedToMultipleInterfaceObjects(
-                            err,
-                        ));
+                        self.errors.log_error(
+                            Diagnostics::PropertyResolvedToMultipleInterfaceObjects(err),
+                        );
                     }
                 }
                 (Type::new_with_unknown(), Some(atom_type_obj))
@@ -1415,24 +1409,28 @@ impl<'ctx> TypeChecker<'ctx> {
         let sub_types = tuple_ty.sub_types();
         let CoreExpressionNode::Unary(index_unary_expr) = index_expr.core_ref() else {
             let err = InvalidIndexExpressionForTupleError::new(index_expr.range());
-            self.log_error(Diagnostics::InvalidIndexExpressionForTuple(err));
+            self.errors
+                .log_error(Diagnostics::InvalidIndexExpressionForTuple(err));
             return Type::new_with_unknown();
         };
         let Some(index_value) = self.is_unary_expr_int_valued(index_unary_expr) else {
             let err = UnresolvedIndexExpressionInTupleError::new(index_expr.range());
-            self.log_error(Diagnostics::UnresolvedIndexExpressionInTuple(err));
+            self.errors
+                .log_error(Diagnostics::UnresolvedIndexExpressionInTuple(err));
             return Type::new_with_unknown();
         };
         match self.is_valid_index_for_tuple(index_value, sub_types.len()) {
             TupleIndexCheckResult::Ok(index_value) => sub_types[index_value].clone(),
             TupleIndexCheckResult::PositiveIndexOutOfBound => {
                 let err = TupleIndexOutOfBoundError::new(sub_types.len(), index_expr.range());
-                self.log_error(Diagnostics::TupleIndexOutOfBound(err));
+                self.errors
+                    .log_error(Diagnostics::TupleIndexOutOfBound(err));
                 Type::new_with_unknown()
             }
             TupleIndexCheckResult::NegativeIndexOutOfBound => {
                 let err = TupleIndexOutOfBoundError::new(sub_types.len(), index_expr.range());
-                self.log_error(Diagnostics::TupleIndexOutOfBound(err));
+                self.errors
+                    .log_error(Diagnostics::TupleIndexOutOfBound(err));
                 Type::new_with_unknown()
             }
         }
@@ -1503,7 +1501,8 @@ impl<'ctx> TypeChecker<'ctx> {
                     atom.range(),
                     index_expr.range(),
                 );
-                self.log_error(Diagnostics::ExpressionIndexingNotValid(err));
+                self.errors
+                    .log_error(Diagnostics::ExpressionIndexingNotValid(err));
                 (Type::new_with_unknown(), Some(atom_type_obj))
             }
         }
@@ -1567,7 +1566,8 @@ impl<'ctx> TypeChecker<'ctx> {
                     ),
                     expr.range(),
                 );
-                self.log_error(Diagnostics::IncorrectExpressionType(err));
+                self.errors
+                    .log_error(Diagnostics::IncorrectExpressionType(err));
             }
         }
 
@@ -1608,7 +1608,8 @@ impl<'ctx> TypeChecker<'ctx> {
                     ),
                     core_key_value_pair.key_expr.range(),
                 );
-                self.log_error(Diagnostics::IncorrectExpressionType(err));
+                self.errors
+                    .log_error(Diagnostics::IncorrectExpressionType(err));
             }
             if !value_ty.is_eq(&first_value_ty, self.semantic_db.namespace_ref()) {
                 let err = IncorrectExpressionTypeError::new(
@@ -1622,7 +1623,8 @@ impl<'ctx> TypeChecker<'ctx> {
                     ),
                     core_key_value_pair.value_expr.range(),
                 );
-                self.log_error(Diagnostics::IncorrectExpressionType(err));
+                self.errors
+                    .log_error(Diagnostics::IncorrectExpressionType(err));
             }
         }
 
@@ -1690,7 +1692,8 @@ impl<'ctx> TypeChecker<'ctx> {
                         unary_expr.range(),
                         operator.range(),
                     );
-                    self.log_error(Diagnostics::UnaryOperatorInvalidUse(err));
+                    self.errors
+                        .log_error(Diagnostics::UnaryOperatorInvalidUse(err));
                     Type::new_with_unknown()
                 }
             }
@@ -1708,7 +1711,8 @@ impl<'ctx> TypeChecker<'ctx> {
                         unary_expr.range(),
                         operator.range(),
                     );
-                    self.log_error(Diagnostics::UnaryOperatorInvalidUse(err));
+                    self.errors
+                        .log_error(Diagnostics::UnaryOperatorInvalidUse(err));
                     Type::new_with_unknown()
                 }
             }
@@ -1748,7 +1752,8 @@ impl<'ctx> TypeChecker<'ctx> {
                     right_expr.range(),
                     operator.range(),
                 );
-                self.log_error(Diagnostics::BinaryOperatorInvalidOperands(err));
+                self.errors
+                    .log_error(Diagnostics::BinaryOperatorInvalidOperands(err));
                 Type::new_with_unknown()
             }
         }
@@ -1794,7 +1799,8 @@ impl<'ctx> TypeChecker<'ctx> {
                         right_expr.range(),
                         operator.range(),
                     );
-                    self.log_error(Diagnostics::BinaryOperatorInvalidOperands(err));
+                    self.errors
+                        .log_error(Diagnostics::BinaryOperatorInvalidOperands(err));
                     return Type::new_with_unknown();
                 }
             }
@@ -1831,7 +1837,8 @@ impl<'ctx> TypeChecker<'ctx> {
                                 ),
                                 l_index_expr.core_ref().atom.range(),
                             );
-                            self.log_error(Diagnostics::ImmutableTypeNotAssignable(err));
+                            self.errors
+                                .log_error(Diagnostics::ImmutableTypeNotAssignable(err));
                         }
                     }
                 }
@@ -1849,7 +1856,8 @@ impl<'ctx> TypeChecker<'ctx> {
         let r_type = self.check_r_assign(r_assign);
         if r_type.is_void() {
             let err = RightSideWithVoidTypeNotAllowedError::new(r_assign.range());
-            self.log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
+            self.errors
+                .log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
             return;
         }
         if !l_type.is_eq(&r_type, self.semantic_db.namespace_ref()) {
@@ -1865,7 +1873,8 @@ impl<'ctx> TypeChecker<'ctx> {
                 range,
                 r_assign.range(),
             );
-            self.log_error(Diagnostics::MismatchedTypesOnLeftRight(err));
+            self.errors
+                .log_error(Diagnostics::MismatchedTypesOnLeftRight(err));
         }
     }
 
@@ -1886,7 +1895,8 @@ impl<'ctx> TypeChecker<'ctx> {
         };
         if r_type.is_void() {
             let err = RightSideWithVoidTypeNotAllowedError::new(r_variable_decl.range());
-            self.log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
+            self.errors
+                .log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
         }
         let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() else {
             return;
@@ -1918,7 +1928,7 @@ impl<'ctx> TypeChecker<'ctx> {
                 core_variable_decl.name.range(),
                 r_variable_decl.range(),
             );
-            self.log_error(
+            self.errors.log_error(
                 Diagnostics::RightSideExpressionTypeMismatchedWithTypeFromAnnotation(err),
             )
         }
@@ -1956,7 +1966,8 @@ impl<'ctx> TypeChecker<'ctx> {
         if has_return_stmt.is_none() && !return_type_obj.is_void() {
             let (_, return_type_node) = prototype.core_ref().return_type.as_ref().unwrap();
             let err = NoReturnStatementInFunctionError::new(return_type_node.range());
-            self.log_error(Diagnostics::NoReturnStatementInFunction(err));
+            self.errors
+                .log_error(Diagnostics::NoReturnStatementInFunction(err));
         }
         self.context.func_stack.pop();
     }
@@ -1976,7 +1987,8 @@ impl<'ctx> TypeChecker<'ctx> {
         let func_stack_len = self.context.func_stack.len();
         if func_stack_len == 0 {
             let err = InvalidReturnStatementError::new(return_stmt.range());
-            self.log_error(Diagnostics::InvalidReturnStatement(err));
+            self.errors
+                .log_error(Diagnostics::InvalidReturnStatement(err));
         }
         let expr = &core_return_stmt.expr;
         let expr_type_obj = match expr {
@@ -1996,7 +2008,8 @@ impl<'ctx> TypeChecker<'ctx> {
                 ),
                 core_return_stmt.return_keyword.range(),
             );
-            self.log_error(Diagnostics::MismatchedReturnType(err));
+            self.errors
+                .log_error(Diagnostics::MismatchedReturnType(err));
         }
     }
 
@@ -2046,7 +2059,8 @@ impl<'ctx> TypeChecker<'ctx> {
                     *range,
                     self.semantic_db.interner(),
                 );
-                self.log_error(Diagnostics::InterfaceMethodsInStructCheck(err));
+                self.errors
+                    .log_error(Diagnostics::InterfaceMethodsInStructCheck(err));
             }
         }
     }
@@ -2064,7 +2078,8 @@ impl<'ctx> TypeChecker<'ctx> {
                 ),
                 condition_expr.range(),
             );
-            self.log_error(Diagnostics::IncorrectExpressionType(err));
+            self.errors
+                .log_error(Diagnostics::IncorrectExpressionType(err));
         }
         self.walk_block(&core_conditional_block.block);
     }
@@ -2095,7 +2110,8 @@ impl<'ctx> TypeChecker<'ctx> {
                 ),
                 expr.range(),
             );
-            self.log_error(Diagnostics::IncorrectExpressionType(err));
+            self.errors
+                .log_error(Diagnostics::IncorrectExpressionType(err));
             return;
         };
 
@@ -2132,7 +2148,7 @@ impl<'ctx> TypeChecker<'ctx> {
                         self.semantic_db.interner().lookup(enum_name_str),
                         enum_name.range(),
                     );
-                    self.log_error(Diagnostics::IncorrectEnumName(err));
+                    self.errors.log_error(Diagnostics::IncorrectEnumName(err));
                 } else {
                     enum_name_decls.push(enum_name.clone());
                     let variant_name = &core_case_branch.variant_name;
@@ -2175,7 +2191,7 @@ impl<'ctx> TypeChecker<'ctx> {
                                                             .to_string(),
                                                         variable_name.range(),
                                                     );
-                                                self.log_error(Diagnostics::UnexpectedValueProvidedToEnumVariant(err));
+                                                self.errors.log_error(Diagnostics::UnexpectedValueProvidedToEnumVariant(err));
                                             }
                                         }
                                     }
@@ -2188,7 +2204,7 @@ impl<'ctx> TypeChecker<'ctx> {
                                                 ),
                                                 variant_name.range(),
                                             );
-                                            self.log_error(
+                                            self.errors.log_error(
                                                 Diagnostics::ExpectedValueForEnumVariant(err),
                                             );
                                         }
@@ -2203,7 +2219,8 @@ impl<'ctx> TypeChecker<'ctx> {
                                         .to_string(),
                                     variant_name.range(),
                                 );
-                                self.log_error(Diagnostics::EnumVariantDoesNotExist(err));
+                                self.errors
+                                    .log_error(Diagnostics::EnumVariantDoesNotExist(err));
                             }
                         }
                     }
@@ -2230,7 +2247,8 @@ impl<'ctx> TypeChecker<'ctx> {
                 expr.range(),
                 self.semantic_db.interner(),
             );
-            self.log_error(Diagnostics::EnumVariantsMissingFromMatchCaseStatement(err));
+            self.errors
+                .log_error(Diagnostics::EnumVariantsMissingFromMatchCaseStatement(err));
         }
 
         // set the symbol_index to enum_name nodes
@@ -2266,7 +2284,8 @@ impl<'ctx> TypeChecker<'ctx> {
                 ),
                 condition_expr.range(),
             );
-            self.log_error(Diagnostics::IncorrectExpressionType(err));
+            self.errors
+                .log_error(Diagnostics::IncorrectExpressionType(err));
         }
         self.walk_block(&core_while_loop.block);
     }
@@ -2317,7 +2336,8 @@ impl<'ctx> TypeChecker<'ctx> {
                 ),
                 iterable_expr.range(),
             );
-            self.log_error(Diagnostics::NonIterableExpression(err));
+            self.errors
+                .log_error(Diagnostics::NonIterableExpression(err));
         }
         self.walk_block(&core_for_loop.block);
     }
@@ -2401,24 +2421,25 @@ impl<'ctx> TypeChecker<'ctx> {
             )) => {
                 let err =
                     LessParamsCountError::new(expected_params_count, received_params_count, range);
-                self.log_error(Diagnostics::LessParamsCount(err));
+                self.errors.log_error(Diagnostics::LessParamsCount(err));
             }
             PrototypeEquivalenceCheckError::MoreParams(expected_params_count) => {
                 let err = MoreParamsCountError::new(expected_params_count, range);
-                self.log_error(Diagnostics::MoreParamsCount(err));
+                self.errors.log_error(Diagnostics::MoreParamsCount(err));
             }
             PrototypeEquivalenceCheckError::MismatchedType(params_vec) => {
                 let err = MismatchedParamTypeError::new(params_vec);
-                self.log_error(Diagnostics::MismatchedParamType(err));
+                self.errors.log_error(Diagnostics::MismatchedParamType(err));
             }
             PrototypeEquivalenceCheckError::NotAllConcreteTypesInferred => {
                 let err = NotAllConcreteTypesInferredError::new(range);
-                self.log_error(Diagnostics::NotAllConcreteTypesInferred(err))
+                self.errors
+                    .log_error(Diagnostics::NotAllConcreteTypesInferred(err))
             }
             PrototypeEquivalenceCheckError::TypeInferenceFailed
             | PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred => {
                 let err = TypeInferenceFailedError::new(range);
-                self.log_error(Diagnostics::TypeInferenceFailed(err));
+                self.errors.log_error(Diagnostics::TypeInferenceFailed(err));
             }
             PrototypeEquivalenceCheckError::InferredTypesNotBoundedByInterfaces(
                 err_strs,
@@ -2431,13 +2452,14 @@ impl<'ctx> TypeChecker<'ctx> {
                     self.semantic_db.interner(),
                     self.semantic_db.namespace_ref(),
                 );
-                self.log_error(Diagnostics::InferredTypesNotBoundedByInterfaces(err));
+                self.errors
+                    .log_error(Diagnostics::InferredTypesNotBoundedByInterfaces(err));
             }
         }
     }
 }
 
-impl<'ctx> Visitor for TypeChecker<'ctx> {
+impl<'ctx> Visitor for JarvilTypeChecker<'ctx> {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Statement(stmt) => {

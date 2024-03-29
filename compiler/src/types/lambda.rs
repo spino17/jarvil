@@ -4,7 +4,7 @@ use super::traits::UserDefinedType;
 use crate::ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode};
 use crate::core::string_interner::{Interner, StrId};
 use crate::parser::type_checker::{
-    InferredConcreteTypesEntry, PrototypeEquivalenceCheckError, TypeChecker,
+    InferredConcreteTypesEntry, JarvilTypeChecker, PrototypeEquivalenceCheckError,
 };
 use crate::scope::concrete::TurbofishTypes;
 use crate::scope::concrete::TypeGenericsInstantiationContext;
@@ -69,7 +69,7 @@ impl Lambda {
     // Type-Checking exclusive method
     pub fn is_received_params_valid(
         &self,
-        type_checker: &TypeChecker,
+        type_checker: &JarvilTypeChecker,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PrototypeEquivalenceCheckError> {
         match self {

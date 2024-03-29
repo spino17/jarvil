@@ -1,5 +1,6 @@
 use crate::code::JarvilCode;
 use crate::error::diagnostics::{Diagnostics, InvalidCharError, NoClosingSymbolError};
+use crate::error::error::JarvilProgramAnalysisErrors;
 use crate::lexer::token::CoreToken;
 use crate::lexer::token::Token;
 use std::convert::TryFrom;
@@ -11,20 +12,26 @@ pub fn is_letter(c: &char) -> bool {
     c.is_ascii_alphabetic() || (*c == '_')
 }
 
-pub trait Lexer {
-    fn tokenize(self, code: &mut JarvilCode) -> (Vec<Token>, Vec<Diagnostics>, Vec<usize>);
-}
-
-pub struct CoreLexer {
+pub struct JarvilLexer<'ctx> {
     index: usize,
     line_number: usize,
     code_lines: Vec<usize>,
     line_start_index: usize,
-    errors: Vec<Diagnostics>,
+    errors: &'ctx JarvilProgramAnalysisErrors,
 }
 
-impl Lexer for CoreLexer {
-    fn tokenize(mut self, code: &mut JarvilCode) -> (Vec<Token>, Vec<Diagnostics>, Vec<usize>) {
+impl<'ctx> JarvilLexer<'ctx> {
+    pub fn new(errors: &'ctx JarvilProgramAnalysisErrors) -> Self {
+        JarvilLexer {
+            index: 0,
+            line_number: 1,
+            code_lines: vec![],
+            line_start_index: 0,
+            errors,
+        }
+    }
+
+    pub fn tokenize(mut self, code: &'ctx mut JarvilCode) -> (Vec<Token>, Vec<usize>) {
         let mut token_vec: Vec<Token> = Vec::new();
         token_vec.push(Token::new(
             self.line_number,
@@ -83,19 +90,7 @@ impl Lexer for CoreLexer {
             token.set_trivia(eof_trivia_vec);
         }
         token_vec.push(token);
-        (token_vec, self.errors, self.code_lines)
-    }
-}
-
-impl CoreLexer {
-    pub fn new() -> Self {
-        CoreLexer {
-            index: 0,
-            line_number: 1,
-            code_lines: vec![],
-            line_start_index: 0,
-            errors: vec![],
-        }
+        (token_vec, self.code_lines)
     }
 
     fn extract_lexeme(&mut self, code: &JarvilCode) -> Token {
@@ -580,12 +575,12 @@ impl CoreLexer {
 
     pub fn log_invalid_char_error(&mut self, range: TextRange) {
         self.errors
-            .push(Diagnostics::InvalidChar(InvalidCharError::new(range)));
+            .log_error(Diagnostics::InvalidChar(InvalidCharError::new(range)));
     }
 
     pub fn log_no_closing_symbol_error(&mut self, expected_symbol: &'static str, range: TextRange) {
         self.errors
-            .push(Diagnostics::NoClosingSymbol(NoClosingSymbolError::new(
+            .log_error(Diagnostics::NoClosingSymbol(NoClosingSymbolError::new(
                 expected_symbol,
                 range,
             )));
