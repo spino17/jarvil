@@ -54,17 +54,17 @@ pub fn build_code(mut code: JarvilCode) -> (Result<String, Report>, String) {
 
     // type checking
     let type_checker = JarvilTypeChecker::new(&code_handler, &errors, semantic_db);
-    let semantic_db = type_checker.check_ast(&ast);
+    let modified_semantic_db = type_checker.check_ast(&ast);
 
     // ast json serialization
-    let ast_str = serialize_ast(&ast, &code_handler, semantic_db.interner()).unwrap();
+    let ast_str = serialize_ast(&ast, &code_handler, modified_semantic_db.interner()).unwrap();
 
     if let Some(report) = errors.first_error_report() {
         return (Err(attach_source_code(report, code.to_string())), ast_str);
     }
 
     // Python code-generation
-    let py_generator = PythonCodeGenerator::new(&code_handler, semantic_db);
+    let py_generator = PythonCodeGenerator::new(&code_handler, modified_semantic_db);
     let py_code = py_generator.generate_python_code(&ast);
     (Ok(py_code), ast_str)
 }

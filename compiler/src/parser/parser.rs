@@ -12,7 +12,6 @@ use crate::ast::traits::{ErrornousNode, Node};
 use crate::code::JarvilCodeHandler;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
-use crate::error::diagnostics::Diagnostics;
 use crate::error::error::JarvilProgramAnalysisErrors;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
