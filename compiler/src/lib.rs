@@ -46,16 +46,16 @@ pub fn build_ast(code: &mut JarvilCode) -> (BlockNode, Vec<Diagnostics>, JarvilC
 pub fn build_code(mut code: JarvilCode) -> (Result<String, Report>, String) {
     let (ast, mut errors, code_handler) = build_ast(&mut code);
 
-    // name-resolver
+    // name resolution
     let resolver = Resolver::new(&code_handler);
     let (semantic_db, mut semantic_errors) = resolver.resolve_ast(&ast);
     errors.append(&mut semantic_errors);
 
-    // type-checker
+    // type checking
     let type_checker = TypeChecker::new(&code_handler, semantic_db);
     let semantic_db = type_checker.check_ast(&ast, &mut errors);
 
-    // TODO - remove this after testing
+    // ast json serialization
     let ast_str = serialize_ast(&ast, &code_handler, semantic_db.interner()).unwrap();
 
     if !errors.is_empty() {
