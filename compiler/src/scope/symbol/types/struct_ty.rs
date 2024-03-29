@@ -4,7 +4,7 @@ use crate::scope::namespace::Namespace;
 use crate::scope::symbol::common::{FieldsMap, MethodsMap};
 use crate::scope::symbol::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
 use crate::scope::symbol::interfaces::InterfaceBounds;
-use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::symbol::types::generic_ty::GenericTypeParams;
 use crate::scope::traits::IsInitialized;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;

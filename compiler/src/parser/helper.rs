@@ -27,7 +27,7 @@ pub fn format_symbol(symbol: &str) -> &str {
     symbol
 }
 
-pub fn err_for_generic_type_args(
+pub fn err_for_generic_ty_args(
     err: &GenericTypeArgsCheckError,
     identifier_decl_range: TextRange,
     identifier_kind: IdentifierKind,

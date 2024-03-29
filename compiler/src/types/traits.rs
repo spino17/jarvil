@@ -7,7 +7,7 @@ use crate::scope::namespace::Namespace;
 use crate::scope::symbol::core::SymbolIndex;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
-use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::types::generic_ty::GenericTypeDeclarationPlaceCategory;
 use crate::scope::traits::InstantiationContext;
 
 pub trait TypeLike {
@@ -23,7 +23,7 @@ pub trait TypeLike {
         context: T,
         namespace: &Namespace,
     ) -> Type;
-    fn try_infer_type_or_check_equivalence(
+    fn try_infer_ty_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
@@ -32,7 +32,7 @@ pub trait TypeLike {
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
     ) -> Result<(), ()>;
-    fn is_type_bounded_by_interfaces(
+    fn is_ty_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
         namespace: &Namespace,

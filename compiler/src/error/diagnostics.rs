@@ -1560,25 +1560,25 @@ impl ExpressionNotCallableError {
 #[error("invalid indexing")]
 #[diagnostic(code("TypeCheckError"))]
 pub struct ExpressionIndexingNotValidError {
-    pub expr_type: String,
-    pub index_type: String,
-    #[label("expression has type `{}`", self.expr_type)]
+    pub expr_ty: String,
+    pub index_ty: String,
+    #[label("expression has type `{}`", self.expr_ty)]
     pub expr_span: SourceSpan,
-    #[label("expression is not indexable with value of type `{}`", self.index_type)]
+    #[label("expression is not indexable with value of type `{}`", self.index_ty)]
     pub index_span: SourceSpan,
 }
 
 impl ExpressionIndexingNotValidError {
     pub fn new(
-        expr_type: &Type,
-        index_type: &Type,
+        expr_ty: &Type,
+        index_ty: &Type,
         expr_range: TextRange,
         index_range: TextRange,
         context: TypeStringifyContext,
     ) -> Self {
         ExpressionIndexingNotValidError {
-            expr_type: expr_type.to_string(context),
-            index_type: index_type.to_string(context),
+            expr_ty: expr_ty.to_string(context),
+            index_ty: index_ty.to_string(context),
             expr_span: range_to_span(expr_range).into(),
             index_span: range_to_span(index_range).into(),
         }
@@ -1696,7 +1696,7 @@ impl ExpressionTypeCannotBeInferredError {
 #[diagnostic(code("TypeCheckError"))]
 pub struct UnaryOperatorInvalidUseError {
     pub ty: String,
-    pub valid_operand_type: String,
+    pub valid_operand_ty: String,
     pub operator: String,
     #[label("operand has type `{}`", self.ty)]
     pub operand_span: SourceSpan,
@@ -1709,18 +1709,18 @@ pub struct UnaryOperatorInvalidUseError {
 impl UnaryOperatorInvalidUseError {
     pub fn new(
         ty: String,
-        valid_operand_type: &'static str,
+        valid_operand_ty: &'static str,
         operator: &'static str,
         operand_range: TextRange,
         operator_range: TextRange,
     ) -> Self {
         let help_str = format!(
             "unary operator {} is valid only for {} operands",
-            operator, valid_operand_type
+            operator, valid_operand_ty
         );
         UnaryOperatorInvalidUseError {
             ty,
-            valid_operand_type: valid_operand_type.to_string(),
+            valid_operand_ty: valid_operand_ty.to_string(),
             operator: operator.to_string(),
             operand_span: range_to_span(operand_range).into(),
             operator_span: range_to_span(operator_range).into(),
@@ -1733,11 +1733,11 @@ impl UnaryOperatorInvalidUseError {
 #[error("invalid binary operands")]
 #[diagnostic(code("TypeCheckError"))]
 pub struct BinaryOperatorInvalidOperandsError {
-    pub left_type: String,
-    pub right_type: String,
-    #[label("operand has type `{}`", self.left_type)]
+    pub left_ty: String,
+    pub right_ty: String,
+    #[label("operand has type `{}`", self.left_ty)]
     pub left_expr_span: SourceSpan,
-    #[label("operand has type `{}`", self.right_type)]
+    #[label("operand has type `{}`", self.right_ty)]
     pub right_expr_span: SourceSpan,
     #[label("binary operator cannot be applied on operands")]
     pub operator_span: SourceSpan,
@@ -1747,8 +1747,8 @@ pub struct BinaryOperatorInvalidOperandsError {
 
 impl BinaryOperatorInvalidOperandsError {
     pub fn new(
-        left_type: &Type,
-        right_type: &Type,
+        left_ty: &Type,
+        right_ty: &Type,
         left_range: TextRange,
         right_range: TextRange,
         operator_range: TextRange,
@@ -1756,8 +1756,8 @@ impl BinaryOperatorInvalidOperandsError {
     ) -> Self {
         // TODO - construct dynamic help message
         BinaryOperatorInvalidOperandsError {
-            left_type: left_type.to_string(context),
-            right_type: right_type.to_string(context),
+            left_ty: left_ty.to_string(context),
+            right_ty: right_ty.to_string(context),
             left_expr_span: range_to_span(left_range).into(),
             right_expr_span: range_to_span(right_range).into(),
             operator_span: range_to_span(operator_range).into(),
@@ -1770,11 +1770,11 @@ impl BinaryOperatorInvalidOperandsError {
 #[error("mismatched types")]
 #[diagnostic(code("TypeCheckError"))]
 pub struct MismatchedTypesOnLeftRightError {
-    pub left_type: String,
-    pub right_type: String,
-    #[label("has type `{}`", self.left_type)]
+    pub left_ty: String,
+    pub right_ty: String,
+    #[label("has type `{}`", self.left_ty)]
     pub left_span: SourceSpan,
-    #[label("has type `{}`", self.right_type)]
+    #[label("has type `{}`", self.right_ty)]
     pub right_span: SourceSpan,
     #[help]
     pub help: Option<String>, // types on both sides should be same
@@ -1782,15 +1782,15 @@ pub struct MismatchedTypesOnLeftRightError {
 
 impl MismatchedTypesOnLeftRightError {
     pub fn new(
-        left_type: &Type,
-        right_type: &Type,
+        left_ty: &Type,
+        right_ty: &Type,
         left_range: TextRange,
         right_range: TextRange,
         context: TypeStringifyContext,
     ) -> Self {
         MismatchedTypesOnLeftRightError {
-            left_type: left_type.to_string(context),
-            right_type: right_type.to_string(context),
+            left_ty: left_ty.to_string(context),
+            right_ty: right_ty.to_string(context),
             left_span: range_to_span(left_range).into(),
             right_span: range_to_span(right_range).into(),
             help: Some(
@@ -1908,22 +1908,22 @@ impl InvalidReturnStatementError {
 #[error("mismatched types")]
 #[diagnostic(code("TypeCheckError"))]
 pub struct MismatchedReturnTypeError {
-    pub expected_type: String,
-    pub received_type: String,
-    #[label("expected return value with type `{}`, got `{}`", self.expected_type, self.received_type)]
+    pub expected_ty: String,
+    pub received_ty: String,
+    #[label("expected return value with type `{}`, got `{}`", self.expected_ty, self.received_ty)]
     pub span: SourceSpan,
 }
 
 impl MismatchedReturnTypeError {
     pub fn new(
-        expected_type: &Type,
-        received_type: &Type,
+        expected_ty: &Type,
+        received_ty: &Type,
         range: TextRange,
         context: TypeStringifyContext,
     ) -> Self {
         MismatchedReturnTypeError {
-            expected_type: expected_type.to_string(context),
-            received_type: received_type.to_string(context),
+            expected_ty: expected_ty.to_string(context),
+            received_ty: received_ty.to_string(context),
             span: range_to_span(range).into(),
         }
     }

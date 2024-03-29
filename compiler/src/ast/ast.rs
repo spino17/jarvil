@@ -299,7 +299,7 @@ pub struct CoreStructDeclarationNode {
 
 #[derive(Debug, Serialize)]
 pub struct CoreStructPropertyDeclarationNode {
-    pub name_type_spec: NameTypeSpecNode,
+    pub name_ty_spec: NameTypeSpecNode,
     pub newline: TokenNode,
 }
 
@@ -326,9 +326,9 @@ pub struct CoreLambdaTypeDeclarationNode {
     pub lambda_keyword: TokenNode,
     pub equal: TokenNode,
     pub lparen: TokenNode,
-    pub type_tuple: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>>,
+    pub ty_tuple: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>>,
     pub rparen: TokenNode,
-    pub return_type: Option<(TokenNode, TypeExpressionNode)>, // (`->`, <type_expr>)
+    pub return_ty: Option<(TokenNode, TypeExpressionNode)>, // (`->`, <type_expr>)
     pub newline: TokenNode,
 }
 
@@ -350,7 +350,7 @@ pub struct CoreAtomicTypeNode {
 #[derive(Debug, Serialize)]
 pub struct CoreArrayTypeNode {
     pub lsquare: TokenNode,
-    pub sub_type: TypeExpressionNode,
+    pub sub_ty: TypeExpressionNode,
     pub rsquare: TokenNode,
 }
 
@@ -364,9 +364,9 @@ pub struct CoreTupleTypeNode {
 #[derive(Debug, Serialize)]
 pub struct CoreHashMapTypeNode {
     pub lcurly: TokenNode,
-    pub key_type: TypeExpressionNode,
+    pub key_ty: TypeExpressionNode,
     pub colon: TokenNode,
-    pub value_type: TypeExpressionNode,
+    pub value_ty: TypeExpressionNode,
     pub rcurly: TokenNode,
 }
 
@@ -380,7 +380,7 @@ pub struct CoreCallablePrototypeNode {
     pub lparen: TokenNode,
     pub params: Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
     pub rparen: TokenNode,
-    pub return_type: Option<(TokenNode, TypeExpressionNode)>, // (`->`, <type_expr>)
+    pub return_ty: Option<(TokenNode, TypeExpressionNode)>, // (`->`, <type_expr>)
 }
 
 #[derive(Debug, Serialize)]
@@ -578,7 +578,7 @@ pub struct CoreEnumVariantExprOrClassMethodCallNode {
 pub struct CoreNameTypeSpecNode {
     pub name: IdentifierInDeclNode,
     pub colon: TokenNode,
-    pub data_type: TypeExpressionNode,
+    pub data_ty: TypeExpressionNode,
 }
 
 #[derive(Debug, Node, Serialize)]
@@ -635,7 +635,7 @@ pub enum CoreIdentifierInDeclNode {
 #[derive(Debug, Serialize)]
 pub struct CoreOkIdentifierInUseNode {
     pub name: OkTokenNode,
-    pub generic_type_args: Option<(
+    pub generic_ty_args: Option<(
         TokenNode,
         SymbolSeparatedSequenceNode<TypeExpressionNode>,
         TokenNode,
@@ -645,7 +645,7 @@ pub struct CoreOkIdentifierInUseNode {
 #[derive(Debug, Serialize)]
 pub struct CoreOkIdentifierInDeclNode {
     pub name: OkTokenNode,
-    pub generic_type_decls: Option<(
+    pub generic_ty_decls: Option<(
         TokenNode,
         SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
         TokenNode,
@@ -654,7 +654,7 @@ pub struct CoreOkIdentifierInDeclNode {
 
 #[derive(Debug, Serialize)]
 pub struct CoreGenericTypeDeclNode {
-    pub generic_type_name: IdentifierInDeclNode,
+    pub generic_ty_name: IdentifierInDeclNode,
     pub interface_bounds: Option<(TokenNode, SymbolSeparatedSequenceNode<IdentifierInUseNode>)>, // (colon, ...)
 }
 

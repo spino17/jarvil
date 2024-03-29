@@ -11,7 +11,7 @@ pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
     let curr_token = parser.curr_token();
     if curr_token.is_eq(":") {
         let colon_node = parser.expect(":");
-        let variable_ty_expr_node = parser.type_expr();
+        let variable_ty_expr_node = parser.ty_expr();
         optional_ty_annotation_node = Some((colon_node, variable_ty_expr_node));
     }
     let equal_node = parser.expect("=");

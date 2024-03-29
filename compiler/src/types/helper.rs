@@ -6,12 +6,12 @@ use crate::{
         concrete::{TurbofishTypes, TypeGenericsInstantiationContext},
         namespace::Namespace,
         scope::ScopeIndex,
-        symbol::{core::SymbolIndex, types::generic_type::GenericTypeDeclarationPlaceCategory},
+        symbol::{core::SymbolIndex, types::generic_ty::GenericTypeDeclarationPlaceCategory},
     },
     types::traits::TypeLike,
 };
 
-pub fn unbounded_generic_ty_in_type_with_declaration_index(
+pub fn unbounded_generic_ty_in_ty_with_declaration_index(
     index: usize,
     interner: &Interner,
 ) -> Type {
@@ -46,7 +46,7 @@ pub fn try_infer_types_from_tuple(
     }
     for (index, generics_containing_ty) in generics_containing_types_tuple.iter().enumerate() {
         let base_ty = &base_types_tuple[index];
-        generics_containing_ty.try_infer_type_or_check_equivalence(
+        generics_containing_ty.try_infer_ty_or_check_equivalence(
             base_ty,
             inferred_concrete_types,
             global_concrete_types,

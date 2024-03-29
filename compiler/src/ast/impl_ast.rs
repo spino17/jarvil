@@ -262,8 +262,8 @@ impl StatementNode {
         StatementNode(node)
     }
 
-    pub fn new_with_type_declaration(type_decl: TypeDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::TypeDeclaration(type_decl));
+    pub fn new_with_ty_declaration(ty_decl: TypeDeclarationNode) -> Self {
+        let node = Rc::new(CoreStatementNode::TypeDeclaration(ty_decl));
         StatementNode(node)
     }
 
@@ -578,10 +578,10 @@ impl Node for InvalidLValueNode {
 }
 
 impl StructPropertyDeclarationNode {
-    pub fn new(name_type_spec: NameTypeSpecNode, newline: TokenNode) -> Self {
+    pub fn new(name_ty_spec: NameTypeSpecNode, newline: TokenNode) -> Self {
         let node = Rc::new(CoreStructPropertyDeclarationNode {
             newline,
-            name_type_spec,
+            name_ty_spec,
         });
         StructPropertyDeclarationNode(node)
     }
@@ -591,13 +591,10 @@ impl StructPropertyDeclarationNode {
 
 impl Node for StructPropertyDeclarationNode {
     fn range(&self) -> TextRange {
-        impl_range!(
-            self.0.as_ref().name_type_spec,
-            self.0.as_ref().name_type_spec
-        )
+        impl_range!(self.0.as_ref().name_ty_spec, self.0.as_ref().name_ty_spec)
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().name_type_spec.start_line_number()
+        self.0.as_ref().name_ty_spec.start_line_number()
     }
 }
 
@@ -752,8 +749,8 @@ impl LambdaTypeDeclarationNode {
         equal: TokenNode,
         lparen: TokenNode,
         rparen: TokenNode,
-        type_tuple: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>>,
-        return_type: Option<(TokenNode, TypeExpressionNode)>,
+        ty_tuple: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>>,
+        return_ty: Option<(TokenNode, TypeExpressionNode)>,
         newline: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreLambdaTypeDeclarationNode {
@@ -763,8 +760,8 @@ impl LambdaTypeDeclarationNode {
             equal,
             lparen,
             rparen,
-            type_tuple,
-            return_type,
+            ty_tuple,
+            return_ty,
             newline,
         });
         LambdaTypeDeclarationNode(node)
@@ -785,7 +782,7 @@ impl Node for LambdaTypeDeclarationNode {
 impl CallablePrototypeNode {
     pub fn new(
         params: Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
-        return_type: Option<(TokenNode, TypeExpressionNode)>,
+        return_ty: Option<(TokenNode, TypeExpressionNode)>,
         lparen: TokenNode,
         rparen: TokenNode,
     ) -> Self {
@@ -793,7 +790,7 @@ impl CallablePrototypeNode {
             lparen,
             rparen,
             params,
-            return_type,
+            return_ty,
         });
         CallablePrototypeNode(node)
     }
@@ -803,8 +800,8 @@ impl CallablePrototypeNode {
 
 impl Node for CallablePrototypeNode {
     fn range(&self) -> TextRange {
-        match &self.0.as_ref().return_type {
-            Some((_, return_type)) => impl_range!(self.0.as_ref().lparen, return_type),
+        match &self.0.as_ref().return_ty {
+            Some((_, return_ty)) => impl_range!(self.0.as_ref().lparen, return_ty),
             None => impl_range!(self.0.as_ref().lparen, self.0.as_ref().rparen),
         }
     }
@@ -1115,15 +1112,11 @@ impl Node for ReturnStatementNode {
 }
 
 impl NameTypeSpecNode {
-    pub fn new(
-        name: IdentifierInDeclNode,
-        data_type: TypeExpressionNode,
-        colon: TokenNode,
-    ) -> Self {
+    pub fn new(name: IdentifierInDeclNode, data_ty: TypeExpressionNode, colon: TokenNode) -> Self {
         let node = Rc::new(CoreNameTypeSpecNode {
             colon,
             name,
-            data_type,
+            data_ty,
         });
         NameTypeSpecNode(node)
     }
@@ -1133,7 +1126,7 @@ impl NameTypeSpecNode {
 
 impl Node for NameTypeSpecNode {
     fn range(&self) -> TextRange {
-        impl_range!(self.0.as_ref().name, self.0.as_ref().data_type)
+        impl_range!(self.0.as_ref().name, self.0.as_ref().data_ty)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().name.start_line_number()
@@ -1141,32 +1134,32 @@ impl Node for NameTypeSpecNode {
 }
 
 impl TypeExpressionNode {
-    pub fn new_with_atomic_type(atomic_type: TokenNode) -> Self {
+    pub fn new_with_atomic_ty(atomic_ty: TokenNode) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::Atomic(AtomicTypeNode::new(
-            atomic_type,
+            atomic_ty,
         )));
         TypeExpressionNode(node)
     }
 
-    pub fn new_with_user_defined_type(identifier: IdentifierInUseNode) -> Self {
+    pub fn new_with_user_defined_ty(identifier: IdentifierInUseNode) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::UserDefined(
             UserDefinedTypeNode::new(identifier),
         ));
         TypeExpressionNode(node)
     }
 
-    pub fn new_with_array_type(
-        sub_type: TypeExpressionNode,
+    pub fn new_with_array_ty(
+        sub_ty: TypeExpressionNode,
         lsquare: TokenNode,
         rsquare: TokenNode,
     ) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::Array(ArrayTypeNode::new(
-            sub_type, lsquare, rsquare,
+            sub_ty, lsquare, rsquare,
         )));
         TypeExpressionNode(node)
     }
 
-    pub fn new_with_tuple_type(
+    pub fn new_with_tuple_ty(
         lparen: TokenNode,
         rparen: TokenNode,
         types: SymbolSeparatedSequenceNode<TypeExpressionNode>,
@@ -1177,15 +1170,15 @@ impl TypeExpressionNode {
         TypeExpressionNode(node)
     }
 
-    pub fn new_with_hashmap_type(
+    pub fn new_with_hashmap_ty(
         lcurly: TokenNode,
         rcurly: TokenNode,
         colon: TokenNode,
-        key_type: TypeExpressionNode,
-        value_type: TypeExpressionNode,
+        key_ty: TypeExpressionNode,
+        value_ty: TypeExpressionNode,
     ) -> Self {
         let node = Rc::new(CoreTypeExpressionNode::HashMap(HashMapTypeNode::new(
-            lcurly, rcurly, colon, key_type, value_type,
+            lcurly, rcurly, colon, key_ty, value_ty,
         )));
         TypeExpressionNode(node)
     }
@@ -1269,11 +1262,11 @@ impl Node for AtomicTypeNode {
 }
 
 impl ArrayTypeNode {
-    pub fn new(sub_type: TypeExpressionNode, lsquare: TokenNode, rsquare: TokenNode) -> Self {
+    pub fn new(sub_ty: TypeExpressionNode, lsquare: TokenNode, rsquare: TokenNode) -> Self {
         let node = Rc::new(CoreArrayTypeNode {
             lsquare,
             rsquare,
-            sub_type,
+            sub_ty,
         });
         ArrayTypeNode(node)
     }
@@ -1285,11 +1278,11 @@ impl ArrayTypeNode {
     ) -> TypeResolveKind {
         match self
             .core_ref()
-            .sub_type
+            .sub_ty
             .ty_before_resolved(resolver, scope_index)
         {
-            TypeResolveKind::Resolved(element_type) => {
-                return TypeResolveKind::Resolved(Type::new_with_array(element_type))
+            TypeResolveKind::Resolved(element_ty) => {
+                return TypeResolveKind::Resolved(Type::new_with_array(element_ty))
             }
             TypeResolveKind::Unresolved(identifier_node) => {
                 return TypeResolveKind::Unresolved(identifier_node)
@@ -1366,15 +1359,15 @@ impl HashMapTypeNode {
         lcurly: TokenNode,
         rcurly: TokenNode,
         colon: TokenNode,
-        key_type: TypeExpressionNode,
-        value_type: TypeExpressionNode,
+        key_ty: TypeExpressionNode,
+        value_ty: TypeExpressionNode,
     ) -> Self {
         let node = Rc::new(CoreHashMapTypeNode {
             lcurly,
             rcurly,
             colon,
-            key_type,
-            value_type,
+            key_ty,
+            value_ty,
         });
         HashMapTypeNode(node)
     }
@@ -1385,16 +1378,16 @@ impl HashMapTypeNode {
         value_result: TypeResolveKind<'a>,
     ) -> TypeResolveKind<'a> {
         match key_result {
-            TypeResolveKind::Resolved(key_type) => match value_result {
-                TypeResolveKind::Resolved(value_type) => {
-                    return TypeResolveKind::Resolved(Type::new_with_hashmap(key_type, value_type))
+            TypeResolveKind::Resolved(key_ty) => match value_result {
+                TypeResolveKind::Resolved(value_ty) => {
+                    return TypeResolveKind::Resolved(Type::new_with_hashmap(key_ty, value_ty))
                 }
                 TypeResolveKind::Unresolved(unresolved_vec) => {
                     return TypeResolveKind::Unresolved(unresolved_vec)
                 }
                 TypeResolveKind::Invalid => {
                     return TypeResolveKind::Resolved(Type::new_with_hashmap(
-                        key_type,
+                        key_ty,
                         Type::new_with_unknown(),
                     ))
                 }
@@ -1410,10 +1403,10 @@ impl HashMapTypeNode {
                 TypeResolveKind::Invalid => return TypeResolveKind::Unresolved(key_unresolved_vec),
             },
             TypeResolveKind::Invalid => match value_result {
-                TypeResolveKind::Resolved(value_type) => {
+                TypeResolveKind::Resolved(value_ty) => {
                     return TypeResolveKind::Resolved(Type::new_with_hashmap(
                         Type::new_with_unknown(),
-                        value_type,
+                        value_ty,
                     ))
                 }
                 TypeResolveKind::Unresolved(unresolved_vec) => {
@@ -1431,11 +1424,11 @@ impl HashMapTypeNode {
     ) -> TypeResolveKind {
         let key_result = self
             .core_ref()
-            .key_type
+            .key_ty
             .ty_before_resolved(resolver, scope_index);
         let value_result = self
             .core_ref()
-            .value_type
+            .value_ty
             .ty_before_resolved(resolver, scope_index);
         return self.aggregate_key_value_result(key_result, value_result);
     }
@@ -1463,7 +1456,7 @@ impl UserDefinedTypeNode {
         resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
     ) -> TypeResolveKind {
-        resolver.ty_from_user_defined_type_expr(self, scope_index)
+        resolver.ty_from_user_defined_ty_expr(self, scope_index)
     }
 
     impl_core_ref!(CoreUserDefinedTypeNode);
@@ -2367,7 +2360,7 @@ impl Node for SkippedTokenNode {
 impl IdentifierInUseNode {
     pub fn new_with_ok(
         token: OkTokenNode,
-        generic_type_args: Option<(
+        generic_ty_args: Option<(
             TokenNode,
             SymbolSeparatedSequenceNode<TypeExpressionNode>,
             TokenNode,
@@ -2375,7 +2368,7 @@ impl IdentifierInUseNode {
     ) -> Self {
         let node = Rc::new(CoreIdentifierInUseNode::Ok(OkIdentifierInUseNode::new(
             token,
-            generic_type_args,
+            generic_ty_args,
         )));
         IdentifierInUseNode(node)
     }
@@ -2387,7 +2380,7 @@ default_errornous_node_impl!(IdentifierInUseNode, CoreIdentifierInUseNode);
 impl IdentifierInDeclNode {
     pub fn new_with_ok(
         token: OkTokenNode,
-        generic_type_decls: Option<(
+        generic_ty_decls: Option<(
             TokenNode,
             SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
             TokenNode,
@@ -2395,7 +2388,7 @@ impl IdentifierInDeclNode {
     ) -> Self {
         let node = Rc::new(CoreIdentifierInDeclNode::Ok(OkIdentifierInDeclNode::new(
             token,
-            generic_type_decls,
+            generic_ty_decls,
         )));
         IdentifierInDeclNode(node)
     }
@@ -2407,7 +2400,7 @@ default_errornous_node_impl!(IdentifierInDeclNode, CoreIdentifierInDeclNode);
 impl OkIdentifierInUseNode {
     fn new(
         token: OkTokenNode,
-        generic_type_args: Option<(
+        generic_ty_args: Option<(
             TokenNode,
             SymbolSeparatedSequenceNode<TypeExpressionNode>,
             TokenNode,
@@ -2415,7 +2408,7 @@ impl OkIdentifierInUseNode {
     ) -> Self {
         let node = Rc::new(CoreOkIdentifierInUseNode {
             name: token,
-            generic_type_args,
+            generic_ty_args,
         });
         OkIdentifierInUseNode(node)
     }
@@ -2433,7 +2426,7 @@ impl OkIdentifierInUseNode {
 
 impl Node for OkIdentifierInUseNode {
     fn range(&self) -> TextRange {
-        match &self.core_ref().generic_type_args {
+        match &self.core_ref().generic_ty_args {
             Some((_, _, rangle)) => impl_range!(self.core_ref().name, rangle),
             None => self.core_ref().name.range(),
         }
@@ -2461,7 +2454,7 @@ impl Hash for OkIdentifierInUseNode {
 impl OkIdentifierInDeclNode {
     fn new(
         token: OkTokenNode,
-        generic_type_decls: Option<(
+        generic_ty_decls: Option<(
             TokenNode,
             SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
             TokenNode,
@@ -2469,7 +2462,7 @@ impl OkIdentifierInDeclNode {
     ) -> Self {
         let node = Rc::new(CoreOkIdentifierInDeclNode {
             name: token,
-            generic_type_decls,
+            generic_ty_decls,
         });
         OkIdentifierInDeclNode(node)
     }
@@ -2487,7 +2480,7 @@ impl OkIdentifierInDeclNode {
 
 impl Node for OkIdentifierInDeclNode {
     fn range(&self) -> TextRange {
-        match &self.core_ref().generic_type_decls {
+        match &self.core_ref().generic_ty_decls {
             Some((_, _, rangle)) => impl_range!(self.core_ref().name, rangle),
             None => self.core_ref().name.range(),
         }
@@ -2514,11 +2507,11 @@ impl Hash for OkIdentifierInDeclNode {
 
 impl GenericTypeDeclNode {
     pub fn new(
-        generic_type_name: IdentifierInDeclNode,
+        generic_ty_name: IdentifierInDeclNode,
         interface_bounds: Option<(TokenNode, SymbolSeparatedSequenceNode<IdentifierInUseNode>)>,
     ) -> Self {
         let node = Rc::new(CoreGenericTypeDeclNode {
-            generic_type_name,
+            generic_ty_name,
             interface_bounds,
         });
         GenericTypeDeclNode(node)
@@ -2530,11 +2523,11 @@ impl GenericTypeDeclNode {
 impl Node for GenericTypeDeclNode {
     fn range(&self) -> TextRange {
         match &self.core_ref().interface_bounds {
-            Some((_, interfaces)) => impl_range!(self.core_ref().generic_type_name, interfaces),
-            None => self.core_ref().generic_type_name.range(),
+            Some((_, interfaces)) => impl_range!(self.core_ref().generic_ty_name, interfaces),
+            None => self.core_ref().generic_ty_name.range(),
         }
     }
     fn start_line_number(&self) -> usize {
-        self.core_ref().generic_type_name.start_line_number()
+        self.core_ref().generic_ty_name.start_line_number()
     }
 }

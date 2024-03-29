@@ -108,8 +108,8 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
             StatementNode::new_with_conditional(conditional_node)
         }
         CoreToken::TYPE_KEYWORD => {
-            let type_decl_node = parser.type_decl();
-            StatementNode::new_with_type_declaration(type_decl_node)
+            let ty_decl_node = parser.ty_decl();
+            StatementNode::new_with_ty_declaration(ty_decl_node)
         }
         CoreToken::INTERFACE_KEYWORD => {
             let interface_decl = parser.interface_decl();
@@ -172,9 +172,9 @@ pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = parser.curr_token();
     match token.core_token() {
         CoreToken::IDENTIFIER => {
-            let name_type_spec_node = parser.name_type_spec();
+            let name_ty_spec_node = parser.name_ty_spec();
             let newline_node = parser.expect_terminators();
-            let struct_stmt = StructPropertyDeclarationNode::new(name_type_spec_node, newline_node);
+            let struct_stmt = StructPropertyDeclarationNode::new(name_ty_spec_node, newline_node);
             StatementNode::new_with_struct_stmt(struct_stmt)
         }
         CoreToken::DEF => parser.function_stmt(CallableKind::Method),
@@ -186,9 +186,9 @@ pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = parser.curr_token();
     match token.core_token() {
         CoreToken::IDENTIFIER => {
-            let name_type_spec_node = parser.name_type_spec();
+            let name_ty_spec_node = parser.name_ty_spec();
             let newline_node = parser.expect_terminators();
-            let struct_stmt = StructPropertyDeclarationNode::new(name_type_spec_node, newline_node);
+            let struct_stmt = StructPropertyDeclarationNode::new(name_ty_spec_node, newline_node);
             StatementNode::new_with_struct_stmt(struct_stmt)
         }
         CoreToken::DEF => {
@@ -207,7 +207,7 @@ pub fn enum_stmt(parser: &mut JarvilParser) -> StatementNode {
     let variant_name_node = parser.expect_identifier();
     if parser.curr_token().is_eq("(") {
         let lparen_node = parser.expect("(");
-        let ty_node = parser.type_expr();
+        let ty_node = parser.ty_expr();
         let rparen_node = parser.expect(")");
         optional_ty_node = Some((lparen_node, ty_node, rparen_node));
     }

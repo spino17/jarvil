@@ -3,7 +3,7 @@ use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::interfaces::InterfaceBounds;
-use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::types::generic_ty::GenericTypeDeclarationPlaceCategory;
 use crate::scope::traits::InstantiationContext;
 use crate::types::core::{CoreType, Type, TypeStringifyContext};
 use crate::types::traits::{CollectionType, OperatorCompatiblity};
@@ -11,16 +11,16 @@ use crate::{constants::common::BOOL, types::traits::TypeLike};
 
 #[derive(Debug, Clone)]
 pub struct Array {
-    element_type: Type,
+    element_ty: Type,
 }
 
 impl Array {
-    pub fn new(element_type: Type) -> Array {
-        Array { element_type }
+    pub fn new(element_ty: Type) -> Array {
+        Array { element_ty }
     }
 
     pub fn element_ty(&self) -> &Type {
-        &self.element_type
+        &self.element_ty
     }
 
     fn check_operator_for_array(
@@ -33,8 +33,8 @@ impl Array {
             return None;
         };
         if self
-            .element_type
-            .check_operator(&other_array.element_type, operator_kind, namespace)
+            .element_ty
+            .check_operator(&other_array.element_ty, operator_kind, namespace)
             .is_some()
         {
             return Some(Type::new_with_atomic(BOOL));
@@ -48,7 +48,7 @@ impl TypeLike for Array {
         let CoreType::Array(array_data) = other_ty.core_ty() else {
             return false;
         };
-        self.element_type.is_eq(&array_data.element_type, namespace)
+        self.element_ty.is_eq(&array_data.element_ty, namespace)
     }
 
     fn is_structurally_eq(
@@ -60,8 +60,8 @@ impl TypeLike for Array {
         let CoreType::Array(array_data) = other_ty.core_ty() else {
             return false;
         };
-        self.element_type
-            .is_structurally_eq(&array_data.element_type, context, namespace)
+        self.element_ty
+            .is_structurally_eq(&array_data.element_ty, context, namespace)
     }
 
     fn concretize<'a, T: InstantiationContext<'a> + Copy>(
@@ -69,10 +69,10 @@ impl TypeLike for Array {
         context: T,
         namespace: &Namespace,
     ) -> Type {
-        Type::new_with_array(self.element_type.concretize(context, namespace))
+        Type::new_with_array(self.element_ty.concretize(context, namespace))
     }
 
-    fn is_type_bounded_by_interfaces(
+    fn is_ty_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
         _namespace: &Namespace,
@@ -81,7 +81,7 @@ impl TypeLike for Array {
         interface_bounds.len() == 0
     }
 
-    fn try_infer_type_or_check_equivalence(
+    fn try_infer_ty_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
@@ -93,8 +93,8 @@ impl TypeLike for Array {
         let CoreType::Array(array_ty) = received_ty.core_ty() else {
             return Err(());
         };
-        self.element_type.try_infer_type_or_check_equivalence(
-            &array_ty.element_type,
+        self.element_ty.try_infer_ty_or_check_equivalence(
+            &array_ty.element_ty,
             inferred_concrete_types,
             global_concrete_types,
             num_inferred_types,
@@ -104,7 +104,7 @@ impl TypeLike for Array {
     }
 
     fn to_string(&self, context: TypeStringifyContext) -> String {
-        format!("[{}]", self.element_type.to_string(context))
+        format!("[{}]", self.element_ty.to_string(context))
     }
 }
 
@@ -113,9 +113,9 @@ impl OperatorCompatiblity for Array {
         let CoreType::Array(array) = other.core_ty() else {
             return None;
         };
-        let sub_type = &array.element_type;
-        if self.element_type.is_eq(sub_type, namespace) {
-            Some(Type::new_with_array(sub_type.clone()))
+        let sub_ty = &array.element_ty;
+        if self.element_ty.is_eq(sub_ty, namespace) {
+            Some(Type::new_with_array(sub_ty.clone()))
         } else {
             None
         }
@@ -157,6 +157,6 @@ impl OperatorCompatiblity for Array {
 
 impl CollectionType for Array {
     fn concrete_types(&self) -> TurbofishTypes {
-        TurbofishTypes::new(vec![self.element_type.clone()])
+        TurbofishTypes::new(vec![self.element_ty.clone()])
     }
 }

@@ -11,7 +11,7 @@ use crate::{
         concrete::{TurbofishTypes, TypeGenericsInstantiationContext},
         namespace::Namespace,
         symbol::{
-            interfaces::InterfaceBounds, types::generic_type::GenericTypeDeclarationPlaceCategory,
+            interfaces::InterfaceBounds, types::generic_ty::GenericTypeDeclarationPlaceCategory,
         },
         traits::InstantiationContext,
     },
@@ -106,7 +106,7 @@ impl TypeLike for Tuple {
         Type::new_with_tuple(concrete_types)
     }
 
-    fn is_type_bounded_by_interfaces(
+    fn is_ty_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
         _namespace: &Namespace,
@@ -115,7 +115,7 @@ impl TypeLike for Tuple {
         interface_bounds.len() == 0
     }
 
-    fn try_infer_type_or_check_equivalence(
+    fn try_infer_ty_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,

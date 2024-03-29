@@ -6,8 +6,8 @@ use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
 use crate::scope::mangled::MangledIdentifierName;
 use crate::scope::namespace::Namespace;
-use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
-use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::symbol::types::generic_ty::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::types::generic_ty::GenericTypeParams;
 use crate::scope::traits::IsInitialized;
 use crate::scope::traits::{AbstractSymbol, InstantiationContext};
 use crate::types::core::{Type, TypeStringifyContext};
@@ -32,15 +32,12 @@ pub enum CallableKind {
 #[derive(Debug, Clone)]
 pub struct CallablePrototypeData {
     params: Vec<Type>,
-    return_type: Type,
+    return_ty: Type,
 }
 
 impl CallablePrototypeData {
-    pub fn new(params: Vec<Type>, return_type: Type) -> CallablePrototypeData {
-        CallablePrototypeData {
-            params,
-            return_type,
-        }
+    pub fn new(params: Vec<Type>, return_ty: Type) -> CallablePrototypeData {
+        CallablePrototypeData { params, return_ty }
     }
 
     pub fn params(&self) -> &Vec<Type> {
@@ -48,7 +45,7 @@ impl CallablePrototypeData {
     }
 
     pub fn return_ty(&self) -> &Type {
-        &self.return_type
+        &self.return_ty
     }
 
     fn compare<F: Fn(&Type, &Type, TypeGenericsInstantiationContext, &Namespace) -> bool>(
@@ -58,14 +55,14 @@ impl CallablePrototypeData {
         context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
-        let (self_param_types, self_return_type) = (&self.params, &self.return_type);
-        let (other_param_types, other_return_type) = (&other.params, &other.return_type);
+        let (self_param_types, self_return_ty) = (&self.params, &self.return_ty);
+        let (other_param_types, other_return_ty) = (&other.params, &other.return_ty);
         let self_params_len = self_param_types.len();
         let other_params_len = other_param_types.len();
         if self_params_len != other_params_len {
             return false;
         }
-        if !cmp_func(self_return_type, other_return_type, context, namespace) {
+        if !cmp_func(self_return_ty, other_return_ty, context, namespace) {
             return false;
         }
         for index in 0..self_params_len {
@@ -108,7 +105,7 @@ impl CallablePrototypeData {
         self.compare(other, cmp_func, context, namespace)
     }
 
-    pub fn try_infer_type(
+    pub fn try_infer_ty(
         &self,
         other: &CallablePrototypeData,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
@@ -117,15 +114,15 @@ impl CallablePrototypeData {
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
     ) -> Result<(), ()> {
-        let (self_param_types, self_return_type) = (&self.params, &self.return_type);
-        let (other_param_types, other_return_type) = (&other.params, &other.return_type);
+        let (self_param_types, self_return_ty) = (&self.params, &self.return_ty);
+        let (other_param_types, other_return_ty) = (&other.params, &other.return_ty);
         let self_params_len = self_param_types.len();
         let other_params_len = other_param_types.len();
         if self_params_len != other_params_len {
             return Err(());
         }
-        self_return_type.try_infer_type_or_check_equivalence(
-            other_return_type,
+        self_return_ty.try_infer_ty_or_check_equivalence(
+            other_return_ty,
             inferred_concrete_types,
             global_concrete_types,
             num_inferred_types,
@@ -133,7 +130,7 @@ impl CallablePrototypeData {
             namespace,
         )?;
         for index in 0..self_params_len {
-            let _ = &self_param_types[index].try_infer_type_or_check_equivalence(
+            let _ = &self_param_types[index].try_infer_ty_or_check_equivalence(
                 &other_param_types[index],
                 inferred_concrete_types,
                 global_concrete_types,
@@ -152,9 +149,9 @@ impl CallablePrototypeData {
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PrototypeEquivalenceCheckError> {
         let expected_params = &self.params;
-        let return_type = &self.return_type;
-        type_checker.check_params_type_and_count(expected_params, received_params)?;
-        Ok(return_type.clone())
+        let return_ty = &self.return_ty;
+        type_checker.check_params_ty_and_count(expected_params, received_params)?;
+        Ok(return_ty.clone())
     }
 }
 
@@ -162,7 +159,7 @@ impl Default for CallablePrototypeData {
     fn default() -> Self {
         CallablePrototypeData {
             params: vec![],
-            return_type: Type::new_with_unset(),
+            return_ty: Type::new_with_unset(),
         }
     }
 }
@@ -177,15 +174,12 @@ pub struct CallableData {
 impl CallableData {
     pub fn new(
         params: Vec<Type>,
-        return_type: Type,
+        return_ty: Type,
         kind: CallableKind,
         generics_spec: Option<GenericTypeParams>,
     ) -> Self {
         CallableData {
-            prototype: CallablePrototypeData {
-                params,
-                return_type,
-            },
+            prototype: CallablePrototypeData { params, return_ty },
             kind,
             generics: generics_spec,
         }
@@ -199,9 +193,9 @@ impl CallableData {
         }
     }
 
-    pub fn set_meta_data(&mut self, params: Vec<Type>, return_type: Type, kind: CallableKind) {
+    pub fn set_meta_data(&mut self, params: Vec<Type>, return_ty: Type, kind: CallableKind) {
         self.prototype.params = params;
-        self.prototype.return_type = return_type;
+        self.prototype.return_ty = return_ty;
         self.kind = kind;
     }
 
@@ -233,7 +227,7 @@ impl CallableData {
         if context.is_empty() {
             return RefOrOwned::Ref(&self.prototype);
         }
-        let concrete_return_type = self.concretized_return_ty(namespace, context);
+        let concrete_return_ty = self.concretized_return_ty(namespace, context);
         let concrete_params = self
             .prototype
             .params
@@ -242,7 +236,7 @@ impl CallableData {
             .collect();
         RefOrOwned::Owned(CallablePrototypeData::new(
             concrete_params,
-            concrete_return_type,
+            concrete_return_ty,
         ))
     }
 }
@@ -296,14 +290,14 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
         local_concrete_ty_ranges: Option<Vec<TextRange>>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PartialCallableDataPrototypeCheckError> {
-        let generic_type_decls = &self.callable_data.generics;
+        let generic_ty_decls = &self.callable_data.generics;
         match local_concrete_types {
-            Some(local_concrete_types) => match generic_type_decls {
-                Some(generic_type_decls) => {
-                    generic_type_decls.check_concrete_types_bounded_by(
+            Some(local_concrete_types) => match generic_ty_decls {
+                Some(generic_ty_decls) => {
+                    generic_ty_decls.check_concrete_types_bounded_by(
                         &local_concrete_types,
                         match &local_concrete_ty_ranges {
-                            Some(type_ranges) => type_ranges,
+                            Some(ty_ranges) => ty_ranges,
                             None => unreachable!(),
                         },
                         type_checker.err_logging_context(),
@@ -324,10 +318,10 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                     ),
                 ),
             },
-            None => match generic_type_decls {
-                Some(generic_type_decls) => {
+            None => match generic_ty_decls {
+                Some(generic_ty_decls) => {
                     let local_concrete_types = type_checker.infer_concrete_types_from_arguments(
-                        generic_type_decls,
+                        generic_ty_decls,
                         &self.callable_data.prototype,
                         self.context.ty_generics_instantiation_args(),
                         received_params,
@@ -371,10 +365,10 @@ impl AbstractSymbol for FunctionSymbolData {
         SymbolDataEntry::Function(self.0)
     }
 
-    fn check_generic_type_args(
+    fn check_generic_ty_args(
         &self,
         concrete_types: Option<&TurbofishTypes>,
-        type_ranges: Option<&Vec<TextRange>>,
+        ty_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
@@ -384,11 +378,11 @@ impl AbstractSymbol for FunctionSymbolData {
             .functions_ref()
             .symbol_ref(self.0)
             .data_ref();
-        let generic_type_decls = function_data.generics();
+        let generic_ty_decls = function_data.generics();
         check_concrete_types_bounded_by_interfaces(
-            generic_type_decls,
+            generic_ty_decls,
             concrete_types,
-            type_ranges,
+            ty_ranges,
             true,
             context,
         )

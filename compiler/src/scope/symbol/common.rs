@@ -107,7 +107,7 @@ impl GlobalUniqueKeyGenerator {
         self.functions.generate_unique_id()
     }
 
-    pub fn generate_unique_id_for_type(&mut self) -> IdentDeclId<UserDefinedTypeData> {
+    pub fn generate_unique_id_for_ty(&mut self) -> IdentDeclId<UserDefinedTypeData> {
         self.types.generate_unique_id()
     }
 

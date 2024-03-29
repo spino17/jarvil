@@ -159,24 +159,22 @@ impl<'ctx> JarvilParser<'ctx> {
         let token = self.curr_token();
         if token.is_eq(separator) {
             let separator_node = self.expect(separator);
-            let remaining_generic_type_args_node =
+            let remaining_generic_ty_args_node =
                 self.expect_symbol_separated_sequence(entity_parsing_fn, separator);
             return SymbolSeparatedSequenceNode::new_with_entities(
                 first_entity_node,
-                remaining_generic_type_args_node,
+                remaining_generic_ty_args_node,
                 separator_node,
             );
         }
         SymbolSeparatedSequenceNode::new_with_single_entity(first_entity_node)
     }
 
-    pub fn expect_generic_type_args(&mut self) -> SymbolSeparatedSequenceNode<TypeExpressionNode> {
-        self.expect_symbol_separated_sequence(|parser: &mut JarvilParser| parser.type_expr(), ",")
+    pub fn expect_generic_ty_args(&mut self) -> SymbolSeparatedSequenceNode<TypeExpressionNode> {
+        self.expect_symbol_separated_sequence(|parser: &mut JarvilParser| parser.ty_expr(), ",")
     }
 
-    pub fn expect_generic_type_decls(
-        &mut self,
-    ) -> SymbolSeparatedSequenceNode<GenericTypeDeclNode> {
+    pub fn expect_generic_ty_decls(&mut self) -> SymbolSeparatedSequenceNode<GenericTypeDeclNode> {
         let parsing_fn = |parser: &mut JarvilParser| {
             let identifier_in_decl_node = parser.expect_identifier();
             let token = parser.curr_token();
@@ -250,7 +248,7 @@ impl<'ctx> JarvilParser<'ctx> {
     pub fn expect_identifier_in_use(&mut self) -> IdentifierInUseNode {
         let angle_bracketed_content_parsing_fn = |parser: &mut JarvilParser| -> SymbolSeparatedSequenceNode<
             TypeExpressionNode,
-        > { parser.expect_generic_type_args() };
+        > { parser.expect_generic_ty_args() };
         let node_creation_method_with_some = |ident_name: OkTokenNode,
                                               symbol_separated_sequence: Option<(
             TokenNode,
@@ -273,7 +271,7 @@ impl<'ctx> JarvilParser<'ctx> {
     pub fn expect_identifier_in_decl(&mut self) -> IdentifierInDeclNode {
         let angle_bracketed_content_parsing_fn = |parser: &mut JarvilParser| -> SymbolSeparatedSequenceNode<
             GenericTypeDeclNode,
-        > { parser.expect_generic_type_decls() };
+        > { parser.expect_generic_ty_decls() };
         let node_creation_method_with_some = |ident_name: OkTokenNode,
                                               symbol_separated_sequence: Option<(
             TokenNode,
@@ -423,8 +421,8 @@ impl<'ctx> JarvilParser<'ctx> {
         components::conditional::conditional_block(self, conditional_keyword_str)
     }
 
-    pub fn type_expr(&mut self) -> TypeExpressionNode {
-        components::expression::type_expression::type_expr(self)
+    pub fn ty_expr(&mut self) -> TypeExpressionNode {
+        components::expression::type_expression::ty_expr(self)
     }
 
     pub fn atomic_expr(&mut self) -> AtomicExpressionNode {
@@ -500,16 +498,16 @@ impl<'ctx> JarvilParser<'ctx> {
         components::variable_declaration::variable_decl(self)
     }
 
-    pub fn name_type_spec(&mut self) -> NameTypeSpecNode {
-        components::common::name_type_spec(self)
+    pub fn name_ty_spec(&mut self) -> NameTypeSpecNode {
+        components::common::name_ty_spec(self)
     }
 
-    pub fn name_type_specs(&mut self) -> SymbolSeparatedSequenceNode<NameTypeSpecNode> {
-        components::common::name_type_specs(self)
+    pub fn name_ty_specs(&mut self) -> SymbolSeparatedSequenceNode<NameTypeSpecNode> {
+        components::common::name_ty_specs(self)
     }
 
-    pub fn type_tuple(&mut self) -> (SymbolSeparatedSequenceNode<TypeExpressionNode>, usize) {
-        components::common::type_tuple(self)
+    pub fn ty_tuple(&mut self) -> (SymbolSeparatedSequenceNode<TypeExpressionNode>, usize) {
+        components::common::ty_tuple(self)
     }
 
     pub fn function_stmt(&mut self, callable_kind: CallableKind) -> StatementNode {
@@ -560,7 +558,7 @@ impl<'ctx> JarvilParser<'ctx> {
         components::interface_declaration::interface_decl(self)
     }
 
-    pub fn type_decl(&mut self) -> TypeDeclarationNode {
-        components::type_declaration::type_decl(self)
+    pub fn ty_decl(&mut self) -> TypeDeclarationNode {
+        components::type_declaration::ty_decl(self)
     }
 }

@@ -144,7 +144,7 @@ impl GenericTypeParams {
     pub fn check_concrete_types_bounded_by(
         &self,
         concrete_types: &TurbofishTypes,
-        type_ranges: &Vec<TextRange>,
+        ty_ranges: &Vec<TextRange>,
         context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
         let expected_len = self.len();
@@ -159,9 +159,9 @@ impl GenericTypeParams {
         let mut incorrectly_bounded_types: Vec<(TextRange, String)> = vec![];
         for (index, (_, interface_bounds, _)) in self.0.iter().enumerate() {
             let ty = &concrete_types[index];
-            if !ty.is_type_bounded_by_interfaces(interface_bounds, namespace) {
+            if !ty.is_ty_bounded_by_interfaces(interface_bounds, namespace) {
                 incorrectly_bounded_types
-                    .push((type_ranges[index], interface_bounds.to_string(context)))
+                    .push((ty_ranges[index], interface_bounds.to_string(context)))
             }
         }
         if !incorrectly_bounded_types.is_empty() {

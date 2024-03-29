@@ -30,7 +30,7 @@ pub struct SemanticStateDatabase {
     unique_key_generator: GlobalUniqueKeyGenerator,
     identifier_in_decl_binding_table: FxHashMap<OkIdentifierInDeclNode, SymbolDataEntry>,
     identifier_in_use_binding_table: FxHashMap<OkIdentifierInUseNode, ConcreteSymbolDataEntry>,
-    type_expr_obj_table: FxHashMap<TypeExpressionNode, Type>,
+    ty_expr_obj_table: FxHashMap<TypeExpressionNode, Type>,
     self_keyword_binding_table: FxHashMap<OkSelfKeywordNode, SymbolIndex<VariableData>>, // `self` (node) -> scope_index
     block_non_locals: FxHashMap<BlockNode, FxHashSet<MangledIdentifierName<VariableData>>>,
     bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
@@ -58,7 +58,7 @@ impl SemanticStateDatabase {
             unique_key_generator: GlobalUniqueKeyGenerator::default(),
             identifier_in_decl_binding_table: FxHashMap::default(),
             identifier_in_use_binding_table: FxHashMap::default(),
-            type_expr_obj_table: FxHashMap::default(),
+            ty_expr_obj_table: FxHashMap::default(),
             self_keyword_binding_table: FxHashMap::default(),
             block_non_locals: FxHashMap::default(),
             bounded_method_kind: FxHashMap::default(),
@@ -121,12 +121,12 @@ impl SemanticStateDatabase {
         &mut self.self_keyword_binding_table
     }
 
-    pub fn set_type_expr_obj_mapping(&mut self, ty_expr: &TypeExpressionNode, ty: &Type) {
-        self.type_expr_obj_table.insert(ty_expr.clone(), ty.clone());
+    pub fn set_ty_expr_obj_mapping(&mut self, ty_expr: &TypeExpressionNode, ty: &Type) {
+        self.ty_expr_obj_table.insert(ty_expr.clone(), ty.clone());
     }
 
     pub fn ty_from_expr(&self, ty_expr: &TypeExpressionNode) -> Type {
-        match self.type_expr_obj_table.get(ty_expr) {
+        match self.ty_expr_obj_table.get(ty_expr) {
             Some(ty) => ty.clone(),
             None => unreachable!(),
         }

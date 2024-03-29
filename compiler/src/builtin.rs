@@ -4,7 +4,7 @@ use crate::{
     scope::symbol::{
         function::{CallableData, CallableKind},
         interfaces::InterfaceBounds,
-        types::generic_type::GenericTypeParams,
+        types::generic_ty::GenericTypeParams,
     },
     types::{core::Type, helper::unbounded_generic_ty_in_func_with_declaration_index},
 };

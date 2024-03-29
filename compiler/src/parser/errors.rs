@@ -71,7 +71,7 @@ impl<'ctx> JarvilParser<'ctx> {
         self.errors.log_error(Diagnostics::InvalidLValue(err));
     }
 
-    pub fn log_single_sub_type_in_tuple_error(&self, range: TextRange) {
+    pub fn log_single_sub_ty_in_tuple_error(&self, range: TextRange) {
         if self.ignore_all_errors() {
             return;
         }

@@ -12,7 +12,7 @@ use crate::{
         symbol::{
             core::SymbolIndex,
             interfaces::InterfaceBounds,
-            types::{core::UserDefinedTypeData, generic_type::GenericTypeDeclarationPlaceCategory},
+            types::{core::UserDefinedTypeData, generic_ty::GenericTypeDeclarationPlaceCategory},
         },
         traits::InstantiationContext,
     },
@@ -104,7 +104,7 @@ impl TypeLike for Enum {
         )
     }
 
-    fn is_type_bounded_by_interfaces(
+    fn is_ty_bounded_by_interfaces(
         &self,
         _interface_bounds: &InterfaceBounds,
         _namespace: &Namespace,
@@ -112,7 +112,7 @@ impl TypeLike for Enum {
         unreachable!()
     }
 
-    fn try_infer_type_or_check_equivalence(
+    fn try_infer_ty_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,

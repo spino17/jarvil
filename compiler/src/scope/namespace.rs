@@ -7,15 +7,15 @@ use super::{
         interfaces::{InterfaceBounds, InterfaceData, InterfaceSymbolData},
         types::{
             core::{UserDefinedTypeData, UserDefinedTypeSymbolData},
-            generic_type::{GenericTypeData, GenericTypeParams},
-            lambda_type::LambdaTypeData,
+            generic_ty::{GenericTypeData, GenericTypeParams},
+            lambda_ty::LambdaTypeData,
         },
         variables::{VariableData, VariableSymbolData},
     },
 };
 use crate::{
     core::string_interner::Interner,
-    scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory,
+    scope::symbol::types::generic_ty::GenericTypeDeclarationPlaceCategory,
 };
 use crate::{core::string_interner::StrId, parser::resolver::BlockKind};
 use crate::{scope::lookup::LookupResult, types::core::Type};
@@ -178,11 +178,11 @@ impl Namespace {
             .into())
     }
 
-    pub fn declare_variable_with_type(
+    pub fn declare_variable_with_ty(
         &mut self,
         scope_index: ScopeIndex,
         name: StrId,
-        variable_type: &Type,
+        variable_ty: &Type,
         decl_range: TextRange,
         is_init: bool,
         unique_id: IdentDeclId<VariableData>,
@@ -198,7 +198,7 @@ impl Namespace {
             .insert(
                 scope_index,
                 name,
-                VariableData::new(variable_type, is_init),
+                VariableData::new(variable_ty, is_init),
                 decl_range,
                 lookup_func,
                 unique_id,
@@ -232,7 +232,7 @@ impl Namespace {
             .into())
     }
 
-    pub fn declare_user_defined_type(
+    pub fn declare_user_defined_ty(
         &mut self,
         scope_index: ScopeIndex,
         name: StrId,
@@ -259,7 +259,7 @@ impl Namespace {
             .into())
     }
 
-    pub fn declare_struct_type(
+    pub fn declare_struct_ty(
         &mut self,
         scope_index: ScopeIndex,
         name: StrId,
@@ -267,10 +267,10 @@ impl Namespace {
         unique_id: IdentDeclId<UserDefinedTypeData>,
     ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
         let meta_data = UserDefinedTypeData::default_with_struct();
-        self.declare_user_defined_type(scope_index, name, meta_data, decl_range, unique_id)
+        self.declare_user_defined_ty(scope_index, name, meta_data, decl_range, unique_id)
     }
 
-    pub fn declare_enum_type(
+    pub fn declare_enum_ty(
         &mut self,
         scope_index: ScopeIndex,
         name: StrId,
@@ -278,28 +278,25 @@ impl Namespace {
         unique_id: IdentDeclId<UserDefinedTypeData>,
     ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
         let meta_data = UserDefinedTypeData::default_with_enum();
-        self.declare_user_defined_type(scope_index, name, meta_data, decl_range, unique_id)
+        self.declare_user_defined_ty(scope_index, name, meta_data, decl_range, unique_id)
     }
 
-    pub fn declare_lambda_type_with_meta_data(
+    pub fn declare_lambda_ty_with_meta_data(
         &mut self,
         scope_index: ScopeIndex,
         name: StrId,
         param_types: Vec<Type>,
-        return_type: Type,
+        return_ty: Type,
         generics_spec: Option<GenericTypeParams>,
         decl_range: TextRange,
         unique_id: IdentDeclId<UserDefinedTypeData>,
     ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
-        let meta_data = UserDefinedTypeData::Lambda(LambdaTypeData::new(
-            param_types,
-            return_type,
-            generics_spec,
-        ));
-        self.declare_user_defined_type(scope_index, name, meta_data, decl_range, unique_id)
+        let meta_data =
+            UserDefinedTypeData::Lambda(LambdaTypeData::new(param_types, return_ty, generics_spec));
+        self.declare_user_defined_ty(scope_index, name, meta_data, decl_range, unique_id)
     }
 
-    pub fn declare_generic_type_with_meta_data(
+    pub fn declare_generic_ty_with_meta_data(
         &mut self,
         scope_index: ScopeIndex,
         name: StrId,
@@ -314,7 +311,7 @@ impl Namespace {
             category,
             interface_bounds.clone(),
         ));
-        self.declare_user_defined_type(scope_index, name, meta_data, decl_range, unique_id)
+        self.declare_user_defined_ty(scope_index, name, meta_data, decl_range, unique_id)
     }
 
     pub fn declare_interface(

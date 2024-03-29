@@ -1,6 +1,6 @@
 use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
-use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::symbol::types::generic_ty::GenericTypeParams;
 use crate::scope::traits::IsInitialized;
 use crate::types::core::Type;
 use crate::{core::string_interner::StrId, types::traits::TypeLike};
@@ -35,7 +35,7 @@ impl EnumTypeData {
         self.generics.as_ref()
     }
 
-    pub fn try_type_for_variant<'a>(
+    pub fn try_ty_for_variant<'a>(
         &'a self,
         variant_name: StrId,
         namespace: &Namespace,

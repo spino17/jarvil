@@ -2,7 +2,7 @@
 // cover and the representation of type expressions in terms of type objects.
 
 use super::components::assignment::R_ASSIGNMENT_STARTING_SYMBOLS;
-use super::helper::err_for_generic_type_args;
+use super::helper::err_for_generic_ty_args;
 use crate::ast::ast::{
     ArrayExpressionNode, CallExpressionNode, CallNode, ConditionalBlockNode,
     ConditionalStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
@@ -33,12 +33,12 @@ use crate::scope::concrete::{
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::symbol::core::{ConcreteSymbolDataEntry, SymbolDataEntry};
 use crate::scope::symbol::function::{CallableData, PartialCallableDataPrototypeCheckError};
-use crate::scope::symbol::types::enum_type::EnumTypeData;
-use crate::scope::symbol::types::generic_type::GenericTypeParams;
-use crate::scope::symbol::types::generic_type::{
+use crate::scope::symbol::types::enum_ty::EnumTypeData;
+use crate::scope::symbol::types::generic_ty::GenericTypeParams;
+use crate::scope::symbol::types::generic_ty::{
     GenericTypeDeclarationPlaceCategory, GenericTypePropertyQueryResult,
 };
-use crate::scope::symbol::types::struct_type::StructTypeData;
+use crate::scope::symbol::types::struct_ty::StructTypeData;
 use crate::scope::symbol::variables::VariableData;
 use crate::types::array::core::Array;
 use crate::types::core::TypeStringifyContext;
@@ -230,24 +230,23 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             .is_some()
     }
 
-    pub fn ty_from_expression(&self, type_expr: &TypeExpressionNode) -> Type {
-        self.semantic_db.ty_from_expr(type_expr)
+    pub fn ty_from_expression(&self, ty_expr: &TypeExpressionNode) -> Type {
+        self.semantic_db.ty_from_expr(ty_expr)
     }
 
     fn extract_angle_bracket_content_from_identifier_in_use(
         &self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
     ) -> (Option<TurbofishTypes>, Option<Vec<TextRange>>) {
-        let Some((_, generic_type_args, _)) = &ok_identifier_in_use.core_ref().generic_type_args
-        else {
+        let Some((_, generic_ty_args, _)) = &ok_identifier_in_use.core_ref().generic_ty_args else {
             return (None, None);
         };
         let mut concrete_types: Vec<Type> = vec![];
         let mut ty_ranges: Vec<TextRange> = vec![];
-        for generic_type_expr in generic_type_args.iter() {
-            let ty = self.ty_from_expression(generic_type_expr);
+        for generic_ty_expr in generic_ty_args.iter() {
+            let ty = self.ty_from_expression(generic_ty_expr);
             concrete_types.push(ty);
-            ty_ranges.push(generic_type_expr.range())
+            ty_ranges.push(generic_ty_expr.range())
         }
         (Some(TurbofishTypes::new(concrete_types)), Some(ty_ranges))
     }
@@ -305,16 +304,16 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     pub fn is_binary_operation_valid(
         &self,
-        l_type: &Type,
-        r_type: &Type,
+        l_ty: &Type,
+        r_ty: &Type,
         operator_kind: &BinaryOperatorKind,
     ) -> Option<Type> {
-        l_type.check_operator(r_type, operator_kind, self.semantic_db.namespace_ref())
+        l_ty.check_operator(r_ty, operator_kind, self.semantic_db.namespace_ref())
     }
 
     pub fn infer_concrete_types_from_arguments(
         &self,
-        generic_type_decls: &GenericTypeParams,
+        generic_ty_decls: &GenericTypeParams,
         expected_prototype: &CallablePrototypeData,
         global_concrete_types: Option<&TurbofishTypes>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
@@ -323,9 +322,9 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let Some(received_params) = received_params else {
             return Err(PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred);
         };
-        let generic_type_decls_len = generic_type_decls.len();
+        let generic_ty_decls_len = generic_ty_decls.len();
         let mut inferred_concrete_types: Vec<InferredConcreteTypesEntry> =
-            vec![InferredConcreteTypesEntry::Uninferred; generic_type_decls_len];
+            vec![InferredConcreteTypesEntry::Uninferred; generic_ty_decls_len];
         let mut num_inferred_types = 0; // this should be `len_concrete_types` at the end of inference process
         let received_params_iter = received_params.iter();
         let expected_params = expected_prototype.params();
@@ -340,7 +339,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 ));
             }
             let expected_ty = &expected_params[index];
-            let inference_result = expected_ty.try_infer_type_or_check_equivalence(
+            let inference_result = expected_ty.try_infer_ty_or_check_equivalence(
                 &param_ty,
                 &mut inferred_concrete_types,
                 global_concrete_types,
@@ -360,7 +359,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 params_len,
             )));
         }
-        if num_inferred_types != generic_type_decls_len {
+        if num_inferred_types != generic_ty_decls_len {
             return Err(PrototypeEquivalenceCheckError::NotAllConcreteTypesInferred);
         }
 
@@ -374,9 +373,9 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let mut error_strs: Vec<(String, String)> = vec![]; // Vec of (inferred_ty string, interface_bounds string)
 
         for (index, inferred_ty) in unpacked_inferred_concrete_types.iter().enumerate() {
-            let interface_bounds = generic_type_decls.interface_bounds(index);
+            let interface_bounds = generic_ty_decls.interface_bounds(index);
             if !inferred_ty
-                .is_type_bounded_by_interfaces(interface_bounds, self.semantic_db.namespace_ref())
+                .is_ty_bounded_by_interfaces(interface_bounds, self.semantic_db.namespace_ref())
             {
                 error_strs.push((
                     inferred_ty.to_string(self.err_logging_context()),
@@ -396,7 +395,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         Ok(TurbofishTypes::new(unpacked_inferred_concrete_types))
     }
 
-    pub fn check_params_type_and_count(
+    pub fn check_params_ty_and_count(
         &self,
         expected_param_data: &Vec<Type>,
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
@@ -423,10 +422,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     expected_params_len,
                 ));
             }
-            let expected_param_type = &expected_param_data[index];
-            if !param_ty.is_eq(expected_param_type, self.semantic_db.namespace_ref()) {
+            let expected_param_ty = &expected_param_data[index];
+            if !param_ty.is_eq(expected_param_ty, self.semantic_db.namespace_ref()) {
                 mismatch_types_vec.push((
-                    expected_param_type.to_string(self.err_logging_context()),
+                    expected_param_ty.to_string(self.err_logging_context()),
                     param_ty.to_string(self.err_logging_context()),
                     index + 1,
                     received_param.range(),
@@ -473,10 +472,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             }
             None => {
                 match func_data.generics() {
-                    Some(generic_type_decls) => {
+                    Some(generic_ty_decls) => {
                         // CASE 2
                         CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
-                            generic_type_decls,
+                            generic_ty_decls,
                         )
                     }
                     // CASE 4
@@ -494,11 +493,9 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 let return_ty = prototype.is_received_params_valid(self, params)?;
                 Ok(return_ty)
             }
-            CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
-                generic_type_decls,
-            ) => {
+            CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_ty_decls) => {
                 let concrete_types = self.infer_concrete_types_from_arguments(
-                    generic_type_decls,
+                    generic_ty_decls,
                     func_data.structural_prototype(),
                     None,
                     params,
@@ -519,17 +516,17 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
         debug_assert!(concrete_symbol_index.concrete_types().is_none());
-        let lambda_type = &self
+        let lambda_ty = self
             .semantic_db
             .variable_symbol_ref(concrete_symbol_index.symbol_index())
             .ty();
-        match lambda_type.core_ty() {
+        match lambda_ty.core_ty() {
             CoreType::Lambda(lambda_data) => {
                 let return_ty = lambda_data.is_received_params_valid(self, params)?;
                 Ok(return_ty)
             }
             _ => Err(AtomStartTypeCheckError::IdentifierNotCallable(
-                lambda_type.to_string(self.err_logging_context()),
+                lambda_ty.to_string(self.err_logging_context()),
             )),
         }
     }
@@ -564,10 +561,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             }
             None => {
                 match struct_data.generics() {
-                    Some(generic_type_decls) => {
+                    Some(generic_ty_decls) => {
                         // CASE 2
                         CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
-                            generic_type_decls,
+                            generic_ty_decls,
                         )
                     }
                     None => {
@@ -584,18 +581,16 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         };
         match prototype_result {
             CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
-                self.check_params_type_and_count(prototype.params(), params)?;
+                self.check_params_ty_and_count(prototype.params(), params)?;
                 let return_ty = Type::new_with_struct(
                     concrete_symbol_index.symbol_index(),
                     concrete_types.cloned(), // expensive clone
                 );
                 Ok(return_ty)
             }
-            CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(
-                generic_type_decls,
-            ) => {
+            CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_ty_decls) => {
                 let concrete_types = self.infer_concrete_types_from_arguments(
-                    generic_type_decls,
+                    generic_ty_decls,
                     constructor_meta_data.structural_prototype(),
                     None,
                     params,
@@ -666,7 +661,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     AtomStartTypeCheckError::PrototypeEquivalenceCheckFailed(
                         prototype_equivalence_err,
                     ) => {
-                        self.log_params_type_and_count_check_error(
+                        self.log_params_ty_and_count_check_error(
                             func_name.range(),
                             prototype_equivalence_err,
                         );
@@ -723,7 +718,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             PartialCallableDataPrototypeCheckError::PrototypeEquivalenceCheckFailed(
                                 prototype_check_err
                             ) => {
-                                self.log_params_type_and_count_check_error(
+                                self.log_params_ty_and_count_check_error(
                                     property_name.range(),
                                     prototype_check_err,
                                 );
@@ -731,7 +726,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             PartialCallableDataPrototypeCheckError::GenericTypeArgsCheckFailed(
                                 generic_typ_args_check_err
                             ) => {
-                                let err = err_for_generic_type_args(
+                                let err = err_for_generic_ty_args(
                                     &generic_typ_args_check_err,
                                     ty_node.core_ref().name.range(),
                                     IdentifierKind::Method
@@ -772,7 +767,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         };
         let variant_name =
             property_name.token_value(&self.code_handler, self.semantic_db.interner());
-        if property_name.core_ref().generic_type_args.is_some() {
+        if property_name.core_ref().generic_ty_args.is_some() {
             let err = GenericTypeArgsNotExpectedError::new(
                 IdentifierKind::Variant,
                 property_name.range(),
@@ -783,11 +778,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
         let concrete_types = concrete_symbol_index.concrete_types();
         let context = TypeGenericsInstantiationContext::new(concrete_types);
-        match enum_data.try_type_for_variant(
-            variant_name,
-            self.semantic_db.namespace_ref(),
-            context,
-        ) {
+        match enum_data.try_ty_for_variant(variant_name, self.semantic_db.namespace_ref(), context)
+        {
             Some(expected_ty) => match params {
                 Some((_, params, rparen)) => match params {
                     Some(params) => match expected_ty {
@@ -976,7 +968,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 match result {
                     Ok(return_ty) => (return_ty, Some(atom_ty)),
                     Err(err) => {
-                        self.log_params_type_and_count_check_error(atom.range(), err);
+                        self.log_params_ty_and_count_check_error(atom.range(), err);
                         (Type::new_with_unknown(), Some(atom_ty))
                     }
                 }
@@ -998,7 +990,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let CoreIdentifierInUseNode::Ok(ok_identifier) = property.core_ref() else {
             return (Type::new_with_unknown(), Some(atom_ty));
         };
-        if ok_identifier.core_ref().generic_type_args.is_some() {
+        if ok_identifier.core_ref().generic_ty_args.is_some() {
             let err = GenericTypeArgsNotExpectedError::new(
                 IdentifierKind::Field,
                 ok_identifier.core_ref().name.range(),
@@ -1094,7 +1086,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             Some((propetry_ty, _)) => {
                 if method_name_ok_identifier
                     .core_ref()
-                    .generic_type_args
+                    .generic_ty_args
                     .is_some()
                 {
                     Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
@@ -1149,7 +1141,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             GenericTypePropertyQueryResult::Ok((propetry_ty, _)) => {
                 if method_name_ok_identifier
                     .core_ref()
-                    .generic_type_args
+                    .generic_ty_args
                     .is_some()
                 {
                     Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
@@ -1231,7 +1223,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         };
         if method_name_ok_identifier
             .core_ref()
-            .generic_type_args
+            .generic_ty_args
             .is_some()
         {
             Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
@@ -1260,7 +1252,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         };
         if method_name_ok_identifier
             .core_ref()
-            .generic_type_args
+            .generic_ty_args
             .is_some()
         {
             Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
@@ -1319,11 +1311,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                         self.errors.log_error(Diagnostics::FieldNotCallable(err));
                     }
                     MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
-                        generic_type_args_check_err,
+                        generic_ty_args_check_err,
                         kind,
                     ) => {
-                        let err = err_for_generic_type_args(
-                            &generic_type_args_check_err,
+                        let err = err_for_generic_ty_args(
+                            &generic_ty_args_check_err,
                             ok_identifier.core_ref().name.range(),
                             kind,
                         );
@@ -1332,7 +1324,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     MethodAccessTypeCheckError::PrototypeEquivalenceCheckFailed(
                         prototype_check_err,
                     ) => {
-                        self.log_params_type_and_count_check_error(
+                        self.log_params_ty_and_count_check_error(
                             ok_identifier.range(),
                             prototype_check_err,
                         );
@@ -1605,16 +1597,16 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
     pub fn check_only_unary_expr(&self, only_unary_expr: &OnlyUnaryExpressionNode) -> Type {
         let core_only_unary_expr = only_unary_expr.core_ref();
         let unary_expr = &core_only_unary_expr.unary_expr;
-        let operand_type = self.check_unary_expr(unary_expr);
+        let operand_ty = self.check_unary_expr(unary_expr);
         let operator = &core_only_unary_expr.operator;
         let operator_kind = &core_only_unary_expr.operator_kind;
         match operator_kind {
             UnaryOperatorKind::Plus | UnaryOperatorKind::Minus => {
-                if operand_type.is_numeric() {
-                    operand_type
+                if operand_ty.is_numeric() {
+                    operand_ty
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
-                        operand_type.to_string(self.err_logging_context()),
+                        operand_ty.to_string(self.err_logging_context()),
                         "numeric (`int`, `float`)",
                         "`+` or `-`",
                         unary_expr.range(),
@@ -1626,11 +1618,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 }
             }
             UnaryOperatorKind::Not => {
-                if operand_type.is_bool() {
-                    operand_type
+                if operand_ty.is_bool() {
+                    operand_ty
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
-                        operand_type.to_string(self.err_logging_context()),
+                        operand_ty.to_string(self.err_logging_context()),
                         "bool",
                         "`not`",
                         unary_expr.range(),
@@ -1656,17 +1648,17 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let core_binary_expr = binary_expr.core_ref();
         let left_expr = &core_binary_expr.left_expr;
         let right_expr = &core_binary_expr.right_expr;
-        let l_type = self.check_expr(left_expr);
+        let l_ty = self.check_expr(left_expr);
         let operator = &core_binary_expr.operator;
         let operator_kind = &core_binary_expr.operator_kind;
-        let r_type = self.check_expr(right_expr);
-        let result = self.is_binary_operation_valid(&l_type, &r_type, operator_kind);
+        let r_ty = self.check_expr(right_expr);
+        let result = self.is_binary_operation_valid(&l_ty, &r_ty, operator_kind);
         match result {
             Some(ty) => ty,
             None => {
                 let err = BinaryOperatorInvalidOperandsError::new(
-                    &l_type,
-                    &r_type,
+                    &l_ty,
+                    &r_ty,
                     left_expr.range(),
                     right_expr.range(),
                     operator.range(),
@@ -1688,8 +1680,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         for index in 1..operands_len {
             let left_expr = &operands[index - 1];
             let right_expr = &operands[index];
-            let l_type = self.check_expr(left_expr);
-            let r_type = self.check_expr(right_expr);
+            let l_ty = self.check_expr(left_expr);
+            let r_ty = self.check_expr(right_expr);
             let operator = &operators[index - 1];
             let operator_kind = operators[index - 1]
                 .is_binary_operator()
@@ -1698,7 +1690,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 operator_kind.is_comparison(),
                 "all the operators in `ComparisonNode` should be comparison operators"
             );
-            let result = self.is_binary_operation_valid(&l_type, &r_type, &operator_kind);
+            let result = self.is_binary_operation_valid(&l_ty, &r_ty, &operator_kind);
             match result {
                 Some(ty) => match ty.core_ty() {
                     CoreType::Atomic(atomic) => debug_assert!(atomic.is_bool()),
@@ -1707,8 +1699,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 },
                 None => {
                     let err = BinaryOperatorInvalidOperandsError::new(
-                        &l_type,
-                        &r_type,
+                        &l_ty,
+                        &r_ty,
                         left_expr.range(),
                         right_expr.range(),
                         operator.range(),
@@ -1737,16 +1729,16 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     pub fn check_assignment(&self, assignment: &AssignmentNode) {
         let core_assignment = assignment.core_ref();
-        let (l_type, r_assign, range) = match core_assignment {
+        let (l_ty, r_assign, range) = match core_assignment {
             CoreAssignmentNode::Ok(ok_assignment) => {
                 let core_ok_assignment = ok_assignment.core_ref();
                 let l_expr = &core_ok_assignment.l_atom;
-                let (l_type, interior_atom_type) = self.check_atom(l_expr);
+                let (l_ty, interior_atom_ty) = self.check_atom(l_expr);
                 if let CoreAtomNode::IndexAccess(l_index_expr) = l_expr.core_ref() {
-                    if let Some(interior_atom_type) = interior_atom_type {
-                        if interior_atom_type.is_immutable() {
+                    if let Some(interior_atom_ty) = interior_atom_ty {
+                        if interior_atom_ty.is_immutable() {
                             let err = ImmutableTypeNotAssignableError::new(
-                                interior_atom_type.to_string(self.err_logging_context()),
+                                interior_atom_ty.to_string(self.err_logging_context()),
                                 l_index_expr.core_ref().atom.range(),
                             );
                             self.errors
@@ -1755,27 +1747,27 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     }
                 }
                 let r_assign = &core_ok_assignment.r_assign;
-                (l_type, r_assign, l_expr.range())
+                (l_ty, r_assign, l_expr.range())
             }
             CoreAssignmentNode::InvalidLValue(invalid_l_value) => {
                 let core_invalid_l_value = invalid_l_value.core_ref();
                 let expr = &core_invalid_l_value.l_expr;
                 let r_assign = &core_invalid_l_value.r_assign;
-                let l_type = self.check_expr(expr);
-                (l_type, r_assign, expr.range())
+                let l_ty = self.check_expr(expr);
+                (l_ty, r_assign, expr.range())
             }
         };
-        let r_type = self.check_r_assign(r_assign);
-        if r_type.is_void() {
+        let r_ty = self.check_r_assign(r_assign);
+        if r_ty.is_void() {
             let err = RightSideWithVoidTypeNotAllowedError::new(r_assign.range());
             self.errors
                 .log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
             return;
         }
-        if !l_type.is_eq(&r_type, self.semantic_db.namespace_ref()) {
+        if !l_ty.is_eq(&r_ty, self.semantic_db.namespace_ref()) {
             let err = MismatchedTypesOnLeftRightError::new(
-                &l_type,
-                &r_type,
+                &l_ty,
+                &r_ty,
                 range,
                 r_assign.range(),
                 self.err_logging_context(),
@@ -1789,7 +1781,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let core_variable_decl = variable_decl.core_ref();
         let r_variable_decl = &core_variable_decl.r_node;
         let core_r_variable_decl = r_variable_decl.core_ref();
-        let r_type = match core_r_variable_decl {
+        let r_ty = match core_r_variable_decl {
             CoreRVariableDeclarationNode::Expression(expr_stmt) => {
                 self.check_expr(&expr_stmt.core_ref().expr)
             }
@@ -1800,7 +1792,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 return;
             }
         };
-        if r_type.is_void() {
+        if r_ty.is_void() {
             let err = RightSideWithVoidTypeNotAllowedError::new(r_variable_decl.range());
             self.errors
                 .log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
@@ -1821,11 +1813,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             // enforce availablity of type annotation here!
             self.semantic_db
                 .variable_symbol_mut_ref(symbol_index)
-                .set_data_type(&r_type);
-        } else if !variable_ty.is_eq(&r_type, self.semantic_db.namespace_ref()) {
+                .set_data_ty(&r_ty);
+        } else if !variable_ty.is_eq(&r_ty, self.semantic_db.namespace_ref()) {
             let err = RightSideExpressionTypeMismatchedWithTypeFromAnnotationError::new(
                 &variable_ty,
-                &r_type,
+                &r_ty,
                 core_variable_decl.name.range(),
                 r_variable_decl.range(),
                 self.err_logging_context(),
@@ -1838,9 +1830,9 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     pub fn check_callable_prototype(&self, callable_prototype: &CallablePrototypeNode) -> Type {
         let core_callable_prototype = callable_prototype.0.as_ref();
-        let return_type_node = &core_callable_prototype.return_type;
-        match return_type_node {
-            Some((_, return_type_expr)) => self.ty_from_expression(return_type_expr),
+        let return_ty_node = &core_callable_prototype.return_ty;
+        match return_ty_node {
+            Some((_, return_ty_expr)) => self.ty_from_expression(return_ty_expr),
             None => Type::new_with_void(),
         }
     }
@@ -1866,8 +1858,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
 
         if has_return_stmt.is_none() && !return_ty.is_void() {
-            let (_, return_type_node) = prototype.core_ref().return_type.as_ref().unwrap();
-            let err = NoReturnStatementInFunctionError::new(return_type_node.range());
+            let (_, return_ty_node) = prototype.core_ref().return_ty.as_ref().unwrap();
+            let err = NoReturnStatementInFunctionError::new(return_ty_node.range());
             self.errors
                 .log_error(Diagnostics::NoReturnStatementInFunction(err));
         }
@@ -2043,7 +2035,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     if let CoreIdentifierInDeclNode::Ok(variant_name) = variant_name.core_ref() {
                         let variant_name_str = variant_name
                             .token_value(&self.code_handler, self.semantic_db.interner());
-                        match enum_data.try_type_for_variant(
+                        match enum_data.try_ty_for_variant(
                             variant_name_str,
                             self.semantic_db.namespace_ref(),
                             context,
@@ -2147,7 +2139,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         for (symbol_index, ty) in symbol_index_ty_vec {
             self.semantic_db
                 .variable_symbol_mut_ref(symbol_index)
-                .set_data_type(&ty);
+                .set_data_ty(&ty);
         }
 
         // traverse the enum variant case blocks
@@ -2207,7 +2199,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 {
                     self.semantic_db
                         .variable_symbol_mut_ref(symbol_index)
-                        .set_data_type(&element_ty);
+                        .set_data_ty(&element_ty);
                 }
             };
         } else {
@@ -2255,7 +2247,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             CoreStatementNode::ForLoop(for_loop_stmt) => {
                 self.check_for_loop_stmt(for_loop_stmt);
             }
-            CoreStatementNode::TypeDeclaration(type_decl) => match type_decl.core_ref() {
+            CoreStatementNode::TypeDeclaration(ty_decl) => match ty_decl.core_ref() {
                 CoreTypeDeclarationNode::Struct(struct_decl) => {
                     self.check_struct_declaration(struct_decl);
                 }
@@ -2288,7 +2280,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn log_params_type_and_count_check_error(
+    pub fn log_params_ty_and_count_check_error(
         &self,
         range: TextRange,
         result: PrototypeEquivalenceCheckError,

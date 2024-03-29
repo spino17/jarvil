@@ -269,14 +269,14 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
         let rparen = &core_callable_prototype.rparen;
         self.print_token_node(lparen);
         if let Some(params) = params {
-            self.walk_comma_separated_name_type_specs(params);
+            self.walk_comma_separated_name_ty_specs(params);
         }
         self.print_token_node(rparen);
     }
 
-    pub fn print_type_decl(&mut self, type_decl: &TypeDeclarationNode) {
-        let core_type_decl = type_decl.core_ref();
-        match core_type_decl {
+    pub fn print_ty_decl(&mut self, ty_decl: &TypeDeclarationNode) {
+        let core_ty_decl = ty_decl.core_ref();
+        match core_ty_decl {
             CoreTypeDeclarationNode::Struct(struct_decl) => {
                 let core_struct_decl = struct_decl.core_ref();
                 let struct_name = &core_struct_decl.name;
@@ -464,7 +464,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 self.add_str_to_python_code("self");
                 if let Some(params) = params {
                     self.add_str_to_python_code(", ");
-                    self.walk_comma_separated_name_type_specs(params);
+                    self.walk_comma_separated_name_ty_specs(params);
                 }
                 self.print_token_node(rparen);
                 self.print_token_node(colon);
@@ -570,9 +570,9 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 self.add_indention_to_python_code();
                 self.print_bounded_method_wrapper(bounded_method_wrapper)
             }
-            CoreStatementNode::TypeDeclaration(type_decl) => {
+            CoreStatementNode::TypeDeclaration(ty_decl) => {
                 self.add_indention_to_python_code();
-                self.print_type_decl(type_decl);
+                self.print_ty_decl(ty_decl);
             }
             CoreStatementNode::MatchCase(match_case_stmt) => self.print_match_case(match_case_stmt),
             CoreStatementNode::StructPropertyDeclaration(_)
@@ -643,10 +643,10 @@ impl<'ctx> Visitor for PythonCodeGenerator<'ctx> {
                 self.print_conditional_block(conditional_block);
                 None
             }
-            ASTNode::NameTypeSpec(name_type_spec) => {
+            ASTNode::NameTypeSpec(name_ty_spec) => {
                 // This is where type-annotations are evapored in the generated Python code
-                let core_name_type_spec = name_type_spec.core_ref();
-                let name = &core_name_type_spec.name;
+                let core_name_ty_spec = name_ty_spec.core_ref();
+                let name = &core_name_ty_spec.name;
                 self.print_identifier_in_decl(name, true);
                 None
             }

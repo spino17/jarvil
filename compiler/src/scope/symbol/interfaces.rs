@@ -12,7 +12,7 @@ use crate::scope::mangled::MangledIdentifierName;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::common::FieldsMap;
 use crate::scope::symbol::common::MethodsMap;
-use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::symbol::types::generic_ty::GenericTypeParams;
 use crate::scope::traits::AbstractSymbol;
 use crate::scope::traits::IsInitialized;
 use crate::types::core::Type;
@@ -256,25 +256,25 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         range: TextRange,
         namespace: &Namespace,
     ) -> Result<(), PartialConcreteInterfaceMethodsCheckError> {
-        let interface_method_generic_type_decls = &interface_method_callable_data.generics();
-        let struct_method_generic_type_decls = &struct_method_callable_data.generics();
-        match interface_method_generic_type_decls {
-            Some(interface_method_generic_type_decls) => {
-                match struct_method_generic_type_decls {
-                    Some(struct_method_generic_type_decls) => {
+        let interface_method_generic_ty_decls = &interface_method_callable_data.generics();
+        let struct_method_generic_ty_decls = &struct_method_callable_data.generics();
+        match interface_method_generic_ty_decls {
+            Some(interface_method_generic_ty_decls) => {
+                match struct_method_generic_ty_decls {
+                    Some(struct_method_generic_ty_decls) => {
                         // check if number of generic type declarations match
-                        if interface_method_generic_type_decls.len()
-                            != struct_method_generic_type_decls.len()
+                        if interface_method_generic_ty_decls.len()
+                            != struct_method_generic_ty_decls.len()
                         {
                             return Err(PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range));
                         }
                         // check if the interface bounds each generic type in the declaration match
-                        let generic_type_decls_len = interface_method_generic_type_decls.len();
-                        for index in 0..generic_type_decls_len {
+                        let generic_ty_decls_len = interface_method_generic_ty_decls.len();
+                        for index in 0..generic_ty_decls_len {
                             let interface_generic_bound =
-                                interface_method_generic_type_decls.interface_bounds(index);
+                                interface_method_generic_ty_decls.interface_bounds(index);
                             let struct_generic_bound =
-                                struct_method_generic_type_decls.interface_bounds(index);
+                                struct_method_generic_ty_decls.interface_bounds(index);
                             if !interface_generic_bound.is_eq(struct_generic_bound, namespace) {
                                 return Err(PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range));
                             }
@@ -299,7 +299,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                     ),
                 }
             }
-            None => match struct_method_generic_type_decls {
+            None => match struct_method_generic_ty_decls {
                 Some(_) => Err(
                     PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationNotExpected(
                         range,
@@ -383,10 +383,10 @@ impl AbstractSymbol for InterfaceSymbolData {
         SymbolDataEntry::Interface(self.0)
     }
 
-    fn check_generic_type_args(
+    fn check_generic_ty_args(
         &self,
         concrete_types: Option<&TurbofishTypes>,
-        type_ranges: Option<&Vec<TextRange>>,
+        ty_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
@@ -396,11 +396,11 @@ impl AbstractSymbol for InterfaceSymbolData {
             .interfaces_ref()
             .symbol_ref(self.0)
             .data_ref();
-        let generic_type_decls = interface_data.generics();
+        let generic_ty_decls = interface_data.generics();
         check_concrete_types_bounded_by_interfaces(
-            generic_type_decls,
+            generic_ty_decls,
             concrete_types,
-            type_ranges,
+            ty_ranges,
             false,
             context,
         )

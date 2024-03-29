@@ -16,10 +16,10 @@ pub trait AbstractSymbol {
     where
         <Self as AbstractSymbol>::SymbolTy: IsInitialized;
     fn entry(&self) -> SymbolDataEntry;
-    fn check_generic_type_args(
+    fn check_generic_ty_args(
         &self,
         concrete_types: Option<&TurbofishTypes>,
-        type_ranges: Option<&Vec<TextRange>>,
+        ty_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
         context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError>;

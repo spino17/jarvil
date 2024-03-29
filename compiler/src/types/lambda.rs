@@ -14,7 +14,7 @@ use crate::scope::symbol::core::SymbolIndex;
 use crate::scope::symbol::function::CallablePrototypeData;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
-use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::types::generic_ty::GenericTypeDeclarationPlaceCategory;
 use crate::scope::traits::InstantiationContext;
 use crate::types::core::{CoreType, Type};
 use crate::types::helper::user_defined_ty_compare_fn;
@@ -84,15 +84,15 @@ impl Lambda {
                 let prototype_result =
                     lambda_data.prototype(type_checker.semantic_db().namespace_ref(), context);
                 let expected_param_types = prototype_result.params();
-                let return_type = prototype_result.return_ty();
-                type_checker.check_params_type_and_count(expected_param_types, received_params)?;
-                Ok(return_type.clone())
+                let return_ty = prototype_result.return_ty();
+                type_checker.check_params_ty_and_count(expected_param_types, received_params)?;
+                Ok(return_ty.clone())
             }
             Lambda::Unnamed(unnamed_lambda) => {
                 let expected_param_types = unnamed_lambda.params();
-                let return_type = unnamed_lambda.return_ty();
-                type_checker.check_params_type_and_count(expected_param_types, received_params)?;
-                Ok(return_type.clone())
+                let return_ty = unnamed_lambda.return_ty();
+                type_checker.check_params_ty_and_count(expected_param_types, received_params)?;
+                Ok(return_ty.clone())
             }
         }
     }
@@ -209,7 +209,7 @@ impl TypeLike for Lambda {
         }
     }
 
-    fn is_type_bounded_by_interfaces(
+    fn is_ty_bounded_by_interfaces(
         &self,
         _interface_bounds: &InterfaceBounds,
         _namespace: &Namespace,
@@ -217,7 +217,7 @@ impl TypeLike for Lambda {
         unreachable!()
     }
 
-    fn try_infer_type_or_check_equivalence(
+    fn try_infer_ty_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
@@ -251,7 +251,7 @@ impl TypeLike for Lambda {
                             );
                             let other_prototype_result =
                                 other_data.prototype(namespace, other_context);
-                            self_prototype_result.try_infer_type(
+                            self_prototype_result.try_infer_ty(
                                 &other_prototype_result,
                                 inferred_concrete_types,
                                 global_concrete_types,
@@ -260,7 +260,7 @@ impl TypeLike for Lambda {
                                 namespace,
                             )
                         }
-                        Lambda::Unnamed(other_prototype) => self_prototype_result.try_infer_type(
+                        Lambda::Unnamed(other_prototype) => self_prototype_result.try_infer_ty(
                             other_prototype,
                             inferred_concrete_types,
                             global_concrete_types,
@@ -294,7 +294,7 @@ impl TypeLike for Lambda {
             }
             Lambda::Unnamed(unnamed) => {
                 let self_param_types = unnamed.params();
-                let self_return_type = unnamed.return_ty();
+                let self_return_ty = unnamed.return_ty();
                 let mut params_str = "".to_string();
                 let mut flag = false;
                 for param in self_param_types {
@@ -307,7 +307,7 @@ impl TypeLike for Lambda {
                 format!(
                     "lambda({}) -> {}",
                     params_str,
-                    self_return_type.to_string(context)
+                    self_return_ty.to_string(context)
                 )
             }
         }
