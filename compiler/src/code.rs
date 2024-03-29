@@ -1,12 +1,12 @@
 use text_size::TextRange;
 
-pub struct JarvilCodeHandler {
-    pub code: JarvilCode,
+pub struct JarvilCodeHandler<'a> {
+    pub code: &'a JarvilCode,
     code_lines: Vec<usize>,
 }
 
-impl JarvilCodeHandler {
-    pub fn new(code: JarvilCode, code_lines: Vec<usize>) -> Self {
+impl<'a> JarvilCodeHandler<'a> {
+    pub fn new(code: &'a JarvilCode, code_lines: Vec<usize>) -> Self {
         JarvilCodeHandler { code, code_lines }
     }
 
@@ -15,6 +15,7 @@ impl JarvilCodeHandler {
     }
 }
 
+#[derive(Debug)]
 pub struct JarvilCode(Vec<char>);
 
 impl JarvilCode {
@@ -50,5 +51,11 @@ impl JarvilCode {
             Some(end_index) => self.0[start_index..end_index].iter(),
             None => self.0[start_index..].iter(),
         }
+    }
+}
+
+impl ToString for JarvilCode {
+    fn to_string(&self) -> String {
+        self.0.iter().collect()
     }
 }

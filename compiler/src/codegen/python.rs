@@ -44,16 +44,16 @@ pub fn trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
     }
 }
 
-pub struct PythonCodeGenerator {
+pub struct PythonCodeGenerator<'ctx> {
     indent_level: usize,
     generated_code: String,
-    code_handler: JarvilCodeHandler,
+    code_handler: &'ctx JarvilCodeHandler<'ctx>,
     semantic_db: SemanticStateDatabase,
 }
 
-impl PythonCodeGenerator {
+impl<'ctx> PythonCodeGenerator<'ctx> {
     pub fn new(
-        code_handler: JarvilCodeHandler,
+        code_handler: &'ctx JarvilCodeHandler<'ctx>,
         semantic_db: SemanticStateDatabase,
     ) -> PythonCodeGenerator {
         PythonCodeGenerator {
@@ -586,7 +586,7 @@ impl PythonCodeGenerator {
     }
 }
 
-impl Visitor for PythonCodeGenerator {
+impl<'ctx> Visitor for PythonCodeGenerator<'ctx> {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Block(block) => {

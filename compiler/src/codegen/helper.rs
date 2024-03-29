@@ -5,7 +5,7 @@ use crate::ast::ast::{
 };
 use crate::ast::walk::Visitor;
 
-impl PythonCodeGenerator {
+impl<'ctx> PythonCodeGenerator<'ctx> {
     pub fn print_atom_node_without_trivia(&mut self, atom: &AtomNode) {
         let core_atom = atom.core_ref();
         match core_atom {

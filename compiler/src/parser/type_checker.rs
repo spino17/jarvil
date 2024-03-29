@@ -182,16 +182,19 @@ pub enum TupleIndexCheckResult {
     NegativeIndexOutOfBound,
 }
 
-pub struct TypeChecker {
-    code_handler: JarvilCodeHandler,
+pub struct TypeChecker<'ctx> {
+    code_handler: &'ctx JarvilCodeHandler<'ctx>,
     errors: UnsafeCell<Vec<Diagnostics>>,
     context: Context,
     non_struct_methods_handler: NonStructMethodsHandler,
     semantic_db: SemanticStateDatabase,
 }
 
-impl TypeChecker {
-    pub fn new(code_handler: JarvilCodeHandler, semantic_db: SemanticStateDatabase) -> Self {
+impl<'ctx> TypeChecker<'ctx> {
+    pub fn new(
+        code_handler: &'ctx JarvilCodeHandler<'ctx>,
+        semantic_db: SemanticStateDatabase,
+    ) -> Self {
         let non_struct_methods_handler = NonStructMethodsHandler::new(semantic_db.interner());
         TypeChecker {
             code_handler,
@@ -222,7 +225,7 @@ impl TypeChecker {
         mut self,
         ast: &BlockNode,
         global_errors: &mut Vec<Diagnostics>,
-    ) -> (SemanticStateDatabase, JarvilCodeHandler) {
+    ) -> SemanticStateDatabase {
         let core_block = ast.0.as_ref();
         for stmt in &core_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
@@ -231,7 +234,7 @@ impl TypeChecker {
             let errors_ref = &mut *self.errors.get();
             global_errors.append(errors_ref);
         };
-        (self.semantic_db, self.code_handler)
+        self.semantic_db
     }
 
     pub fn is_resolved(&self, node: &OkIdentifierInDeclNode) -> bool {
@@ -2434,7 +2437,7 @@ impl TypeChecker {
     }
 }
 
-impl Visitor for TypeChecker {
+impl<'ctx> Visitor for TypeChecker<'ctx> {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Statement(stmt) => {

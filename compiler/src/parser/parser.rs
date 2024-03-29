@@ -19,22 +19,18 @@ use crate::parser::helper::{IndentResult, IndentResultKind};
 use serde::Serialize;
 use std::cell::RefCell;
 
-pub trait Parser {
-    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCodeHandler);
-}
-
-pub struct JarvilParser {
+pub struct JarvilParser<'ctx> {
     token_vec: Vec<Token>,
     lookahead: usize,
     indent_level: i64,
-    code_handler: JarvilCodeHandler,
+    code_handler: &'ctx JarvilCodeHandler<'ctx>,
     ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
     errors: RefCell<Vec<Diagnostics>>,
 }
 
-impl JarvilParser {
-    pub fn new(code_handler: JarvilCodeHandler) -> Self {
+impl<'ctx> JarvilParser<'ctx> {
+    pub fn new(code_handler: &'ctx JarvilCodeHandler<'ctx>) -> Self {
         JarvilParser {
             token_vec: Vec::new(),
             lookahead: 0,
@@ -46,6 +42,11 @@ impl JarvilParser {
         }
     }
 
+    pub fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>) {
+        let code_node = self.code(token_vec);
+        (code_node, self.errors.into_inner())
+    }
+
     pub fn ignore_all_errors(&self) -> bool {
         self.ignore_all_errors
     }
@@ -55,14 +56,7 @@ impl JarvilParser {
     }
 }
 
-impl Parser for JarvilParser {
-    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCodeHandler) {
-        let code_node = self.code(token_vec);
-        (code_node, self.errors.into_inner(), self.code_handler)
-    }
-}
-
-impl JarvilParser {
+impl<'ctx> JarvilParser<'ctx> {
     // ------------------- parsing utilities -------------------
     pub fn set_token_vec(&mut self, token_vec: Vec<Token>) {
         self.token_vec = token_vec;

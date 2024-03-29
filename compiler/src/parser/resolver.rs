@@ -134,17 +134,17 @@ pub struct Context {
     block_context_stack: Vec<BlockContext>,
 }
 
-pub struct Resolver {
+pub struct Resolver<'ctx> {
     scope_index: ScopeIndex,
-    code_handler: JarvilCodeHandler,
+    code_handler: &'ctx JarvilCodeHandler<'ctx>,
     errors: Vec<Diagnostics>,
     context: Context,
     indent_level: usize,
     semantic_db: SemanticStateDatabase,
 }
 
-impl Resolver {
-    pub fn new(code_handler: JarvilCodeHandler) -> Self {
+impl<'ctx> Resolver<'ctx> {
+    pub fn new(code_handler: &'ctx JarvilCodeHandler<'ctx>) -> Self {
         Resolver {
             scope_index: ScopeIndex::global(),
             code_handler,
@@ -170,10 +170,7 @@ impl Resolver {
         self.semantic_db.interner()
     }
 
-    pub fn resolve_ast(
-        mut self,
-        ast: &BlockNode,
-    ) -> (SemanticStateDatabase, Vec<Diagnostics>, JarvilCodeHandler) {
+    pub fn resolve_ast(mut self, ast: &BlockNode) -> (SemanticStateDatabase, Vec<Diagnostics>) {
         let code_block = ast.0.as_ref();
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
@@ -204,7 +201,7 @@ impl Resolver {
                 self.errors.push(Diagnostics::MainFunctionNotFound(err));
             }
         }
-        (self.semantic_db, self.errors, self.code_handler)
+        (self.semantic_db, self.errors)
     }
 
     pub fn open_block(&mut self, block_kind: BlockKind) {
@@ -2026,7 +2023,7 @@ impl Resolver {
     }
 }
 
-impl Visitor for Resolver {
+impl<'ctx> Visitor for Resolver<'ctx> {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Block(block) => {

@@ -8,7 +8,7 @@ use crate::error::diagnostics::{
 use crate::{error::diagnostics::MissingTokenError, lexer::token::Token};
 use text_size::TextRange;
 
-impl JarvilParser {
+impl<'ctx> JarvilParser<'ctx> {
     pub fn log_missing_token_error(
         &self,
         expected_symbols: &[&'static str],
