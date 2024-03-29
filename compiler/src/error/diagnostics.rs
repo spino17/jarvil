@@ -1570,14 +1570,15 @@ pub struct ExpressionIndexingNotValidError {
 
 impl ExpressionIndexingNotValidError {
     pub fn new(
-        expr_type: String,
-        index_type: String,
+        expr_type: &Type,
+        index_type: &Type,
         expr_range: TextRange,
         index_range: TextRange,
+        context: TypeStringifyContext,
     ) -> Self {
         ExpressionIndexingNotValidError {
-            expr_type,
-            index_type,
+            expr_type: expr_type.to_string(context),
+            index_type: index_type.to_string(context),
             expr_span: range_to_span(expr_range).into(),
             index_span: range_to_span(index_range).into(),
         }
@@ -1746,16 +1747,17 @@ pub struct BinaryOperatorInvalidOperandsError {
 
 impl BinaryOperatorInvalidOperandsError {
     pub fn new(
-        left_type: String,
-        right_type: String,
+        left_type: &Type,
+        right_type: &Type,
         left_range: TextRange,
         right_range: TextRange,
         operator_range: TextRange,
+        context: TypeStringifyContext,
     ) -> Self {
         // TODO - construct dynamic help message
         BinaryOperatorInvalidOperandsError {
-            left_type,
-            right_type,
+            left_type: left_type.to_string(context),
+            right_type: right_type.to_string(context),
             left_expr_span: range_to_span(left_range).into(),
             right_expr_span: range_to_span(right_range).into(),
             operator_span: range_to_span(operator_range).into(),
@@ -1780,14 +1782,15 @@ pub struct MismatchedTypesOnLeftRightError {
 
 impl MismatchedTypesOnLeftRightError {
     pub fn new(
-        left_type: String,
-        right_type: String,
+        left_type: &Type,
+        right_type: &Type,
         left_range: TextRange,
         right_range: TextRange,
+        context: TypeStringifyContext,
     ) -> Self {
         MismatchedTypesOnLeftRightError {
-            left_type,
-            right_type,
+            left_type: left_type.to_string(context),
+            right_type: right_type.to_string(context),
             left_span: range_to_span(left_range).into(),
             right_span: range_to_span(right_range).into(),
             help: Some(
@@ -1814,14 +1817,15 @@ pub struct RightSideExpressionTypeMismatchedWithTypeFromAnnotationError {
 
 impl RightSideExpressionTypeMismatchedWithTypeFromAnnotationError {
     pub fn new(
-        ty_from_annotation: String,
-        right_expr_ty: String,
+        ty_from_annotation: &Type,
+        right_expr_ty: &Type,
         variable_range: TextRange,
         right_expr_range: TextRange,
+        context: TypeStringifyContext,
     ) -> Self {
         RightSideExpressionTypeMismatchedWithTypeFromAnnotationError {
-            ty_from_annotation,
-            right_expr_ty,
+            ty_from_annotation: ty_from_annotation.to_string(context),
+            right_expr_ty: right_expr_ty.to_string(context),
             variable_span: range_to_span(variable_range).into(),
             right_expr_span: range_to_span(right_expr_range).into(),
         }
@@ -1911,10 +1915,15 @@ pub struct MismatchedReturnTypeError {
 }
 
 impl MismatchedReturnTypeError {
-    pub fn new(expected_type: String, received_type: String, range: TextRange) -> Self {
+    pub fn new(
+        expected_type: &Type,
+        received_type: &Type,
+        range: TextRange,
+        context: TypeStringifyContext,
+    ) -> Self {
         MismatchedReturnTypeError {
-            expected_type,
-            received_type,
+            expected_type: expected_type.to_string(context),
+            received_type: received_type.to_string(context),
             span: range_to_span(range).into(),
         }
     }

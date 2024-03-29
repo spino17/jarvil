@@ -1444,10 +1444,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             Some(ty) => (ty, Some(atom_type_obj)),
             None => {
                 let err = ExpressionIndexingNotValidError::new(
-                    atom_type_obj.to_string(self.err_logging_context()),
-                    index_type_obj.to_string(self.err_logging_context()),
+                    &atom_type_obj,
+                    &index_type_obj,
                     atom.range(),
                     index_expr.range(),
+                    self.err_logging_context(),
                 );
                 self.errors
                     .log_error(Diagnostics::ExpressionIndexingNotValid(err));
@@ -1664,11 +1665,12 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             Some(type_obj) => type_obj,
             None => {
                 let err = BinaryOperatorInvalidOperandsError::new(
-                    l_type.to_string(self.err_logging_context()),
-                    r_type.to_string(self.err_logging_context()),
+                    &l_type,
+                    &r_type,
                     left_expr.range(),
                     right_expr.range(),
                     operator.range(),
+                    self.err_logging_context(),
                 );
                 self.errors
                     .log_error(Diagnostics::BinaryOperatorInvalidOperands(err));
@@ -1705,11 +1707,12 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 },
                 None => {
                     let err = BinaryOperatorInvalidOperandsError::new(
-                        l_type.to_string(self.err_logging_context()),
-                        r_type.to_string(self.err_logging_context()),
+                        &l_type,
+                        &r_type,
                         left_expr.range(),
                         right_expr.range(),
                         operator.range(),
+                        self.err_logging_context(),
                     );
                     self.errors
                         .log_error(Diagnostics::BinaryOperatorInvalidOperands(err));
@@ -1771,10 +1774,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
         if !l_type.is_eq(&r_type, self.semantic_db.namespace_ref()) {
             let err = MismatchedTypesOnLeftRightError::new(
-                l_type.to_string(self.err_logging_context()),
-                r_type.to_string(self.err_logging_context()),
+                &l_type,
+                &r_type,
                 range,
                 r_assign.range(),
+                self.err_logging_context(),
             );
             self.errors
                 .log_error(Diagnostics::MismatchedTypesOnLeftRight(err));
@@ -1820,10 +1824,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 .set_data_type(&r_type);
         } else if !variable_ty.is_eq(&r_type, self.semantic_db.namespace_ref()) {
             let err = RightSideExpressionTypeMismatchedWithTypeFromAnnotationError::new(
-                variable_ty.to_string(self.err_logging_context()),
-                r_type.to_string(self.err_logging_context()),
+                &variable_ty,
+                &r_type,
                 core_variable_decl.name.range(),
                 r_variable_decl.range(),
+                self.err_logging_context(),
             );
             self.errors.log_error(
                 Diagnostics::RightSideExpressionTypeMismatchedWithTypeFromAnnotation(err),
@@ -1895,9 +1900,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let expected_type_obj = &self.context.func_stack[func_stack_len - 1];
         if !expr_type_obj.is_eq(expected_type_obj, self.semantic_db.namespace_ref()) {
             let err = MismatchedReturnTypeError::new(
-                expected_type_obj.to_string(self.err_logging_context()),
-                expr_type_obj.to_string(self.err_logging_context()),
+                &expected_type_obj,
+                &expr_type_obj,
                 core_return_stmt.return_keyword.range(),
+                self.err_logging_context(),
             );
             self.errors
                 .log_error(Diagnostics::MismatchedReturnType(err));
