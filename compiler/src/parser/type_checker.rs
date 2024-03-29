@@ -1630,7 +1630,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 } else {
                     let err = UnaryOperatorInvalidUseError::new(
                         operand_type.to_string(self.err_logging_context()),
-                        "boolean",
+                        "bool",
                         "`not`",
                         unary_expr.range(),
                         operator.range(),

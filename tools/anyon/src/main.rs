@@ -27,7 +27,6 @@ fn execute_cmd(commands: &Commands) -> Result<(), AnyonError> {
         Commands::New { project_name } => execute_new(project_name),
         Commands::Build => execute_build_or_run(BuildMode::Build),
         Commands::Run => execute_build_or_run(BuildMode::Run),
-        // Commands::Version => execute_version(),
     }
 }
 

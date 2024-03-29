@@ -3,5 +3,4 @@ members = [
     "compiler",
     "tools/anyon",
     "tools/jarvil-wasm",
-    "tools/yam"
 ]
