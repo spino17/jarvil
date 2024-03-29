@@ -31,7 +31,7 @@ impl<'ctx> JarvilLexer<'ctx> {
         }
     }
 
-    pub fn tokenize(mut self, code: &'ctx mut JarvilCode) -> (Vec<Token>, Vec<usize>) {
+    pub fn tokenize(mut self, code: &'ctx JarvilCode) -> (Vec<Token>, Vec<usize>) {
         let mut token_vec: Vec<Token> = Vec::new();
         token_vec.push(Token::new(
             self.line_number,

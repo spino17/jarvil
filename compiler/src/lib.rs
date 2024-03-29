@@ -28,25 +28,28 @@ fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
     match result.map_err(|error| error.with_source_code(source)).err() {
         Some(err) => err,
-        None => unreachable!("the result should always unwrap to an error"),
+        None => unreachable!(),
     }
 }
 
 pub fn build_ast<'ctx>(
-    code: &'ctx mut JarvilCode,
+    code: &'ctx JarvilCode,
     errors: &'ctx JarvilProgramAnalysisErrors,
 ) -> (BlockNode, JarvilCodeHandler<'ctx>) {
+    // lexing
     let core_lexer = JarvilLexer::new(errors);
     let (token_vec, code_lines) = core_lexer.tokenize(code);
     let code_handler = JarvilCodeHandler::new(code, code_lines);
+
+    // parsing
     let parser = JarvilParser::new(&code_handler, &errors);
     let ast = parser.parse(token_vec);
     (ast, code_handler)
 }
 
-pub fn build_code(mut code: JarvilCode) -> (Result<String, Report>, String) {
+pub fn build_code(code: JarvilCode) -> (Result<String, Report>, String) {
     let errors = JarvilProgramAnalysisErrors::default();
-    let (ast, code_handler) = build_ast(&mut code, &errors);
+    let (ast, code_handler) = build_ast(&code, &errors);
 
     // name resolution
     let resolver = JarvilResolver::new(&code_handler, &errors);
