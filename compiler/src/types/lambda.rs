@@ -81,10 +81,10 @@ impl Lambda {
                     .ty_symbol_ref(named_lambda.symbol_index);
                 let lambda_data = ty_data.lambda_data_ref();
                 let context = TypeGenericsInstantiationContext::new(concrete_types.as_ref());
-                let prototype_result =
+                let prototype =
                     lambda_data.prototype(type_checker.semantic_db().namespace_ref(), context);
-                let expected_param_types = prototype_result.params();
-                let return_ty = prototype_result.return_ty();
+                let expected_param_types = prototype.params();
+                let return_ty = prototype.return_ty();
                 type_checker.check_params_ty_and_count(expected_param_types, received_params)?;
                 Ok(return_ty.clone())
             }
@@ -114,7 +114,7 @@ impl TypeLike for Lambda {
                 let self_concrete_types = &self_named.concrete_types;
                 let self_context =
                     TypeGenericsInstantiationContext::new(self_concrete_types.as_ref());
-                let self_prototype_result = self_data.prototype(namespace, self_context);
+                let self_prototype = self_data.prototype(namespace, self_context);
                 match other_data {
                     Lambda::Named(other_named) => {
                         let other_ty_data = namespace
@@ -125,11 +125,11 @@ impl TypeLike for Lambda {
                         let other_concrete_types = &other_named.concrete_types;
                         let other_context =
                             TypeGenericsInstantiationContext::new(other_concrete_types.as_ref());
-                        let other_prototype_result = other_data.prototype(namespace, other_context);
-                        other_prototype_result.is_eq(&self_prototype_result, namespace)
+                        let other_prototype = other_data.prototype(namespace, other_context);
+                        other_prototype.is_eq(&self_prototype, namespace)
                     }
                     Lambda::Unnamed(other_prototype) => {
-                        self_prototype_result.is_eq(other_prototype, namespace)
+                        self_prototype.is_eq(other_prototype, namespace)
                     }
                 }
             }
@@ -143,8 +143,8 @@ impl TypeLike for Lambda {
                     let other_concrete_types = &other_named.concrete_types;
                     let other_context =
                         TypeGenericsInstantiationContext::new(other_concrete_types.as_ref());
-                    let other_prototype_result = other_data.prototype(namespace, other_context);
-                    other_prototype_result.is_eq(self_prototype, namespace)
+                    let other_prototype = other_data.prototype(namespace, other_context);
+                    other_prototype.is_eq(self_prototype, namespace)
                 }
                 Lambda::Unnamed(other_prototype) => {
                     self_prototype.is_eq(other_prototype, namespace)
@@ -239,7 +239,7 @@ impl TypeLike for Lambda {
         let self_data = self_ty_data.lambda_data_ref();
         let self_concrete_types = &self_named.concrete_types;
         let self_context = TypeGenericsInstantiationContext::new(self_concrete_types.as_ref());
-        let self_prototype_result = self_data.prototype(namespace, self_context);
+        let self_prototype = self_data.prototype(namespace, self_context);
         match lambda_ty {
             Lambda::Named(other_named) => {
                 let other_ty_data = namespace
@@ -250,9 +250,9 @@ impl TypeLike for Lambda {
                 let other_concrete_types = &other_named.concrete_types;
                 let other_context =
                     TypeGenericsInstantiationContext::new(other_concrete_types.as_ref());
-                let other_prototype_result = other_data.prototype(namespace, other_context);
-                self_prototype_result.try_infer_ty(
-                    &other_prototype_result,
+                let other_prototype = other_data.prototype(namespace, other_context);
+                self_prototype.try_infer_ty(
+                    &other_prototype,
                     inferred_concrete_types,
                     global_concrete_types,
                     num_inferred_types,
@@ -260,7 +260,7 @@ impl TypeLike for Lambda {
                     namespace,
                 )
             }
-            Lambda::Unnamed(other_prototype) => self_prototype_result.try_infer_ty(
+            Lambda::Unnamed(other_prototype) => self_prototype.try_infer_ty(
                 other_prototype,
                 inferred_concrete_types,
                 global_concrete_types,
