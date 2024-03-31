@@ -443,24 +443,24 @@ impl TypeLike for Type {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct TypeStringifyContext<'short> {
-    interner: &'short Interner,
-    namespace: &'short Namespace,
+pub struct TypeStringifyContext<'a> {
+    interner: &'a Interner,
+    namespace: &'a Namespace,
 }
 
-impl<'short> TypeStringifyContext<'short> {
-    pub fn new(interner_ref: &'short Interner, namespace_ref: &'short Namespace) -> Self {
+impl<'a> TypeStringifyContext<'a> {
+    pub fn new(interner_ref: &'a Interner, namespace_ref: &'a Namespace) -> Self {
         TypeStringifyContext {
             interner: interner_ref,
             namespace: namespace_ref,
         }
     }
 
-    pub fn interner(&self) -> &'short Interner {
+    pub fn interner(&self) -> &'a Interner {
         self.interner
     }
 
-    pub fn namespace(&self) -> &'short Namespace {
+    pub fn namespace(&self) -> &'a Namespace {
         self.namespace
     }
 }

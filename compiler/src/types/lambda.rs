@@ -226,53 +226,48 @@ impl TypeLike for Lambda {
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
     ) -> Result<(), ()> {
-        match received_ty.core_ty() {
-            CoreType::Lambda(lambda_ty) => match self {
-                Lambda::Named(self_named) => {
-                    let self_ty_data = namespace
-                        .types_ref()
-                        .symbol_ref(self_named.symbol_index)
-                        .data_ref();
-                    let self_data = self_ty_data.lambda_data_ref();
-                    let self_concrete_types = &self_named.concrete_types;
-                    let self_context =
-                        TypeGenericsInstantiationContext::new(self_concrete_types.as_ref());
-                    let self_prototype_result = self_data.prototype(namespace, self_context);
-                    match lambda_ty {
-                        Lambda::Named(other_named) => {
-                            let other_ty_data = namespace
-                                .types_ref()
-                                .symbol_ref(other_named.symbol_index)
-                                .data_ref();
-                            let other_data = other_ty_data.lambda_data_ref();
-                            let other_concrete_types = &other_named.concrete_types;
-                            let other_context = TypeGenericsInstantiationContext::new(
-                                other_concrete_types.as_ref(),
-                            );
-                            let other_prototype_result =
-                                other_data.prototype(namespace, other_context);
-                            self_prototype_result.try_infer_ty(
-                                &other_prototype_result,
-                                inferred_concrete_types,
-                                global_concrete_types,
-                                num_inferred_types,
-                                inference_category,
-                                namespace,
-                            )
-                        }
-                        Lambda::Unnamed(other_prototype) => self_prototype_result.try_infer_ty(
-                            other_prototype,
-                            inferred_concrete_types,
-                            global_concrete_types,
-                            num_inferred_types,
-                            inference_category,
-                            namespace,
-                        ),
-                    }
-                }
-                Lambda::Unnamed(_) => unreachable!(),
-            },
-            _ => Err(()),
+        let CoreType::Lambda(lambda_ty) = received_ty.core_ty() else {
+            return Err(());
+        };
+        let Lambda::Named(self_named) = self else {
+            unreachable!()
+        };
+        let self_ty_data = namespace
+            .types_ref()
+            .symbol_ref(self_named.symbol_index)
+            .data_ref();
+        let self_data = self_ty_data.lambda_data_ref();
+        let self_concrete_types = &self_named.concrete_types;
+        let self_context = TypeGenericsInstantiationContext::new(self_concrete_types.as_ref());
+        let self_prototype_result = self_data.prototype(namespace, self_context);
+        match lambda_ty {
+            Lambda::Named(other_named) => {
+                let other_ty_data = namespace
+                    .types_ref()
+                    .symbol_ref(other_named.symbol_index)
+                    .data_ref();
+                let other_data = other_ty_data.lambda_data_ref();
+                let other_concrete_types = &other_named.concrete_types;
+                let other_context =
+                    TypeGenericsInstantiationContext::new(other_concrete_types.as_ref());
+                let other_prototype_result = other_data.prototype(namespace, other_context);
+                self_prototype_result.try_infer_ty(
+                    &other_prototype_result,
+                    inferred_concrete_types,
+                    global_concrete_types,
+                    num_inferred_types,
+                    inference_category,
+                    namespace,
+                )
+            }
+            Lambda::Unnamed(other_prototype) => self_prototype_result.try_infer_ty(
+                other_prototype,
+                inferred_concrete_types,
+                global_concrete_types,
+                num_inferred_types,
+                inference_category,
+                namespace,
+            ),
         }
     }
 
