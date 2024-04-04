@@ -1,10 +1,10 @@
 use super::ast::{
     ArrayExpressionNode, BreakStatementNode, CaseBranchStatementNode, ConditionalBlockNode,
     ConditionalStatementNode, ContinueStatementNode, CoreIdentifierInDeclNode,
-    CoreIdentifierInUseNode, EnumDeclarationNode, EnumVariantDeclarationNode, ForLoopStatementNode,
-    GenericTypeDeclNode, HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode,
-    InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode,
-    KeyValuePairNode, MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    CoreIdentifierInUseNode, DeclareCallablePrototypeNode, EnumDeclarationNode,
+    EnumVariantDeclarationNode, ForLoopStatementNode, GenericTypeDeclNode, HashMapExpressionNode,
+    IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode, KeyValuePairNode,
+    MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
     SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode, WhileLoopStatementNode,
 };
 use crate::ast::ast::{
@@ -74,8 +74,8 @@ pub trait Visitor {
     );
     impl_node_walk!(
         walk_interface_method_prototype_wrapper,
-        InterfaceMethodPrototypeWrapperNode,
-        new_with_InterfaceMethodPrototypeWrapperNode
+        DeclareCallablePrototypeNode,
+        new_with_DeclareCallablePrototypeNode
     );
     impl_node_walk!(
         walk_expr_stmt,
@@ -625,13 +625,7 @@ pub trait Visitor {
                 self.walk_token(&core_interface_method_prototype_wrapper.def_keyword);
                 self.walk_identifier_in_decl(&core_interface_method_prototype_wrapper.name);
                 self.walk_callable_prototype(&core_interface_method_prototype_wrapper.prototype);
-                match &core_interface_method_prototype_wrapper.terminal {
-                    InterfaceMethodTerminalNode::HasDefaultBody(colon, block) => {
-                        self.walk_token(colon);
-                        self.walk_block(block);
-                    }
-                    InterfaceMethodTerminalNode::NoDefaultBody(newline) => self.walk_token(newline),
-                }
+                self.walk_token(&core_interface_method_prototype_wrapper.newline);
             }
             ASTNode::StructDeclaration(struct_decl_node) => {
                 let core_struct_decl = struct_decl_node.core_ref();

@@ -7,9 +7,9 @@ use crate::ast::ast::{
     ArrayExpressionNode, CallExpressionNode, CallNode, ConditionalBlockNode,
     ConditionalStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
     EnumVariantExprOrClassMethodCallNode, ForLoopStatementNode, HashMapExpressionNode,
-    IdentifierInUseNode, IndexAccessNode, InterfaceMethodTerminalNode, MatchCaseStatementNode,
-    MethodAccessNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, PropertyAccessNode,
-    StructDeclarationNode, TupleExpressionNode, WhileLoopStatementNode,
+    IdentifierInUseNode, IndexAccessNode, MatchCaseStatementNode, MethodAccessNode,
+    OkIdentifierInDeclNode, OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode,
+    TupleExpressionNode, WhileLoopStatementNode,
 };
 use crate::code::JarvilCodeHandler;
 use crate::core::common::RefOrOwned;
@@ -2258,21 +2258,8 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             CoreStatementNode::InterfaceDeclaration(interface_decl) => {
                 self.walk_block(&interface_decl.core_ref().block);
             }
-            CoreStatementNode::InterfaceMethodPrototypeWrapper(
-                interface_method_prototype_wrapper,
-            ) => {
-                let core_interface_method_prototype_wrapper =
-                    interface_method_prototype_wrapper.core_ref();
-                if let InterfaceMethodTerminalNode::HasDefaultBody(_, optional_default_body) =
-                    &core_interface_method_prototype_wrapper.terminal
-                {
-                    self.check_callable_body(
-                        &core_interface_method_prototype_wrapper.prototype,
-                        optional_default_body,
-                    );
-                }
-            }
             CoreStatementNode::StructPropertyDeclaration(_)
+            | CoreStatementNode::InterfaceMethodPrototypeWrapper(_)
             | CoreStatementNode::EnumVariantDeclaration(_)
             | CoreStatementNode::CaseBranch(_)
             | CoreStatementNode::Break(_)

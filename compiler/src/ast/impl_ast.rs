@@ -9,34 +9,33 @@ use super::ast::{
     CoreBreakStatementNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
     CoreCallablePrototypeNode, CoreCaseBranchStatementNode, CoreComparisonNode,
     CoreConditionalBlockNode, CoreConditionalStatementNode, CoreContinueStatementNode,
-    CoreEnumDeclarationNode, CoreEnumVariantDeclarationNode,
+    CoreDeclareCallablePrototypeNode, CoreEnumDeclarationNode, CoreEnumVariantDeclarationNode,
     CoreEnumVariantExprOrClassMethodCallNode, CoreExpressionNode, CoreExpressionStatementNode,
     CoreForLoopStatementNode, CoreFunctionDeclarationNode, CoreFunctionWrapperNode,
     CoreGenericTypeDeclNode, CoreHashMapExpressionNode, CoreHashMapTypeNode,
     CoreIdentifierInDeclNode, CoreIdentifierInUseNode, CoreIncorrectlyIndentedStatementNode,
-    CoreIndexAccessNode, CoreInterfaceDeclarationNode, CoreInterfaceMethodPrototypeWrapperNode,
-    CoreInvalidLValueNode, CoreKeyValuePairNode, CoreLambdaDeclarationNode,
-    CoreLambdaTypeDeclarationNode, CoreMatchCaseStatementNode, CoreMethodAccessNode,
-    CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
-    CoreOkIdentifierInUseNode, CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
-    CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
-    CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
-    CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatementIndentWrapperNode, CoreStatementNode,
-    CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreSymbolSeparatedSequenceNode,
-    CoreTokenNode, CoreTupleExpressionNode, CoreTupleTypeNode, CoreTypeDeclarationNode,
-    CoreTypeExpressionNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
-    CoreVariableDeclarationNode, CoreWhileLoopStatementNode, EnumDeclarationNode,
+    CoreIndexAccessNode, CoreInterfaceDeclarationNode, CoreInvalidLValueNode, CoreKeyValuePairNode,
+    CoreLambdaDeclarationNode, CoreLambdaTypeDeclarationNode, CoreMatchCaseStatementNode,
+    CoreMethodAccessNode, CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode,
+    CoreOkIdentifierInDeclNode, CoreOkIdentifierInUseNode, CoreOkSelfKeywordNode, CoreOkTokenNode,
+    CoreOnlyUnaryExpressionNode, CoreParenthesisedExpressionNode, CorePropertyAccessNode,
+    CoreRAssignmentNode, CoreRVariableDeclarationNode, CoreReturnStatementNode,
+    CoreSelfKeywordNode, CoreSkippedTokenNode, CoreSkippedTokensNode,
+    CoreStatementIndentWrapperNode, CoreStatementNode, CoreStructDeclarationNode,
+    CoreStructPropertyDeclarationNode, CoreSymbolSeparatedSequenceNode, CoreTokenNode,
+    CoreTupleExpressionNode, CoreTupleTypeNode, CoreTypeDeclarationNode, CoreTypeExpressionNode,
+    CoreUnaryExpressionNode, CoreUserDefinedTypeNode, CoreVariableDeclarationNode,
+    CoreWhileLoopStatementNode, DeclareCallablePrototypeNode, EnumDeclarationNode,
     EnumVariantDeclarationNode, EnumVariantExprOrClassMethodCallNode, ExpressionNode,
     ExpressionStatementNode, ForLoopStatementNode, FunctionDeclarationNode, FunctionWrapperNode,
     GenericTypeDeclNode, HashMapExpressionNode, HashMapTypeNode, IdentifierInDeclNode,
     IdentifierInUseNode, IncorrectlyIndentedStatementNode, IndexAccessNode,
-    InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode,
-    InvalidLValueNode, KeyValuePairNode, LambdaDeclarationNode, LambdaTypeDeclarationNode,
-    MatchCaseStatementNode, MethodAccessNode, NameTypeSpecNode, OkAssignmentNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode, OkTokenNode,
-    OnlyUnaryExpressionNode, ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode,
-    RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode, SkippedTokenNode,
-    StatementIndentWrapperNode, StatementNode, StructDeclarationNode,
+    InterfaceDeclarationNode, InvalidLValueNode, KeyValuePairNode, LambdaDeclarationNode,
+    LambdaTypeDeclarationNode, MatchCaseStatementNode, MethodAccessNode, NameTypeSpecNode,
+    OkAssignmentNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
+    OkTokenNode, OnlyUnaryExpressionNode, ParenthesisedExpressionNode, PropertyAccessNode,
+    RAssignmentNode, RVariableDeclarationNode, ReturnStatementNode, SelfKeywordNode,
+    SkippedTokenNode, StatementIndentWrapperNode, StatementNode, StructDeclarationNode,
     StructPropertyDeclarationNode, SymbolSeparatedSequenceNode, TokenNode, TupleExpressionNode,
     TupleTypeNode, TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
     UnresolvedIdentifier, UserDefinedTypeNode, VariableDeclarationNode, WhileLoopStatementNode,
@@ -283,7 +282,7 @@ impl StatementNode {
     }
 
     pub fn new_with_interface_method_prototype_wrapper(
-        interface_method_prototype: InterfaceMethodPrototypeWrapperNode,
+        interface_method_prototype: DeclareCallablePrototypeNode,
     ) -> Self {
         let node = Rc::new(CoreStatementNode::InterfaceMethodPrototypeWrapper(
             interface_method_prototype,
@@ -984,35 +983,28 @@ impl Node for InterfaceDeclarationNode {
     }
 }
 
-impl InterfaceMethodPrototypeWrapperNode {
+impl DeclareCallablePrototypeNode {
     pub fn new(
         def_keyword: TokenNode,
         name: IdentifierInDeclNode,
         prototype: CallablePrototypeNode,
-        terminal: InterfaceMethodTerminalNode,
+        newline: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreInterfaceMethodPrototypeWrapperNode {
+        let node = Rc::new(CoreDeclareCallablePrototypeNode {
             def_keyword,
             name,
             prototype,
-            terminal,
+            newline,
         });
-        InterfaceMethodPrototypeWrapperNode(node)
+        DeclareCallablePrototypeNode(node)
     }
 
-    impl_core_ref!(CoreInterfaceMethodPrototypeWrapperNode);
+    impl_core_ref!(CoreDeclareCallablePrototypeNode);
 }
 
-impl Node for InterfaceMethodPrototypeWrapperNode {
+impl Node for DeclareCallablePrototypeNode {
     fn range(&self) -> TextRange {
-        match &self.0.as_ref().terminal {
-            InterfaceMethodTerminalNode::NoDefaultBody(newline) => {
-                impl_range!(self.0.as_ref().def_keyword, newline)
-            }
-            InterfaceMethodTerminalNode::HasDefaultBody(_, block) => {
-                impl_range!(self.0.as_ref().def_keyword, block)
-            }
-        }
+        impl_range!(self.core_ref().def_keyword, self.core_ref().newline)
     }
     fn start_line_number(&self) -> usize {
         self.0.as_ref().def_keyword.start_line_number()

@@ -35,7 +35,7 @@ pub enum ASTNode {
     MatchCase(MatchCaseStatementNode),
     CaseBranch(CaseBranchStatementNode),
     InterfaceDeclaration(InterfaceDeclarationNode),
-    InterfaceMethodPrototypeWrapper(InterfaceMethodPrototypeWrapperNode),
+    InterfaceMethodPrototypeWrapper(DeclareCallablePrototypeNode),
     VariableDeclaration(VariableDeclarationNode),
     Assignment(AssignmentNode),
     OkAssignment(OkAssignmentNode),
@@ -142,7 +142,7 @@ pub enum CoreStatementNode {
     CaseBranch(CaseBranchStatementNode),
     EnumVariantDeclaration(EnumVariantDeclarationNode),
     InterfaceDeclaration(InterfaceDeclarationNode),
-    InterfaceMethodPrototypeWrapper(InterfaceMethodPrototypeWrapperNode),
+    InterfaceMethodPrototypeWrapper(DeclareCallablePrototypeNode),
 }
 
 #[derive(Debug, Serialize)]
@@ -185,17 +185,11 @@ pub struct CoreInterfaceDeclarationNode {
 }
 
 #[derive(Debug, Serialize)]
-pub enum InterfaceMethodTerminalNode {
-    NoDefaultBody(TokenNode), // newline
-    HasDefaultBody(TokenNode, BlockNode),
-}
-
-#[derive(Debug, Serialize)]
-pub struct CoreInterfaceMethodPrototypeWrapperNode {
+pub struct CoreDeclareCallablePrototypeNode {
     pub def_keyword: TokenNode,
     pub name: IdentifierInDeclNode,
     pub prototype: CallablePrototypeNode,
-    pub terminal: InterfaceMethodTerminalNode,
+    pub newline: TokenNode,
 }
 
 #[derive(Debug, Serialize)]
@@ -671,7 +665,7 @@ pub struct StatementNode(pub Rc<CoreStatementNode>);
 #[derive(Debug, Clone)]
 pub struct InterfaceDeclarationNode(pub Rc<CoreInterfaceDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct InterfaceMethodPrototypeWrapperNode(pub Rc<CoreInterfaceMethodPrototypeWrapperNode>);
+pub struct DeclareCallablePrototypeNode(pub Rc<CoreDeclareCallablePrototypeNode>);
 #[derive(Debug, Clone)]
 pub struct ReturnStatementNode(pub Rc<CoreReturnStatementNode>);
 #[derive(Debug, Clone)]

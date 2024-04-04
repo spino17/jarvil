@@ -2,10 +2,10 @@ use super::resolver::BlockKind;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ConditionalBlockNode, ConditionalStatementNode,
-    ExpressionNode, ForLoopStatementNode, GenericTypeDeclNode, IdentifierInDeclNode,
-    IdentifierInUseNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
-    MatchCaseStatementNode, NameTypeSpecNode, OkTokenNode, SelfKeywordNode, SkippedTokenNode,
-    StatementNode, SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
+    DeclareCallablePrototypeNode, ExpressionNode, ForLoopStatementNode, GenericTypeDeclNode,
+    IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode, MatchCaseStatementNode,
+    NameTypeSpecNode, OkTokenNode, SelfKeywordNode, SkippedTokenNode, StatementNode,
+    SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
     UnaryExpressionNode, VariableDeclarationNode, WhileLoopStatementNode,
 };
 use crate::ast::traits::{ErrornousNode, Node};
@@ -550,7 +550,7 @@ impl<'ctx> JarvilParser<'ctx> {
         components::statement::core::interface_stmt(self)
     }
 
-    pub fn interface_method_prototype_wrapper(&mut self) -> InterfaceMethodPrototypeWrapperNode {
+    pub fn interface_method_prototype_wrapper(&mut self) -> DeclareCallablePrototypeNode {
         components::interface_declaration::interface_method_prototype_wrapper(self)
     }
 
