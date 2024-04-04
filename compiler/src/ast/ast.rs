@@ -35,6 +35,7 @@ pub enum ASTNode {
     MatchCase(MatchCaseStatementNode),
     CaseBranch(CaseBranchStatementNode),
     InterfaceDeclaration(InterfaceDeclarationNode),
+    DeclareFunctionPrototype(DeclareFunctionPrototypeNode),
     InterfaceMethodPrototypeWrapper(DeclareCallablePrototypeNode),
     VariableDeclaration(VariableDeclarationNode),
     Assignment(AssignmentNode),
@@ -143,6 +144,7 @@ pub enum CoreStatementNode {
     EnumVariantDeclaration(EnumVariantDeclarationNode),
     InterfaceDeclaration(InterfaceDeclarationNode),
     InterfaceMethodPrototypeWrapper(DeclareCallablePrototypeNode),
+    // DeclareFunctionPrototype(DeclareFunctionPrototypeNode),
 }
 
 #[derive(Debug, Serialize)]
@@ -182,6 +184,12 @@ pub struct CoreInterfaceDeclarationNode {
     pub name: IdentifierInDeclNode,
     pub colon: TokenNode,
     pub block: BlockNode,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CoreDeclareFunctionPrototypeNode {
+    pub declare_keyword: TokenNode,
+    pub decl: DeclareCallablePrototypeNode,
 }
 
 #[derive(Debug, Serialize)]
@@ -664,6 +672,8 @@ pub struct IncorrectlyIndentedStatementNode(pub Rc<CoreIncorrectlyIndentedStatem
 pub struct StatementNode(pub Rc<CoreStatementNode>);
 #[derive(Debug, Clone)]
 pub struct InterfaceDeclarationNode(pub Rc<CoreInterfaceDeclarationNode>);
+#[derive(Debug, Clone)]
+pub struct DeclareFunctionPrototypeNode(pub Rc<CoreDeclareFunctionPrototypeNode>);
 #[derive(Debug, Clone)]
 pub struct DeclareCallablePrototypeNode(pub Rc<CoreDeclareCallablePrototypeNode>);
 #[derive(Debug, Clone)]

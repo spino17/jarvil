@@ -73,7 +73,7 @@ pub trait Visitor {
         new_with_ContinueStatementNode
     );
     impl_node_walk!(
-        walk_interface_method_prototype_wrapper,
+        walk_decl_callable_prototype,
         DeclareCallablePrototypeNode,
         new_with_DeclareCallablePrototypeNode
     );
@@ -487,9 +487,7 @@ pub trait Visitor {
                 CoreStatementNode::InterfaceMethodPrototypeWrapper(
                     interface_method_prototype_wrapper,
                 ) => {
-                    self.walk_interface_method_prototype_wrapper(
-                        interface_method_prototype_wrapper,
-                    );
+                    self.walk_decl_callable_prototype(interface_method_prototype_wrapper);
                 }
                 CoreStatementNode::Return(return_stmt) => {
                     self.walk_return_stmt(return_stmt);
@@ -618,6 +616,11 @@ pub trait Visitor {
                 self.walk_identifier_in_decl(&core_interface_decl.name);
                 self.walk_token(&core_interface_decl.colon);
                 self.walk_block(&core_interface_decl.block);
+            }
+            ASTNode::DeclareFunctionPrototype(decl_func_prototype_node) => {
+                let core_decl_func_prototype_node = decl_func_prototype_node.core_ref();
+                self.walk_token(&core_decl_func_prototype_node.declare_keyword);
+                self.walk_decl_callable_prototype(&core_decl_func_prototype_node.decl);
             }
             ASTNode::InterfaceMethodPrototypeWrapper(interface_method_prototype_wrapper_node) => {
                 let core_interface_method_prototype_wrapper =

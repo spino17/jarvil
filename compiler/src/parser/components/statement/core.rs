@@ -8,7 +8,8 @@ use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::parser::parser::JarvilParser;
 use crate::parser::resolver::BlockKind;
 
-pub const STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS: [&str; 3] = ["def", "type", "interface"];
+pub const STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS: [&str; 4] =
+    ["def", "type", "interface", "declare"];
 
 pub const STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS: [&str; 10] = [
     "let",
@@ -43,6 +44,7 @@ pub fn is_statement_at_global_scope_starting_with(token: &Token) -> bool {
         CoreToken::DEF => true,
         CoreToken::TYPE_KEYWORD => true,
         CoreToken::INTERFACE_KEYWORD => true,
+        CoreToken::DECLARE_KEYWORD => true,
         _ => false,
     }
 }
@@ -91,6 +93,10 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
             StatementNode::new_with_variable_declaration(variable_decl_node)
         }
         CoreToken::DEF => parser.function_stmt(CallableKind::Function),
+        CoreToken::DECLARE_KEYWORD => {
+            // TODO - parse declaration statement for function in `.d.jv` files
+            todo!()
+        }
         CoreToken::FOR => {
             let for_loop_node = parser.for_loop_stmt();
             StatementNode::new_with_for_loop(for_loop_node)
