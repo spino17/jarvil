@@ -1,3 +1,5 @@
 type Result<T, E> enum:
     Ok(T)
     Err(E)
+
+declare def yo<T>(x: T) -> int

@@ -954,9 +954,9 @@ impl<'ctx> JarvilResolver<'ctx> {
         let core_callable_prototype = callable_prototype.core_ref();
         let params = &core_callable_prototype.params;
         let return_ty = &core_callable_prototype.return_ty;
-        let mut param_types_vec: Vec<Type> = vec![];
-        let mut return_ty_range: Option<TextRange> = None;
-        let return_ty: Type = match return_ty {
+        let mut param_types_vec = vec![];
+        let mut return_ty_range = None;
+        let return_ty = match return_ty {
             Some((_, return_ty_expr)) => {
                 return_ty_range = Some(return_ty_expr.range());
                 self.ty_from_expression(return_ty_expr)
