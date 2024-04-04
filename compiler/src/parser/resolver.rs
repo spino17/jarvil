@@ -84,6 +84,12 @@ pub enum BlockKind {
     Case,
 }
 
+impl Default for BlockKind {
+    fn default() -> Self {
+        BlockKind::Function
+    }
+}
+
 impl BlockKind {
     fn is_generics_shielding_block(&self) -> bool {
         match self {
@@ -287,7 +293,6 @@ impl<'ctx> JarvilResolver<'ctx> {
     }
 
     pub fn enclosing_generics_declarative_scope_index(&self) -> (ScopeIndex, Option<ScopeIndex>) {
-        // (enclosing_scope, enclosing_class_scope `if enclosing scope is method`)
         let mut index = self.context.block_context_stack.len() - 1;
         loop {
             let block_context = &self.context.block_context_stack[index];
@@ -321,7 +326,6 @@ impl<'ctx> JarvilResolver<'ctx> {
         symbol_obj: &T,
         is_concrete_types_none_allowed: bool,
     ) -> Result<Option<TurbofishTypes>, GenericTypeArgsCheckError> {
-        // (index to the registry, has_generics)
         let (concrete_types, ty_ranges) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
         symbol_obj.check_generic_ty_args(
@@ -950,12 +954,13 @@ impl<'ctx> JarvilResolver<'ctx> {
             }
             None => None,
         };
-        // (params_vec, return_type, return_type_span, is_concretization_required)
+
         let core_callable_prototype = callable_prototype.core_ref();
         let params = &core_callable_prototype.params;
         let return_ty = &core_callable_prototype.return_ty;
         let mut param_types_vec = vec![];
         let mut return_ty_range = None;
+
         let return_ty = match return_ty {
             Some((_, return_ty_expr)) => {
                 return_ty_range = Some(return_ty_expr.range());
@@ -963,6 +968,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             }
             None => Type::new_with_void(),
         };
+
         if let Some(params) = params {
             let params_iter = params.iter();
             for param in params_iter {
@@ -1017,24 +1023,33 @@ impl<'ctx> JarvilResolver<'ctx> {
 
     pub fn visit_callable_body(
         &mut self,
-        callable_body: &CallableBodyNode,
+        symbol_obj: Option<&FunctionSymbolData>,
         optional_identifier_in_decl: Option<&OkIdentifierInDeclNode>,
-        symbol_obj: &Option<FunctionSymbolData>,
+        callable_body: Option<&BlockNode>,
+        callable_prototype: &CallablePrototypeNode,
     ) -> (Vec<Type>, Type, Option<TextRange>) {
-        let core_callable_body = callable_body.core_ref();
-        let callable_body = &core_callable_body.block;
-        self.open_block(callable_body.core_ref().kind);
-        let (param_types_vec, return_ty, return_ty_range, generic_ty_decls) = self
-            .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
+        self.open_block(if let Some(callable_body) = callable_body {
+            callable_body.core_ref().kind
+        } else {
+            BlockKind::default() // `Function`: function declarations inside `.d.jv` files won't have body
+        });
+
+        let (param_types_vec, return_ty, return_ty_range, generic_ty_decls) =
+            self.declare_callable_prototype(callable_prototype, optional_identifier_in_decl);
+
         if let Some(symbol_obj) = symbol_obj {
             self.semantic_db
                 .function_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_generics(generic_ty_decls);
         }
-        for stmt in &callable_body.0.as_ref().stmts {
-            self.walk_stmt_indent_wrapper(stmt);
+
+        if let Some(callable_body) = callable_body {
+            for stmt in &callable_body.0.as_ref().stmts {
+                self.walk_stmt_indent_wrapper(stmt);
+            }
         }
-        self.close_block(Some(callable_body));
+
+        self.close_block(callable_body);
         (param_types_vec, return_ty, return_ty_range)
     }
 
@@ -1050,12 +1065,16 @@ impl<'ctx> JarvilResolver<'ctx> {
     ) {
         let core_callable_body = callable_body.core_ref();
         let callable_body = &core_callable_body.block;
+
         self.open_block(callable_body.core_ref().kind);
+
         let (param_types_vec, return_ty, return_ty_range, generic_ty_decls) = self
             .declare_callable_prototype(&core_callable_body.prototype, optional_identifier_in_decl);
+
         for stmt in &callable_body.0.as_ref().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
+
         self.close_block(Some(callable_body));
         (
             param_types_vec,
@@ -1072,9 +1091,12 @@ impl<'ctx> JarvilResolver<'ctx> {
         let core_callable_body = callable_body.core_ref();
         let mut initialized_fields: FxHashSet<StrId> = FxHashSet::default();
         let callable_body = &core_callable_body.block;
+
         self.open_block(callable_body.core_ref().kind);
+
         let (param_types_vec, return_ty, return_ty_range, _) =
             self.declare_callable_prototype(&core_callable_body.prototype, None);
+
         for stmt in &callable_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
@@ -1086,33 +1108,33 @@ impl<'ctx> JarvilResolver<'ctx> {
             };
             self.walk_stmt(stmt);
 
-            // check for assignment node of the form `self.<property_name>`
-            let CoreStatementNode::Assignment(assignment) = stmt.core_ref() else {
-                continue;
-            };
-            let CoreAssignmentNode::Ok(ok_assignment) = assignment.core_ref() else {
-                continue;
-            };
-            let l_atom = &ok_assignment.core_ref().l_atom;
-            let CoreAtomNode::PropertyAccess(property_access) = l_atom.core_ref() else {
-                continue;
-            };
-            let core_property_access = property_access.core_ref();
-            let property_name = &core_property_access.propertry;
-            let CoreIdentifierInUseNode::Ok(property_name) = property_name.core_ref() else {
-                continue;
-            };
-            let atom = &core_property_access.atom;
-            let CoreAtomNode::AtomStart(atom_start) = atom.core_ref() else {
-                continue;
-            };
-            let CoreAtomStartNode::SelfKeyword(_) = atom_start.core_ref() else {
-                continue;
-            };
-            let property_name_str =
-                property_name.token_value(&self.code_handler, self.semantic_db.interner());
-            initialized_fields.insert(property_name_str);
+            // collect for all the assignment statements with format: `self.<PROPERTY_NAME>`
+            // in order to check which all fields are not initialized inside the constructor
+            if let CoreStatementNode::Assignment(assignment) = stmt.core_ref() {
+                if let CoreAssignmentNode::Ok(ok_assignment) = assignment.core_ref() {
+                    if let CoreAtomNode::PropertyAccess(property_access) =
+                        ok_assignment.core_ref().l_atom.core_ref()
+                    {
+                        if let CoreIdentifierInUseNode::Ok(property_name) =
+                            property_access.core_ref().propertry.core_ref()
+                        {
+                            if let CoreAtomNode::AtomStart(atom_start) =
+                                property_access.core_ref().atom.core_ref()
+                            {
+                                if let CoreAtomStartNode::SelfKeyword(_) = atom_start.core_ref() {
+                                    let property_name_str = property_name.token_value(
+                                        &self.code_handler,
+                                        self.semantic_db.interner(),
+                                    );
+                                    initialized_fields.insert(property_name_str);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
+
         self.close_block(Some(callable_body));
         (
             param_types_vec,
@@ -1125,6 +1147,7 @@ impl<'ctx> JarvilResolver<'ctx> {
     pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
         let mut symbol_obj: Option<VariableSymbolData> = None;
+
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() {
             match self.try_declare_and_bind_variable(ok_identifier) {
                 Ok(local_symbol_obj) => {
@@ -1142,10 +1165,12 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
             }
         }
+
         let ty_from_optional_annotation = core_variable_decl
             .ty_annotation
             .as_ref()
             .map(|(_, ty_expr)| (self.ty_from_expression(ty_expr), ty_expr.range()));
+
         // Except `CoreRAssignmentNode::LAMBDA`, type of the variable is set in the `type_checker.rs`. For `CoreRAssignmentNode::LAMBDA`,
         // it's type is set to the variable symbol_data here itself.
         match core_variable_decl.r_node.core_ref() {
@@ -1157,12 +1182,18 @@ impl<'ctx> JarvilResolver<'ctx> {
                         .variable_symbol_mut_ref(symbol_obj.symbol_index())
                         .set_is_init(true);
                 }
-                let core_lambda_r_assign = &lambda_r_assign.core_ref();
+
+                let core_lambda_r_assign = lambda_r_assign.core_ref();
+                let body = &core_lambda_r_assign.body.core_ref().block;
+                let prototype = &core_lambda_r_assign.body.core_ref().prototype;
+
                 let (params_vec, return_ty, _) =
-                    self.visit_callable_body(&core_lambda_r_assign.body, None, &None);
+                    self.visit_callable_body(None, None, Some(body), prototype);
+
                 let lambda_ty = Type::new_with_lambda_unnamed(CallablePrototypeData::new(
                     params_vec, return_ty,
                 ));
+
                 let final_variable_ty = match ty_from_optional_annotation {
                     Some((ty_from_optional_annotation, range)) => {
                         if !ty_from_optional_annotation
@@ -1179,6 +1210,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     }
                     None => lambda_ty,
                 };
+
                 if let Some(symbol_obj) = &symbol_obj {
                     self.semantic_db
                         .variable_symbol_mut_ref(symbol_obj.symbol_index())
@@ -1187,6 +1219,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             }
             CoreRVariableDeclarationNode::Expression(expr_r_assign) => {
                 self.walk_expr_stmt(expr_r_assign);
+
                 if let Some(symbol_obj) = &symbol_obj {
                     match ty_from_optional_annotation {
                         Some((ty, _)) => self
@@ -1207,9 +1240,11 @@ impl<'ctx> JarvilResolver<'ctx> {
     pub fn declare_function(&mut self, func_wrapper: &FunctionWrapperNode) {
         let core_func_decl = func_wrapper.core_ref().func_decl.core_ref();
         let func_name = &core_func_decl.name;
-        let body = &core_func_decl.body;
+        let body = &core_func_decl.body.core_ref().block;
+        let prototype = &core_func_decl.body.core_ref().prototype;
         let mut optional_ok_identifier_node = None;
         let mut symbol_obj: Option<FunctionSymbolData> = None;
+
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = func_name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
             match self.try_declare_and_bind_function(ok_identifier) {
@@ -1226,8 +1261,14 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
             }
         }
-        let (param_types_vec, return_ty, _) =
-            self.visit_callable_body(body, optional_ok_identifier_node, &symbol_obj);
+
+        let (param_types_vec, return_ty, _) = self.visit_callable_body(
+            symbol_obj.as_ref(),
+            optional_ok_identifier_node,
+            Some(body),
+            prototype,
+        );
+
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
                 .function_symbol_mut_ref(symbol_obj.symbol_index())
@@ -1239,11 +1280,13 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.context.class_context_stack.push(ClassContext {
             is_containing_self: false,
         });
+
         let core_struct_decl = struct_decl.core_ref();
         let struct_body = &core_struct_decl.block;
         let implementing_interfaces_node = &core_struct_decl.implementing_interfaces;
         let mut optional_ok_identifier_node = None;
         let mut symbol_obj: Option<UserDefinedTypeSymbolData> = None;
+
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
             match self.try_declare_and_bind_struct_ty(ok_identifier) {
@@ -1262,7 +1305,9 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
             }
         };
+
         self.open_block(struct_body.core_ref().kind);
+
         let (struct_generic_ty_decls, struct_ty) = match optional_ok_identifier_node {
             Some(ok_identifier) => {
                 let (struct_generic_ty_decls, concrete_types) = self
@@ -1278,6 +1323,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             }
             None => (None, Type::new_with_unknown()),
         };
+
         let unique_id = self
             .semantic_db
             .unique_key_generator_mut_ref()
@@ -1327,6 +1373,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 implementing_interfaces = Some(interfaces);
             }
         }
+
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
                 .ty_symbol_mut_ref(symbol_obj.0)
@@ -1339,6 +1386,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         let mut methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
         let mut class_methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
         let mut initialized_fields: FxHashSet<StrId> = FxHashSet::default();
+
         for stmt in &struct_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
@@ -1350,6 +1398,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     let core_struct_property_decl = struct_property_decl.core_ref();
                     let name_ty_spec = core_struct_property_decl.name_ty_spec.core_ref();
                     let name = &name_ty_spec.name;
+
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier
                             .token_value(&self.code_handler, self.semantic_db.interner());
@@ -1376,6 +1425,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     let core_func_decl = bounded_method_wrapper.core_ref().func_decl.core_ref();
                     let mut is_constructor = false;
                     let mut optional_ok_identifier_node = None;
+
                     if let CoreIdentifierInDeclNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
@@ -1398,6 +1448,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                             }
                         }
                     }
+
                     let (param_types_vec, return_ty, return_ty_range, method_generic_ty_decls) =
                         if is_constructor {
                             let (
@@ -1414,6 +1465,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 optional_ok_identifier_node,
                             )
                         };
+
                     if let CoreIdentifierInDeclNode::Ok(ok_bounded_method_name) =
                         core_func_decl.name.core_ref()
                     {
@@ -1499,7 +1551,9 @@ impl<'ctx> JarvilResolver<'ctx> {
                 _ => unreachable!(),
             }
         }
+
         self.close_block(Some(struct_body));
+
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             match constructor {
                 Some((_, construct_span)) => {
@@ -1533,6 +1587,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     .set_meta_data(fields_map, constructor, methods, class_methods);
             }
         }
+
         self.context.class_context_stack.pop();
     }
 
@@ -1541,6 +1596,8 @@ impl<'ctx> JarvilResolver<'ctx> {
         let name = &core_enum_ty_decl.name;
         let mut optional_ok_identifier_in_decl = None;
         let mut symbol_obj: Option<UserDefinedTypeSymbolData> = None;
+        let enum_body = &core_enum_ty_decl.block;
+
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
             optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
             match self.try_declare_and_bind_enum_ty(ok_identifier_in_decl) {
@@ -1557,8 +1614,9 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
             }
         }
-        let enum_body = &core_enum_ty_decl.block;
+
         self.open_block(enum_body.core_ref().kind);
+
         let generic_ty_decls = match optional_ok_identifier_in_decl {
             Some(ok_identifier) => {
                 self.declare_angle_bracket_content_from_identifier_in_decl(
@@ -1569,14 +1627,17 @@ impl<'ctx> JarvilResolver<'ctx> {
             }
             None => None,
         };
+
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
                 .ty_symbol_mut_ref(symbol_obj.0)
                 .enum_data_mut_ref()
                 .set_generics(generic_ty_decls);
         }
+
         let mut variants: Vec<(StrId, Option<Type>, TextRange)> = vec![];
         let mut variants_map: FxHashMap<StrId, TextRange> = FxHashMap::default();
+
         for stmt in &enum_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
@@ -1616,7 +1677,9 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
             }
         }
+
         self.close_block(Some(enum_body));
+
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
                 .ty_symbol_mut_ref(symbol_obj.0)
@@ -1632,7 +1695,9 @@ impl<'ctx> JarvilResolver<'ctx> {
         let return_ty = &core_lambda_ty_decl.return_ty;
         let mut optional_ok_identifier_node: Option<&OkIdentifierInDeclNode> = None;
         let mut generic_ty_decls: Option<GenericTypeParams> = None;
+
         self.open_block(BlockKind::LambdaType);
+
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_lambda_ty_decl.name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
             generic_ty_decls = self
@@ -1642,10 +1707,12 @@ impl<'ctx> JarvilResolver<'ctx> {
                 )
                 .0;
         }
+
         let return_ty: Type = match return_ty {
             Some((_, return_ty_expr)) => self.ty_from_expression(return_ty_expr),
             None => Type::new_with_void(),
         };
+
         if let Some(ty_tuple) = ty_tuple {
             let ty_tuple_iter = ty_tuple.iter();
             for data_ty in ty_tuple_iter {
@@ -1653,7 +1720,9 @@ impl<'ctx> JarvilResolver<'ctx> {
                 types_vec.push(ty);
             }
         }
+
         self.close_block(None);
+
         let Some(ok_identifier) = optional_ok_identifier_node else {
             return;
         };
@@ -1696,6 +1765,8 @@ impl<'ctx> JarvilResolver<'ctx> {
         let name = &core_interface_decl.name;
         let mut optional_ok_identifier_in_decl = None;
         let mut symbol_obj: Option<InterfaceSymbolData> = None;
+        let interface_body = &core_interface_decl.block;
+
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
             optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
             match self.try_declare_and_bind_interface(ok_identifier_in_decl) {
@@ -1712,8 +1783,9 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
             }
         }
-        let interface_body = &core_interface_decl.block;
+
         self.open_block(interface_body.core_ref().kind);
+
         let generic_ty_decls = match optional_ok_identifier_in_decl {
             Some(ok_identifier) => {
                 self.declare_angle_bracket_content_from_identifier_in_decl(
@@ -1724,6 +1796,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             }
             None => None,
         };
+
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
                 .interface_symbol_mut_ref(symbol_obj.symbol_index())
@@ -1732,6 +1805,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         let mut fields_map: FxHashMap<StrId, (Type, TextRange)> = FxHashMap::default();
         let mut methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
+
         for stmt in &interface_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
@@ -1743,6 +1817,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     let core_interface_property_decl = interface_property_declaration.core_ref();
                     let name_ty_spec = core_interface_property_decl.name_ty_spec.core_ref();
                     let name = &name_ty_spec.name;
+
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier
                             .token_value(&self.code_handler, self.semantic_db.interner());
@@ -1766,6 +1841,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
                 CoreStatementNode::InterfaceMethodPrototypeWrapper(interface_method_wrapper) => {
                     let core_interface_method_wrapper = interface_method_wrapper.core_ref();
+
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) =
                         core_interface_method_wrapper.name.core_ref()
                     {
@@ -1796,7 +1872,9 @@ impl<'ctx> JarvilResolver<'ctx> {
                 _ => unreachable!(),
             }
         }
+
         self.close_block(Some(interface_body));
+
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
                 .interface_symbol_mut_ref(symbol_obj.symbol_index())
@@ -1807,8 +1885,11 @@ impl<'ctx> JarvilResolver<'ctx> {
     pub fn resolve_match_case(&mut self, match_case: &MatchCaseStatementNode) {
         let core_match_case = match_case.core_ref();
         let block = &core_match_case.block;
+
         self.walk_expression(&core_match_case.expr);
+
         self.open_block(block.core_ref().kind);
+
         for stmt in &block.core_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
@@ -1821,7 +1902,9 @@ impl<'ctx> JarvilResolver<'ctx> {
             };
             let core_case_branch = case_branch.core_ref();
             let case_block = &core_case_branch.block;
+
             self.open_block(case_block.core_ref().kind);
+
             if let Some((_, variable_name, _)) = &core_case_branch.variable_name {
                 if let CoreIdentifierInDeclNode::Ok(ok_identifier) = variable_name.core_ref() {
                     match self.try_declare_and_bind_variable(ok_identifier) {
@@ -1834,11 +1917,14 @@ impl<'ctx> JarvilResolver<'ctx> {
                     }
                 }
             }
+
             for stmt in &case_block.core_ref().stmts {
                 self.walk_stmt_indent_wrapper(stmt);
             }
+
             self.close_block(Some(case_block));
         }
+
         self.close_block(Some(block));
     }
 
@@ -1846,8 +1932,11 @@ impl<'ctx> JarvilResolver<'ctx> {
         let core_for_loop = for_loop.core_ref();
         let loop_variable = &core_for_loop.loop_variable;
         let block = &core_for_loop.block;
+
         self.walk_expression(&core_for_loop.iterable_expr);
+
         self.open_block(block.core_ref().kind);
+
         if let CoreIdentifierInDeclNode::Ok(ok_loop_variable) = loop_variable.core_ref() {
             match self.try_declare_and_bind_variable(ok_loop_variable) {
                 Ok(symbol_obj) => {
@@ -1858,9 +1947,11 @@ impl<'ctx> JarvilResolver<'ctx> {
                 Err(_) => unreachable!(),
             }
         }
+
         for stmt in &block.core_ref().stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
+
         self.close_block(Some(block));
     }
 
@@ -1868,6 +1959,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         let CoreIdentifierInUseNode::Ok(ok_identifier) = identifier.core_ref() else {
             return;
         };
+
         if let ResolveResult::Ok(lookup_data, _) = self.try_resolving_variable(ok_identifier, true)
         {
             if lookup_data.depth > 0 {
@@ -1885,6 +1977,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         let CoreSelfKeywordNode::Ok(ok_self_keyword) = self_keyword.core_ref() else {
             return;
         };
+
         match self.try_resolving_self_keyword(ok_self_keyword) {
             Some(_) => {
                 self.set_curr_class_context_is_containing_self(true);
@@ -1898,6 +1991,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
     fn resolve_call_expr(&mut self, func_call: &CallExpressionNode) {
         let core_func_call = func_call.core_ref();
+
         if let CoreIdentifierInUseNode::Ok(ok_identifier) = core_func_call.function_name.core_ref()
         {
             // order of namespace search: function => type => variable
@@ -1979,6 +2073,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
             }
         }
+
         if let Some(params) = &core_func_call.params {
             self.walk_comma_separated_expressions(params)
         }
@@ -1990,6 +2085,7 @@ impl<'ctx> JarvilResolver<'ctx> {
     ) {
         let core_enum_variant_expr_or_class_method_call =
             enum_variant_expr_or_class_method_call.core_ref();
+
         if let CoreIdentifierInUseNode::Ok(ok_identifier) =
             core_enum_variant_expr_or_class_method_call
                 .ty_name
@@ -1997,7 +2093,9 @@ impl<'ctx> JarvilResolver<'ctx> {
         {
             self.try_resolving_user_defined_ty(ok_identifier, true, false);
         }
+
         self.walk_identifier_in_use(&core_enum_variant_expr_or_class_method_call.property_name);
+
         if let Some((_, params, _)) = &core_enum_variant_expr_or_class_method_call.params {
             if let Some(params) = params {
                 self.walk_comma_separated_expressions(params);
