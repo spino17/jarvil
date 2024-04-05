@@ -1,10 +1,10 @@
 use super::ast::{
     ArrayExpressionNode, BreakStatementNode, CaseBranchStatementNode, ConditionalBlockNode,
     ConditionalStatementNode, ContinueStatementNode, CoreIdentifierInDeclNode,
-    CoreIdentifierInUseNode, DeclareCallablePrototypeNode, EnumDeclarationNode,
-    EnumVariantDeclarationNode, ForLoopStatementNode, GenericTypeDeclNode, HashMapExpressionNode,
-    IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode, KeyValuePairNode,
-    MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
+    CoreIdentifierInUseNode, DeclareCallablePrototypeNode, DeclareFunctionPrototypeNode,
+    EnumDeclarationNode, EnumVariantDeclarationNode, ForLoopStatementNode, GenericTypeDeclNode,
+    HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode,
+    KeyValuePairNode, MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
     SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode, WhileLoopStatementNode,
 };
 use crate::ast::ast::{
@@ -76,6 +76,11 @@ pub trait Visitor {
         walk_decl_callable_prototype,
         DeclareCallablePrototypeNode,
         new_with_DeclareCallablePrototypeNode
+    );
+    impl_node_walk!(
+        walk_decl_func_prototype,
+        DeclareFunctionPrototypeNode,
+        new_with_DeclareFunctionPrototypeNode
     );
     impl_node_walk!(
         walk_expr_stmt,
@@ -488,6 +493,9 @@ pub trait Visitor {
                     interface_method_prototype_wrapper,
                 ) => {
                     self.walk_decl_callable_prototype(interface_method_prototype_wrapper);
+                }
+                CoreStatementNode::DeclareFunctionPrototype(decl_func_prototype) => {
+                    self.walk_decl_func_prototype(decl_func_prototype)
                 }
                 CoreStatementNode::Return(return_stmt) => {
                     self.walk_return_stmt(return_stmt);

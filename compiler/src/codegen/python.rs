@@ -581,7 +581,8 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
             }
             CoreStatementNode::EnumVariantDeclaration(_)
             | CoreStatementNode::InterfaceMethodPrototypeWrapper(_)
-            | CoreStatementNode::CaseBranch(_) => unreachable!(),
+            | CoreStatementNode::CaseBranch(_)
+            | CoreStatementNode::DeclareFunctionPrototype(_) => unreachable!(),
         }
     }
 }

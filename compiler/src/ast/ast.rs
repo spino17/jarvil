@@ -144,7 +144,7 @@ pub enum CoreStatementNode {
     EnumVariantDeclaration(EnumVariantDeclarationNode),
     InterfaceDeclaration(InterfaceDeclarationNode),
     InterfaceMethodPrototypeWrapper(DeclareCallablePrototypeNode),
-    // DeclareFunctionPrototype(DeclareFunctionPrototypeNode),
+    DeclareFunctionPrototype(DeclareFunctionPrototypeNode),
 }
 
 #[derive(Debug, Serialize)]

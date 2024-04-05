@@ -282,6 +282,15 @@ impl StatementNode {
         StatementNode(node)
     }
 
+    pub fn new_with_declare_function_prototype(
+        decl_func_prototype: DeclareFunctionPrototypeNode,
+    ) -> Self {
+        let node = Rc::new(CoreStatementNode::DeclareFunctionPrototype(
+            decl_func_prototype,
+        ));
+        StatementNode(node)
+    }
+
     pub fn new_with_interface_method_prototype_wrapper(
         interface_method_prototype: DeclareCallablePrototypeNode,
     ) -> Self {

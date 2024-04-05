@@ -2260,6 +2260,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             }
             CoreStatementNode::StructPropertyDeclaration(_)
             | CoreStatementNode::InterfaceMethodPrototypeWrapper(_)
+            | CoreStatementNode::DeclareFunctionPrototype(_)
             | CoreStatementNode::EnumVariantDeclaration(_)
             | CoreStatementNode::CaseBranch(_)
             | CoreStatementNode::Break(_)
