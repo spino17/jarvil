@@ -292,10 +292,10 @@ impl StatementNode {
     }
 
     pub fn new_with_interface_method_prototype_wrapper(
-        interface_method_prototype: DeclareCallablePrototypeNode,
+        decl_callable_prototype: DeclareCallablePrototypeNode,
     ) -> Self {
         let node = Rc::new(CoreStatementNode::InterfaceMethodPrototypeWrapper(
-            interface_method_prototype,
+            decl_callable_prototype,
         ));
         StatementNode(node)
     }
@@ -994,16 +994,10 @@ impl Node for InterfaceDeclarationNode {
 }
 
 impl DeclareFunctionPrototypeNode {
-    pub fn new(
-        decl_keyword: TokenNode,
-        def_keyword: TokenNode,
-        name: IdentifierInDeclNode,
-        prototype: CallablePrototypeNode,
-        newline: TokenNode,
-    ) -> Self {
+    pub fn new(decl_keyword: TokenNode, decl: DeclareCallablePrototypeNode) -> Self {
         let node = Rc::new(CoreDeclareFunctionPrototypeNode {
             declare_keyword: decl_keyword,
-            decl: DeclareCallablePrototypeNode::new(def_keyword, name, prototype, newline),
+            decl,
         });
         DeclareFunctionPrototypeNode(node)
     }

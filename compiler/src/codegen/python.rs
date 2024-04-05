@@ -576,13 +576,13 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
             }
             CoreStatementNode::MatchCase(match_case_stmt) => self.print_match_case(match_case_stmt),
             CoreStatementNode::StructPropertyDeclaration(_)
-            | CoreStatementNode::InterfaceDeclaration(_) => {
+            | CoreStatementNode::InterfaceDeclaration(_)
+            | CoreStatementNode::DeclareFunctionPrototype(_) => {
                 self.add_str_to_python_code("\n");
             }
             CoreStatementNode::EnumVariantDeclaration(_)
             | CoreStatementNode::InterfaceMethodPrototypeWrapper(_)
-            | CoreStatementNode::CaseBranch(_)
-            | CoreStatementNode::DeclareFunctionPrototype(_) => unreachable!(),
+            | CoreStatementNode::CaseBranch(_) => unreachable!(),
         }
     }
 }

@@ -2,11 +2,12 @@ use super::resolver::BlockKind;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ConditionalBlockNode, ConditionalStatementNode,
-    DeclareCallablePrototypeNode, ExpressionNode, ForLoopStatementNode, GenericTypeDeclNode,
-    IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode, MatchCaseStatementNode,
-    NameTypeSpecNode, OkTokenNode, SelfKeywordNode, SkippedTokenNode, StatementNode,
-    SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    UnaryExpressionNode, VariableDeclarationNode, WhileLoopStatementNode,
+    DeclareCallablePrototypeNode, DeclareFunctionPrototypeNode, ExpressionNode,
+    ForLoopStatementNode, GenericTypeDeclNode, IdentifierInDeclNode, IdentifierInUseNode,
+    InterfaceDeclarationNode, MatchCaseStatementNode, NameTypeSpecNode, OkTokenNode,
+    SelfKeywordNode, SkippedTokenNode, StatementNode, SymbolSeparatedSequenceNode, TokenNode,
+    TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
+    WhileLoopStatementNode,
 };
 use crate::ast::traits::{ErrornousNode, Node};
 use crate::code::JarvilCodeHandler;
@@ -403,7 +404,7 @@ impl<'ctx> JarvilParser<'ctx> {
     }
 
     pub fn stmt(&mut self) -> StatementNode {
-        components::statement::core::stmt(self)
+        components::statement::stmt(self)
     }
 
     pub fn assignment(&mut self, expr: ExpressionNode) -> AssignmentNode {
@@ -523,15 +524,15 @@ impl<'ctx> JarvilParser<'ctx> {
     }
 
     pub fn struct_stmt(&mut self) -> StatementNode {
-        components::statement::core::struct_stmt(self)
+        components::statement::struct_stmt(self)
     }
 
     pub fn enum_stmt(&mut self) -> StatementNode {
-        components::statement::core::enum_stmt(self)
+        components::statement::enum_stmt(self)
     }
 
     pub fn case_branch_stmt(&mut self) -> StatementNode {
-        components::statement::core::case_branch_stmt(self)
+        components::statement::case_branch_stmt(self)
     }
 
     pub fn match_case(&mut self) -> MatchCaseStatementNode {
@@ -547,11 +548,15 @@ impl<'ctx> JarvilParser<'ctx> {
     }
 
     pub fn interface_stmt(&mut self) -> StatementNode {
-        components::statement::core::interface_stmt(self)
+        components::statement::interface_stmt(self)
     }
 
-    pub fn interface_method_prototype_wrapper(&mut self) -> DeclareCallablePrototypeNode {
-        components::interface_declaration::interface_method_prototype_wrapper(self)
+    pub fn decl_callable_prototype(&mut self) -> DeclareCallablePrototypeNode {
+        components::common::decl_callable_prototype(self)
+    }
+
+    pub fn decl_func_prototype(&mut self) -> DeclareFunctionPrototypeNode {
+        components::common::decl_func_prototype(self)
     }
 
     pub fn interface_decl(&mut self) -> InterfaceDeclarationNode {

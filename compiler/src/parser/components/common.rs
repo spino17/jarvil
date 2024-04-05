@@ -1,10 +1,11 @@
-use super::statement::core::{
+use super::statement::{
     is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
 };
 use crate::ast::ast::{
     BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode,
-    FunctionDeclarationNode, FunctionWrapperNode, NameTypeSpecNode, StatementNode,
-    SymbolSeparatedSequenceNode, TypeExpressionNode,
+    DeclareCallablePrototypeNode, DeclareFunctionPrototypeNode, FunctionDeclarationNode,
+    FunctionWrapperNode, NameTypeSpecNode, StatementNode, SymbolSeparatedSequenceNode,
+    TypeExpressionNode,
 };
 use crate::lexer::token::CoreToken;
 use crate::parser::parser::JarvilParser;
@@ -111,4 +112,18 @@ pub fn function_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> 
             BoundedMethodWrapperNode::new(func_decl_node),
         ),
     }
+}
+
+pub fn decl_callable_prototype(parser: &mut JarvilParser) -> DeclareCallablePrototypeNode {
+    let def_keyword_node = parser.expect("def");
+    let func_name_node = parser.expect_identifier_in_decl(); // decl
+    let prototype = parser.callable_prototype();
+    let newline = parser.expect_terminators();
+    DeclareCallablePrototypeNode::new(def_keyword_node, func_name_node, prototype, newline)
+}
+
+pub fn decl_func_prototype(parser: &mut JarvilParser) -> DeclareFunctionPrototypeNode {
+    let declare_keyword_node = parser.expect("declare");
+    let declaration_node = parser.decl_callable_prototype();
+    DeclareFunctionPrototypeNode::new(declare_keyword_node, declaration_node)
 }

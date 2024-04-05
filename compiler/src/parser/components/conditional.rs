@@ -1,7 +1,7 @@
 use crate::{
     ast::ast::{BlockNode, ConditionalBlockNode, ConditionalStatementNode, TokenNode},
     parser::{
-        components::statement::core::{
+        components::statement::{
             is_statement_within_control_flow_starting_with,
             STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS,
         },

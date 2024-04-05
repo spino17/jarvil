@@ -94,8 +94,8 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         }
         CoreToken::DEF => parser.function_stmt(CallableKind::Function),
         CoreToken::DECLARE_KEYWORD => {
-            // TODO - parse declaration statement for function in `.d.jv` files
-            todo!()
+            let decl_func_prototype = parser.decl_func_prototype();
+            StatementNode::new_with_declare_function_prototype(decl_func_prototype)
         }
         CoreToken::FOR => {
             let for_loop_node = parser.for_loop_stmt();
@@ -198,11 +198,8 @@ pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
             StatementNode::new_with_struct_stmt(struct_stmt)
         }
         CoreToken::DEF => {
-            let interface_method_prototype_wrapper_node =
-                parser.interface_method_prototype_wrapper();
-            StatementNode::new_with_interface_method_prototype_wrapper(
-                interface_method_prototype_wrapper_node,
-            )
+            let decl_callable_prototype_node = parser.decl_callable_prototype();
+            StatementNode::new_with_interface_method_prototype_wrapper(decl_callable_prototype_node)
         }
         _ => unreachable!(),
     }
