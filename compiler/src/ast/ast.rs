@@ -480,7 +480,7 @@ pub struct CoreComparisonNode {
 
 #[derive(Debug, Serialize)]
 pub struct CoreCallExpressionNode {
-    pub function_name: IdentifierInUseNode,
+    pub func_name: IdentifierInUseNode,
     pub lparen: TokenNode,
     pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     pub rparen: TokenNode,

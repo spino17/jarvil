@@ -24,7 +24,7 @@ use text_size::TextRange;
 #[derive(Debug)]
 pub struct Namespace {
     variables: ScopeArena<VariableData>,
-    functions: ScopeArena<CallableData>,
+    funcs: ScopeArena<CallableData>,
     types: ScopeArena<UserDefinedTypeData>,
     interfaces: ScopeArena<InterfaceData>,
 }
@@ -34,7 +34,7 @@ impl Namespace {
         let mut namespace = Namespace {
             variables: ScopeArena::new(),
             types: ScopeArena::new(),
-            functions: ScopeArena::new(),
+            funcs: ScopeArena::new(),
             interfaces: ScopeArena::new(),
         };
         fill_side_scope_with_generic_types(&mut namespace, interner);
@@ -49,12 +49,12 @@ impl Namespace {
         &mut self.variables
     }
 
-    pub fn functions_ref(&self) -> &ScopeArena<CallableData> {
-        &self.functions
+    pub fn funcs_ref(&self) -> &ScopeArena<CallableData> {
+        &self.funcs
     }
 
-    pub fn functions_mut_ref(&mut self) -> &mut ScopeArena<CallableData> {
-        &mut self.functions
+    pub fn funcs_mut_ref(&mut self) -> &mut ScopeArena<CallableData> {
+        &mut self.funcs
     }
 
     pub fn types_ref(&self) -> &ScopeArena<UserDefinedTypeData> {
@@ -84,7 +84,7 @@ impl Namespace {
     ) -> ScopeIndex {
         self.variables.add_new_scope(curr_scope_index, scope_kind);
         self.types.add_new_scope(curr_scope_index, scope_kind);
-        self.functions.add_new_scope(curr_scope_index, scope_kind);
+        self.funcs.add_new_scope(curr_scope_index, scope_kind);
         self.interfaces.add_new_scope(curr_scope_index, scope_kind)
     }
 
@@ -96,12 +96,12 @@ impl Namespace {
         self.variables.get(scope_index, key)
     }
 
-    pub fn from_functions_namespace(
+    pub fn from_funcs_namespace(
         &self,
         scope_index: ScopeIndex,
         key: StrId,
     ) -> Option<SymbolIndex<CallableData>> {
-        self.functions.get(scope_index, key)
+        self.funcs.get(scope_index, key)
     }
 
     pub fn from_types_namespace(
@@ -128,12 +128,12 @@ impl Namespace {
         self.variables.lookup_with_is_init(scope_index, key).into()
     }
 
-    pub fn lookup_in_functions_namespace(
+    pub fn lookup_in_funcs_namespace(
         &self,
         scope_index: ScopeIndex,
         key: StrId,
     ) -> LookupResult<FunctionSymbolData> {
-        self.functions.lookup_with_is_init(scope_index, key).into()
+        self.funcs.lookup_with_is_init(scope_index, key).into()
     }
 
     pub fn lookup_in_types_namespace(
@@ -163,7 +163,7 @@ impl Namespace {
             |scope: &ScopeArena<VariableData>, scope_index: ScopeIndex, key: StrId| {
                 scope
                     .get(scope_index, key)
-                    .map(|symbol_index| symbol_index.declaration_line_number(scope))
+                    .map(|symbol_index| symbol_index.decl_line_number(scope))
             };
         Ok(self
             .variables
@@ -191,7 +191,7 @@ impl Namespace {
             |scope: &ScopeArena<VariableData>, scope_index: ScopeIndex, key: StrId| {
                 scope
                     .get(scope_index, key)
-                    .map(|symbol_index| symbol_index.declaration_line_number(scope))
+                    .map(|symbol_index| symbol_index.decl_line_number(scope))
             };
         Ok(self
             .variables
@@ -206,7 +206,7 @@ impl Namespace {
             .into())
     }
 
-    pub fn declare_function(
+    pub fn declare_func(
         &mut self,
         scope_index: ScopeIndex,
         name: StrId,
@@ -217,10 +217,10 @@ impl Namespace {
             |scope: &ScopeArena<CallableData>, scope_index: ScopeIndex, key: StrId| {
                 scope
                     .get(scope_index, key)
-                    .map(|symbol_index| symbol_index.declaration_line_number(scope))
+                    .map(|symbol_index| symbol_index.decl_line_number(scope))
             };
         Ok(self
-            .functions
+            .funcs
             .insert(
                 scope_index,
                 name,
@@ -244,7 +244,7 @@ impl Namespace {
             |scope: &ScopeArena<UserDefinedTypeData>, scope_index: ScopeIndex, key: StrId| {
                 scope
                     .lookup(scope_index, key)
-                    .map(|(symbol_index, _, _)| symbol_index.declaration_line_number(scope))
+                    .map(|(symbol_index, _, _)| symbol_index.decl_line_number(scope))
             };
         Ok(self
             .types
@@ -325,7 +325,7 @@ impl Namespace {
             |scope: &ScopeArena<InterfaceData>, scope_index: ScopeIndex, key: StrId| {
                 scope
                     .lookup(scope_index, key)
-                    .map(|(symbol_index, _, _)| symbol_index.declaration_line_number(scope))
+                    .map(|(symbol_index, _, _)| symbol_index.decl_line_number(scope))
             };
         Ok(self
             .interfaces

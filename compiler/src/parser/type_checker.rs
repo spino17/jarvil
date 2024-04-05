@@ -456,7 +456,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
     ) -> Result<Type, AtomStartTypeCheckError> {
         let func_data = self
             .semantic_db
-            .function_symbol_ref(concrete_symbol_index.symbol_index());
+            .func_symbol_ref(concrete_symbol_index.symbol_index());
         let concrete_types = concrete_symbol_index.concrete_types();
         let prototype_result = match concrete_types {
             Some(concrete_types) => {
@@ -606,7 +606,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_atom_start_call_expr(&self, call_expr: &CallExpressionNode) -> Type {
         let core_call_expr = call_expr.core_ref();
-        let func_name = &core_call_expr.function_name;
+        let func_name = &core_call_expr.func_name;
         let params = &core_call_expr.params;
         let CoreIdentifierInUseNode::Ok(ok_identifier) = func_name.core_ref() else {
             return Type::new_with_unknown();
@@ -1902,7 +1902,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_struct_declaration(&mut self, struct_decl: &StructDeclarationNode) {
+    pub fn check_struct_decl(&mut self, struct_decl: &StructDeclarationNode) {
         let core_struct_decl = struct_decl.core_ref();
         self.walk_block(&core_struct_decl.block);
         let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() else {
@@ -2249,7 +2249,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             }
             CoreStatementNode::TypeDeclaration(ty_decl) => match ty_decl.core_ref() {
                 CoreTypeDeclarationNode::Struct(struct_decl) => {
-                    self.check_struct_declaration(struct_decl);
+                    self.check_struct_decl(struct_decl);
                 }
                 CoreTypeDeclarationNode::Lambda(_)
                 | CoreTypeDeclarationNode::Enum(_)

@@ -188,11 +188,11 @@ impl<'ctx> JarvilResolver<'ctx> {
         match self
             .semantic_db
             .namespace_ref()
-            .functions_ref()
+            .funcs_ref()
             .get(self.scope_index, self.semantic_db.interner().intern("main"))
         {
             Some(symbol_index) => {
-                let func_meta_data = self.semantic_db.function_symbol_ref(symbol_index);
+                let func_meta_data = self.semantic_db.func_symbol_ref(symbol_index);
                 let prototype = func_meta_data.concretized_prototype(
                     self.semantic_db.namespace_ref(),
                     MethodGenericsInstantiationContext::default(),
@@ -200,8 +200,8 @@ impl<'ctx> JarvilResolver<'ctx> {
                 let params = prototype.params();
                 let return_ty = prototype.return_ty();
                 if !params.is_empty() || !return_ty.is_void() {
-                    let span = symbol_index
-                        .declaration_line_number(self.semantic_db.namespace_ref().functions_ref());
+                    let span =
+                        symbol_index.decl_line_number(self.semantic_db.namespace_ref().funcs_ref());
                     let err = MainFunctionWrongTypeError::new(span);
                     self.errors
                         .log_error(Diagnostics::MainFunctionWrongType(err));
@@ -420,13 +420,13 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.try_resolving(identifier, lookup_fn, IdentKind::Variable, log_error, false)
     }
 
-    pub fn try_resolving_function(
+    pub fn try_resolving_func(
         &mut self,
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
     ) -> ResolveResult<FunctionSymbolData> {
         let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: StrId| {
-            namespace.lookup_in_functions_namespace(scope_index, key)
+            namespace.lookup_in_funcs_namespace(scope_index, key)
         };
         self.try_resolving(identifier, lookup_fn, IdentKind::Function, log_error, true)
     }
@@ -539,7 +539,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
-    pub fn try_declare_and_bind_function(
+    pub fn try_declare_and_bind_func(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<FunctionSymbolData, (StrId, TextRange)> {
@@ -548,12 +548,12 @@ impl<'ctx> JarvilResolver<'ctx> {
                           name: StrId,
                           decl_range: TextRange,
                           unique_id: IdentDeclId<CallableData>| {
-            namespace.declare_function(scope_index, name, decl_range, unique_id)
+            namespace.declare_func(scope_index, name, decl_range, unique_id)
         };
         let unique_id = self
             .semantic_db
             .unique_key_generator_mut_ref()
-            .generate_unique_id_for_function();
+            .generate_unique_id_for_func();
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
@@ -719,7 +719,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                             Err(_) => TypeResolveKind::Unresolved(vec![
                                 UnresolvedIdentifier::GenericResolvedToOutsideScope(
                                     ok_identifier,
-                                    symbol_obj.0.declaration_line_number(
+                                    symbol_obj.0.decl_line_number(
                                         self.semantic_db.namespace_ref().types_ref(),
                                     ),
                                 ),
@@ -1039,7 +1039,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         if let Some(symbol_obj) = symbol_obj {
             self.semantic_db
-                .function_symbol_mut_ref(symbol_obj.symbol_index())
+                .func_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_generics(generic_ty_decls);
         }
 
@@ -1237,7 +1237,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn declare_function(&mut self, func_wrapper: &FunctionWrapperNode) {
+    pub fn declare_func(&mut self, func_wrapper: &FunctionWrapperNode) {
         let core_func_decl = func_wrapper.core_ref().func_decl.core_ref();
         let func_name = &core_func_decl.name;
         let body = &core_func_decl.body.core_ref().block;
@@ -1247,7 +1247,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = func_name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
-            match self.try_declare_and_bind_function(ok_identifier) {
+            match self.try_declare_and_bind_func(ok_identifier) {
                 Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
@@ -1271,7 +1271,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         if let Some(symbol_obj) = &symbol_obj {
             self.semantic_db
-                .function_symbol_mut_ref(symbol_obj.symbol_index())
+                .func_symbol_mut_ref(symbol_obj.symbol_index())
                 .set_meta_data(param_types_vec, return_ty, CallableKind::Function);
         }
     }
@@ -1813,8 +1813,8 @@ impl<'ctx> JarvilResolver<'ctx> {
                 _ => continue,
             };
             match stmt.core_ref() {
-                CoreStatementNode::StructPropertyDeclaration(interface_property_declaration) => {
-                    let core_interface_property_decl = interface_property_declaration.core_ref();
+                CoreStatementNode::StructPropertyDeclaration(interface_property_decl) => {
+                    let core_interface_property_decl = interface_property_decl.core_ref();
                     let name_ty_spec = core_interface_property_decl.name_ty_spec.core_ref();
                     let name = &name_ty_spec.name;
 
@@ -1992,10 +1992,9 @@ impl<'ctx> JarvilResolver<'ctx> {
     fn resolve_call_expr(&mut self, func_call: &CallExpressionNode) {
         let core_func_call = func_call.core_ref();
 
-        if let CoreIdentifierInUseNode::Ok(ok_identifier) = core_func_call.function_name.core_ref()
-        {
+        if let CoreIdentifierInUseNode::Ok(ok_identifier) = core_func_call.func_name.core_ref() {
             // order of namespace search: function => type => variable
-            match self.try_resolving_function(ok_identifier, false) {
+            match self.try_resolving_func(ok_identifier, false) {
                 ResolveResult::Ok(_, _) => {}
                 ResolveResult::NotInitialized(_, _) => unreachable!(),
                 ResolveResult::InvalidGenericTypeArgsProvided(err) => {
@@ -2140,7 +2139,7 @@ impl<'ctx> Visitor for JarvilResolver<'ctx> {
                 None
             }
             ASTNode::FunctionWrapper(func_wrapper) => {
-                self.declare_function(func_wrapper);
+                self.declare_func(func_wrapper);
                 None
             }
             ASTNode::StructDeclaration(struct_decl) => {

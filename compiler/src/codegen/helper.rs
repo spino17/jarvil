@@ -20,7 +20,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                     }
                     CoreAtomStartNode::Call(call_expr) => {
                         let core_call_expr = call_expr.core_ref();
-                        self.print_identifier_in_use(&core_call_expr.function_name, false);
+                        self.print_identifier_in_use(&core_call_expr.func_name, false);
                         self.walk_token(&core_call_expr.lparen);
                         if let Some(params) = &core_call_expr.params {
                             self.walk_comma_separated_expressions(params);

@@ -205,9 +205,7 @@ impl<T: IsInitialized> ScopeArena<T> {
             return IntermediateLookupResult::Unresolved;
         };
         if !self.symbol_ref(symbol_index).data_ref().is_initialized() {
-            return IntermediateLookupResult::NotInitialized(
-                symbol_index.declaration_line_number(self),
-            );
+            return IntermediateLookupResult::NotInitialized(symbol_index.decl_line_number(self));
         }
         IntermediateLookupResult::Ok((symbol_index, depth, enclosing_func_scope_depth))
     }

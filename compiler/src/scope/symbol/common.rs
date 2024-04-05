@@ -94,7 +94,7 @@ impl<T> Default for UniqueKeyGenerator<T> {
 pub struct GlobalUniqueKeyGenerator {
     variables: UniqueKeyGenerator<VariableData>,
     types: UniqueKeyGenerator<UserDefinedTypeData>,
-    functions: UniqueKeyGenerator<CallableData>,
+    funcs: UniqueKeyGenerator<CallableData>,
     interfaces: UniqueKeyGenerator<InterfaceData>,
 }
 
@@ -103,8 +103,8 @@ impl GlobalUniqueKeyGenerator {
         self.variables.generate_unique_id()
     }
 
-    pub fn generate_unique_id_for_function(&mut self) -> IdentDeclId<CallableData> {
-        self.functions.generate_unique_id()
+    pub fn generate_unique_id_for_func(&mut self) -> IdentDeclId<CallableData> {
+        self.funcs.generate_unique_id()
     }
 
     pub fn generate_unique_id_for_ty(&mut self) -> IdentDeclId<UserDefinedTypeData> {

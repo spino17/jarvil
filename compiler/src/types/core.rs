@@ -92,9 +92,9 @@ impl Type {
         ))))
     }
 
-    pub fn new_with_lambda_unnamed(function_prototype: CallablePrototypeData) -> Type {
+    pub fn new_with_lambda_unnamed(func_prototype: CallablePrototypeData) -> Type {
         Type(Rc::new(CoreType::Lambda(Lambda::new_with_unnamed(
-            function_prototype,
+            func_prototype,
         ))))
     }
 

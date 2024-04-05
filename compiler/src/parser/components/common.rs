@@ -1,5 +1,5 @@
 use super::statement::{
-    is_statement_within_function_starting_with, STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
+    is_statement_within_func_starting_with, STATEMENT_WITHIN_FUNC_STARTING_SYMBOLS,
 };
 use crate::ast::ast::{
     BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode,
@@ -86,15 +86,15 @@ pub fn callable_body(parser: &mut JarvilParser, block_kind: BlockKind) -> Callab
     let callable_prototype = parser.callable_prototype();
     let colon_node = parser.expect(":");
     let func_block_node = parser.block(
-        is_statement_within_function_starting_with,
+        is_statement_within_func_starting_with,
         |parser| parser.stmt(),
-        &STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS,
+        &STATEMENT_WITHIN_FUNC_STARTING_SYMBOLS,
         block_kind,
     );
     CallableBodyNode::new(func_block_node, colon_node, callable_prototype)
 }
 
-pub fn function_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> StatementNode {
+pub fn func_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> StatementNode {
     let def_keyword_node = parser.expect("def");
     let func_name_node = parser.expect_identifier_in_decl();
     let block_kind = match callable_kind {
@@ -106,7 +106,7 @@ pub fn function_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> 
         FunctionDeclarationNode::new(func_name_node, def_keyword_node, callable_body);
     match callable_kind {
         CallableKind::Function => {
-            StatementNode::new_with_function_wrapper(FunctionWrapperNode::new(func_decl_node))
+            StatementNode::new_with_func_wrapper(FunctionWrapperNode::new(func_decl_node))
         }
         CallableKind::Method => StatementNode::new_with_bounded_method_wrapper(
             BoundedMethodWrapperNode::new(func_decl_node),
@@ -124,6 +124,6 @@ pub fn decl_callable_prototype(parser: &mut JarvilParser) -> DeclareCallableProt
 
 pub fn decl_func_prototype(parser: &mut JarvilParser) -> DeclareFunctionPrototypeNode {
     let declare_keyword_node = parser.expect("declare");
-    let declaration_node = parser.decl_callable_prototype();
-    DeclareFunctionPrototypeNode::new(declare_keyword_node, declaration_node)
+    let decl_node = parser.decl_callable_prototype();
+    DeclareFunctionPrototypeNode::new(declare_keyword_node, decl_node)
 }

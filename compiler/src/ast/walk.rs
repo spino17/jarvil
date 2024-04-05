@@ -710,8 +710,8 @@ pub trait Visitor {
                 self.walk_token(&core_lambda_decl_node.lambda_keyword);
                 self.walk_callable_body(&core_lambda_decl_node.body);
             }
-            ASTNode::FunctionDeclaration(function_decl_node) => {
-                let core_func_decl = function_decl_node.core_ref();
+            ASTNode::FunctionDeclaration(func_decl_node) => {
+                let core_func_decl = func_decl_node.core_ref();
                 self.walk_token(&core_func_decl.def_keyword);
                 self.walk_identifier_in_decl(&core_func_decl.name);
                 self.walk_callable_body(&core_func_decl.body);
@@ -901,7 +901,7 @@ pub trait Visitor {
             }
             ASTNode::CallExpression(call_expression_node) => {
                 let core_call_expr = call_expression_node.core_ref();
-                self.walk_identifier_in_use(&core_call_expr.function_name);
+                self.walk_identifier_in_use(&core_call_expr.func_name);
                 self.walk_token(&core_call_expr.lparen);
                 if let Some(params) = &core_call_expr.params {
                     self.walk_comma_separated_expressions(params);

@@ -511,8 +511,8 @@ impl<'ctx> JarvilParser<'ctx> {
         components::common::ty_tuple(self)
     }
 
-    pub fn function_stmt(&mut self, callable_kind: CallableKind) -> StatementNode {
-        components::common::function_stmt(self, callable_kind)
+    pub fn func_stmt(&mut self, callable_kind: CallableKind) -> StatementNode {
+        components::common::func_stmt(self, callable_kind)
     }
 
     pub fn callable_prototype(&mut self) -> CallablePrototypeNode {

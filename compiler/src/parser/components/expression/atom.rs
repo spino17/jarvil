@@ -86,7 +86,7 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
                         lparen_node,
                         rparen_node,
                     );
-                    AtomStartNode::new_with_function_call(call_expr_node)
+                    AtomStartNode::new_with_func_call(call_expr_node)
                 }
                 CoreToken::DOUBLE_COLON => {
                     let mut contained_params_node: Option<(

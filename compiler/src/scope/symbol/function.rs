@@ -373,12 +373,12 @@ impl AbstractSymbol for FunctionSymbolData {
         context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(is_concrete_types_none_allowed);
-        let function_data = context
+        let func_data = context
             .namespace()
-            .functions_ref()
+            .funcs_ref()
             .symbol_ref(self.0)
             .data_ref();
-        let generic_ty_decls = function_data.generics();
+        let generic_ty_decls = func_data.generics();
         check_concrete_types_bounded_by_interfaces(
             generic_ty_decls,
             concrete_types,
@@ -389,7 +389,7 @@ impl AbstractSymbol for FunctionSymbolData {
     }
 
     fn mangled_name(&self, namespace: &Namespace) -> MangledIdentifierName<CallableData> {
-        self.0.mangled_name(namespace.functions_ref())
+        self.0.mangled_name(namespace.funcs_ref())
     }
 }
 

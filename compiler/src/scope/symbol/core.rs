@@ -123,7 +123,7 @@ impl<T: IsInitialized> SymbolIndex<T> {
         self.ident_name
     }
 
-    pub fn declaration_line_number(&self, arena: &ScopeArena<T>) -> TextRange {
+    pub fn decl_line_number(&self, arena: &ScopeArena<T>) -> TextRange {
         arena.symbol_ref(*self).decl_line_number()
     }
 

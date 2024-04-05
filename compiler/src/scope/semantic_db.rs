@@ -19,7 +19,7 @@ use crate::{
     core::string_interner::Interner,
     types::core::{Type, TypeStringifyContext},
 };
-use crate::{builtin::builtin_functions, scope::mangled::MangledIdentifierName};
+use crate::{builtin::builtin_funcs, scope::mangled::MangledIdentifierName};
 use rustc_hash::{FxHashMap, FxHashSet};
 use text_size::TextRange;
 
@@ -42,9 +42,9 @@ impl SemanticStateDatabase {
         let mut namespace = Namespace::new(&interner);
 
         // fill the built-in functions inside the global namespace
-        let builtin_functions = builtin_functions(&interner);
-        for (name, callable_data) in builtin_functions {
-            namespace.functions_mut_ref().force_insert(
+        let builtin_funcs = builtin_funcs(&interner);
+        for (name, callable_data) in builtin_funcs {
+            namespace.funcs_mut_ref().force_insert(
                 ScopeIndex::global(), // index of global namespace
                 interner.intern(name),
                 callable_data,
@@ -193,24 +193,24 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn function_symbol_ref(&self, symbol_index: SymbolIndex<CallableData>) -> &CallableData {
+    pub fn func_symbol_ref(&self, symbol_index: SymbolIndex<CallableData>) -> &CallableData {
         self.namespace
-            .functions_ref()
+            .funcs_ref()
             .symbol_ref(symbol_index)
             .data_ref()
     }
 
-    pub fn function_symbol_mut_ref(
+    pub fn func_symbol_mut_ref(
         &mut self,
         symbol_index: SymbolIndex<CallableData>,
     ) -> &mut CallableData {
         self.namespace
-            .functions_mut_ref()
+            .funcs_mut_ref()
             .symbol_mut_ref(symbol_index)
             .data_mut_ref()
     }
 
-    pub fn function_symbol_for_identifier_in_decl(
+    pub fn func_symbol_for_identifier_in_decl(
         &self,
         node: &OkIdentifierInDeclNode,
     ) -> Option<SymbolIndex<CallableData>> {
@@ -223,7 +223,7 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn function_symbol_for_identifier_in_use(
+    pub fn func_symbol_for_identifier_in_use(
         &self,
         node: &OkIdentifierInUseNode,
     ) -> Option<&ConcreteSymbolIndex<CallableData>> {

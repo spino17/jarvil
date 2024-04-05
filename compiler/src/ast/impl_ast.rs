@@ -228,7 +228,7 @@ impl StatementNode {
         StatementNode(node)
     }
 
-    pub fn new_with_variable_declaration(variable_decl: VariableDeclarationNode) -> Self {
+    pub fn new_with_variable_decl(variable_decl: VariableDeclarationNode) -> Self {
         let node = Rc::new(CoreStatementNode::VariableDeclaration(variable_decl));
         StatementNode(node)
     }
@@ -248,7 +248,7 @@ impl StatementNode {
         StatementNode(node)
     }
 
-    pub fn new_with_function_wrapper(func_wrapper: FunctionWrapperNode) -> Self {
+    pub fn new_with_func_wrapper(func_wrapper: FunctionWrapperNode) -> Self {
         let node = Rc::new(CoreStatementNode::FunctionWrapper(func_wrapper));
         StatementNode(node)
     }
@@ -262,7 +262,7 @@ impl StatementNode {
         StatementNode(node)
     }
 
-    pub fn new_with_ty_declaration(ty_decl: TypeDeclarationNode) -> Self {
+    pub fn new_with_ty_decl(ty_decl: TypeDeclarationNode) -> Self {
         let node = Rc::new(CoreStatementNode::TypeDeclaration(ty_decl));
         StatementNode(node)
     }
@@ -277,12 +277,12 @@ impl StatementNode {
         StatementNode(node)
     }
 
-    pub fn new_with_interface_declaration(interface_decl: InterfaceDeclarationNode) -> Self {
+    pub fn new_with_interface_decl(interface_decl: InterfaceDeclarationNode) -> Self {
         let node = Rc::new(CoreStatementNode::InterfaceDeclaration(interface_decl));
         StatementNode(node)
     }
 
-    pub fn new_with_declare_function_prototype(
+    pub fn new_with_declare_func_prototype(
         decl_func_prototype: DeclareFunctionPrototypeNode,
     ) -> Self {
         let node = Rc::new(CoreStatementNode::DeclareFunctionPrototype(
@@ -1835,7 +1835,7 @@ impl<T: Clone + Node + Serialize> Serialize for SymbolSeparatedSequenceNode<T> {
 
 impl CallExpressionNode {
     pub fn new(
-        function_name: IdentifierInUseNode,
+        func_name: IdentifierInUseNode,
         params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
         lparen: TokenNode,
         rparen: TokenNode,
@@ -1843,7 +1843,7 @@ impl CallExpressionNode {
         let node = Rc::new(CoreCallExpressionNode {
             lparen,
             rparen,
-            function_name,
+            func_name,
             params,
         });
         CallExpressionNode(node)
@@ -1854,10 +1854,10 @@ impl CallExpressionNode {
 
 impl Node for CallExpressionNode {
     fn range(&self) -> TextRange {
-        impl_range!(self.0.as_ref().function_name, self.0.as_ref().rparen)
+        impl_range!(self.0.as_ref().func_name, self.0.as_ref().rparen)
     }
     fn start_line_number(&self) -> usize {
-        self.0.as_ref().function_name.start_line_number()
+        self.0.as_ref().func_name.start_line_number()
     }
 }
 
@@ -2086,7 +2086,7 @@ impl AtomStartNode {
         AtomStartNode(node)
     }
 
-    pub fn new_with_function_call(call_expr: CallExpressionNode) -> Self {
+    pub fn new_with_func_call(call_expr: CallExpressionNode) -> Self {
         let node = Rc::new(CoreAtomStartNode::Call(call_expr));
         AtomStartNode(node)
     }

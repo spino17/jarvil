@@ -11,10 +11,7 @@ use crate::{
     types::traits::TypeLike,
 };
 
-pub fn unbounded_generic_ty_in_ty_with_declaration_index(
-    index: usize,
-    interner: &Interner,
-) -> Type {
+pub fn unbounded_generic_ty_in_ty_with_decl_index(index: usize, interner: &Interner) -> Type {
     match index {
         0 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("T"))),
         1 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("U"))),
@@ -22,10 +19,7 @@ pub fn unbounded_generic_ty_in_ty_with_declaration_index(
     }
 }
 
-pub fn unbounded_generic_ty_in_func_with_declaration_index(
-    index: usize,
-    interner: &Interner,
-) -> Type {
+pub fn unbounded_generic_ty_in_func_with_decl_index(index: usize, interner: &Interner) -> Type {
     match index {
         0 => Type::new_with_generic(SymbolIndex::new(ScopeIndex::side(), interner.intern("V"))),
         _ => unreachable!(),

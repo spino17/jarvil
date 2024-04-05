@@ -6,7 +6,7 @@ use crate::{
         interfaces::InterfaceBounds,
         types::generic_ty::GenericTypeParams,
     },
-    types::{core::Type, helper::unbounded_generic_ty_in_func_with_declaration_index},
+    types::{core::Type, helper::unbounded_generic_ty_in_func_with_decl_index},
 };
 use rustc_hash::FxHashMap;
 use text_size::TextRange;
@@ -14,9 +14,7 @@ use text_size::TextRange;
 // print<V>(obj: V)
 fn print_callable_data(interner: &Interner) -> CallableData {
     CallableData::new(
-        vec![unbounded_generic_ty_in_func_with_declaration_index(
-            0, interner,
-        )],
+        vec![unbounded_generic_ty_in_func_with_decl_index(0, interner)],
         Type::new_with_void(),
         CallableKind::Function,
         Some(GenericTypeParams::new(vec![(
@@ -37,12 +35,12 @@ fn range_callable_data() -> CallableData {
     )
 }
 
-pub fn builtin_functions(interner: &Interner) -> FxHashMap<&'static str, CallableData> {
-    let mut functions = FxHashMap::default();
+pub fn builtin_funcs(interner: &Interner) -> FxHashMap<&'static str, CallableData> {
+    let mut funcs = FxHashMap::default();
 
     // all built-in functions
-    functions.insert("print", print_callable_data(interner));
-    functions.insert("range", range_callable_data());
+    funcs.insert("print", print_callable_data(interner));
+    funcs.insert("range", range_callable_data());
 
-    functions
+    funcs
 }

@@ -77,17 +77,14 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        let index = match self
-            .semantic_db
-            .namespace_ref()
-            .lookup_in_functions_namespace(
-                ScopeIndex::global(),
-                self.semantic_db.interner().intern("main"),
-            ) {
+        let index = match self.semantic_db.namespace_ref().lookup_in_funcs_namespace(
+            ScopeIndex::global(),
+            self.semantic_db.interner().intern("main"),
+        ) {
             LookupResult::Ok(lookup_data) => match lookup_data
                 .symbol_obj
                 .symbol_index()
-                .index(self.semantic_db.namespace_ref().functions_ref())
+                .index(self.semantic_db.namespace_ref().funcs_ref())
             {
                 Some(index) => index,
                 None => unreachable!(),
@@ -118,7 +115,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                     .mangled_name(self.semantic_db.namespace_ref().variables_ref())
                     .to_string(VAR_SUFFIX, self.semantic_db.interner()),
                 SymbolDataEntry::Function(symbol_index) => symbol_index
-                    .mangled_name(self.semantic_db.namespace_ref().functions_ref())
+                    .mangled_name(self.semantic_db.namespace_ref().funcs_ref())
                     .to_string(FUNC_SUFFIX, self.semantic_db.interner()),
                 SymbolDataEntry::Type(symbol_index) => symbol_index
                     .mangled_name(self.semantic_db.namespace_ref().types_ref())
@@ -141,7 +138,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 .to_string(VAR_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Function(concrete_symbol_index) => concrete_symbol_index
                 .symbol_index()
-                .mangled_name(self.semantic_db.namespace_ref().functions_ref())
+                .mangled_name(self.semantic_db.namespace_ref().funcs_ref())
                 .to_string(FUNC_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Type(concrete_symbol_index) => concrete_symbol_index
                 .symbol_index()
