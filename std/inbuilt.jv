@@ -2,4 +2,5 @@ type Result<T, E> enum:
     Ok(T)
     Err(E)
 
-declare def yo<T>(x: T) -> int
+declare def print<T>(obj: T)
+declare def range(start: int, end: int) -> [int]
