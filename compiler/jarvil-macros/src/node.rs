@@ -56,6 +56,8 @@ pub fn impl_nodify_macro(ast: &syn::DeriveInput) -> TokenStream {
         }
     });
     let gen = quote! {
+        use crate::ast::traits::Node;
+
         impl ASTNode {
             #(#ast_node_new_methods)*
         }

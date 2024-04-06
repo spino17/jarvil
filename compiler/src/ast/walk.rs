@@ -1,9 +1,9 @@
 use super::ast::{
     ArrayExpressionNode, BreakStatementNode, CaseBranchStatementNode, ConditionalBlockNode,
     ConditionalStatementNode, ContinueStatementNode, CoreIdentifierInDeclNode,
-    CoreIdentifierInUseNode, EnumDeclarationNode, EnumVariantDeclarationNode, ForLoopStatementNode,
-    GenericTypeDeclNode, HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode,
-    InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode, InterfaceMethodTerminalNode,
+    CoreIdentifierInUseNode, DeclareCallablePrototypeNode, DeclareFunctionPrototypeNode,
+    EnumDeclarationNode, EnumVariantDeclarationNode, ForLoopStatementNode, GenericTypeDeclNode,
+    HashMapExpressionNode, IdentifierInDeclNode, IdentifierInUseNode, InterfaceDeclarationNode,
     KeyValuePairNode, MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode,
     SymbolSeparatedSequenceNode, TupleExpressionNode, TupleTypeNode, WhileLoopStatementNode,
 };
@@ -73,9 +73,14 @@ pub trait Visitor {
         new_with_ContinueStatementNode
     );
     impl_node_walk!(
-        walk_interface_method_prototype_wrapper,
-        InterfaceMethodPrototypeWrapperNode,
-        new_with_InterfaceMethodPrototypeWrapperNode
+        walk_decl_callable_prototype,
+        DeclareCallablePrototypeNode,
+        new_with_DeclareCallablePrototypeNode
+    );
+    impl_node_walk!(
+        walk_decl_func_prototype,
+        DeclareFunctionPrototypeNode,
+        new_with_DeclareFunctionPrototypeNode
     );
     impl_node_walk!(
         walk_expr_stmt,
@@ -139,7 +144,7 @@ pub trait Visitor {
         new_with_CallableBodyNode
     );
     impl_node_walk!(
-        walk_type_decl,
+        walk_ty_decl,
         TypeDeclarationNode,
         new_with_TypeDeclarationNode
     );
@@ -189,18 +194,18 @@ pub trait Visitor {
         new_with_StructDeclarationNode
     );
     impl_node_walk!(
-        walk_lambda_type_decl,
+        walk_lambda_ty_decl,
         LambdaTypeDeclarationNode,
         new_with_LambdaTypeDeclarationNode
     );
     impl_node_walk!(walk_token, TokenNode, new_with_TokenNode);
     impl_node_walk!(
-        walk_name_type_spec,
+        walk_name_ty_spec,
         NameTypeSpecNode,
         new_with_NameTypeSpecNode
     );
     impl_node_walk!(
-        walk_type_expression,
+        walk_ty_expression,
         TypeExpressionNode,
         new_with_TypeExpressionNode
     );
@@ -211,15 +216,15 @@ pub trait Visitor {
         new_with_RVariableDeclarationNode
     );
     impl_node_walk!(walk_expression, ExpressionNode, new_with_ExpressionNode);
-    impl_node_walk!(walk_atomic_type, AtomicTypeNode, new_with_AtomicTypeNode);
+    impl_node_walk!(walk_atomic_ty, AtomicTypeNode, new_with_AtomicTypeNode);
     impl_node_walk!(
-        walk_user_defined_type,
+        walk_user_defined_ty,
         UserDefinedTypeNode,
         new_with_UserDefinedTypeNode
     );
-    impl_node_walk!(walk_tuple_type, TupleTypeNode, new_with_TupleTypeNode);
-    impl_node_walk!(walk_array_type, ArrayTypeNode, new_with_ArrayTypeNode);
-    impl_node_walk!(walk_hashmap_type, HashMapTypeNode, new_with_HashMapTypeNode);
+    impl_node_walk!(walk_tuple_ty, TupleTypeNode, new_with_TupleTypeNode);
+    impl_node_walk!(walk_array_ty, ArrayTypeNode, new_with_ArrayTypeNode);
+    impl_node_walk!(walk_hashmap_ty, HashMapTypeNode, new_with_HashMapTypeNode);
     impl_node_walk!(
         walk_unary_expression,
         UnaryExpressionNode,
@@ -317,7 +322,7 @@ pub trait Visitor {
         new_with_OkIdentifierInDeclNode
     );
     impl_node_walk!(
-        walk_generic_type_decl,
+        walk_generic_ty_decl,
         GenericTypeDeclNode,
         new_with_GenericTypeDeclNode
     );
@@ -329,17 +334,16 @@ pub trait Visitor {
     );
 
     // below are concrete `SymbolSeparatedSequenceNode<T>` walk methods
-    fn walk_comma_separated_type_expressions(
+    fn walk_comma_separated_ty_expressions(
         &mut self,
         x: &SymbolSeparatedSequenceNode<TypeExpressionNode>,
     ) {
-        let core_comma_separated_type_exprs = x.core_ref();
-        self.walk_type_expression(&core_comma_separated_type_exprs.entity);
-        if let Some((comma, remaining_type_exprs)) =
-            &core_comma_separated_type_exprs.remaining_entities
+        let core_comma_separated_ty_exprs = x.core_ref();
+        self.walk_ty_expression(&core_comma_separated_ty_exprs.entity);
+        if let Some((comma, remaining_ty_exprs)) = &core_comma_separated_ty_exprs.remaining_entities
         {
             self.walk_token(comma);
-            self.walk_comma_separated_type_expressions(remaining_type_exprs);
+            self.walk_comma_separated_ty_expressions(remaining_ty_exprs);
         }
     }
 
@@ -369,29 +373,29 @@ pub trait Visitor {
         }
     }
 
-    fn walk_comma_separated_name_type_specs(
+    fn walk_comma_separated_name_ty_specs(
         &mut self,
         x: &SymbolSeparatedSequenceNode<NameTypeSpecNode>,
     ) {
-        let core_comma_separated_name_type_specs = x.core_ref();
-        self.walk_name_type_spec(&core_comma_separated_name_type_specs.entity);
-        if let Some((comma, remaining_name_type_specs)) =
-            &core_comma_separated_name_type_specs.remaining_entities
+        let core_comma_separated_name_ty_specs = x.core_ref();
+        self.walk_name_ty_spec(&core_comma_separated_name_ty_specs.entity);
+        if let Some((comma, remaining_name_ty_specs)) =
+            &core_comma_separated_name_ty_specs.remaining_entities
         {
             self.walk_token(comma);
-            self.walk_comma_separated_name_type_specs(remaining_name_type_specs);
+            self.walk_comma_separated_name_ty_specs(remaining_name_ty_specs);
         }
     }
 
-    fn walk_comma_separated_generic_type_decls(
+    fn walk_comma_separated_generic_ty_decls(
         &mut self,
         x: &SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
     ) {
-        let core_generic_type_decls = x.core_ref();
-        self.walk_generic_type_decl(&core_generic_type_decls.entity);
-        if let Some((comma, remaining_entities)) = &core_generic_type_decls.remaining_entities {
+        let core_generic_ty_decls = x.core_ref();
+        self.walk_generic_ty_decl(&core_generic_ty_decls.entity);
+        if let Some((comma, remaining_entities)) = &core_generic_ty_decls.remaining_entities {
             self.walk_token(comma);
-            self.walk_comma_separated_generic_type_decls(remaining_entities);
+            self.walk_comma_separated_generic_ty_decls(remaining_entities);
         }
     }
 
@@ -473,8 +477,8 @@ pub trait Visitor {
                 CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
                     self.walk_bounded_method_wrapper(bounded_method_wrapper);
                 }
-                CoreStatementNode::TypeDeclaration(type_decl) => {
-                    self.walk_type_decl(type_decl);
+                CoreStatementNode::TypeDeclaration(ty_decl) => {
+                    self.walk_ty_decl(ty_decl);
                 }
                 CoreStatementNode::StructPropertyDeclaration(struct_stmt) => {
                     self.walk_struct_property_decl(struct_stmt);
@@ -488,9 +492,10 @@ pub trait Visitor {
                 CoreStatementNode::InterfaceMethodPrototypeWrapper(
                     interface_method_prototype_wrapper,
                 ) => {
-                    self.walk_interface_method_prototype_wrapper(
-                        interface_method_prototype_wrapper,
-                    );
+                    self.walk_decl_callable_prototype(interface_method_prototype_wrapper);
+                }
+                CoreStatementNode::DeclareFunctionPrototype(decl_func_prototype) => {
+                    self.walk_decl_func_prototype(decl_func_prototype)
                 }
                 CoreStatementNode::Return(return_stmt) => {
                     self.walk_return_stmt(return_stmt);
@@ -596,10 +601,10 @@ pub trait Visitor {
             }
             ASTNode::StructPropertyDeclaration(struct_statement) => {
                 let core_struct_stmt = struct_statement.core_ref();
-                self.walk_name_type_spec(&core_struct_stmt.name_type_spec);
+                self.walk_name_ty_spec(&core_struct_stmt.name_ty_spec);
                 self.walk_token(&core_struct_stmt.newline);
             }
-            ASTNode::TypeDeclaration(type_decl_node) => match &type_decl_node.core_ref() {
+            ASTNode::TypeDeclaration(ty_decl_node) => match &ty_decl_node.core_ref() {
                 CoreTypeDeclarationNode::Struct(struct_decl) => {
                     self.walk_struct_decl(struct_decl);
                 }
@@ -607,7 +612,7 @@ pub trait Visitor {
                     self.walk_enum_decl(enum_decl);
                 }
                 CoreTypeDeclarationNode::Lambda(lambda_decl) => {
-                    self.walk_lambda_type_decl(lambda_decl);
+                    self.walk_lambda_ty_decl(lambda_decl);
                 }
                 CoreTypeDeclarationNode::MissingTokens(missing_tokens) => {
                     self.walk_missing_tokens(missing_tokens);
@@ -620,19 +625,18 @@ pub trait Visitor {
                 self.walk_token(&core_interface_decl.colon);
                 self.walk_block(&core_interface_decl.block);
             }
+            ASTNode::DeclareFunctionPrototype(decl_func_prototype_node) => {
+                let core_decl_func_prototype_node = decl_func_prototype_node.core_ref();
+                self.walk_token(&core_decl_func_prototype_node.declare_keyword);
+                self.walk_decl_callable_prototype(&core_decl_func_prototype_node.decl);
+            }
             ASTNode::InterfaceMethodPrototypeWrapper(interface_method_prototype_wrapper_node) => {
                 let core_interface_method_prototype_wrapper =
                     interface_method_prototype_wrapper_node.core_ref();
                 self.walk_token(&core_interface_method_prototype_wrapper.def_keyword);
                 self.walk_identifier_in_decl(&core_interface_method_prototype_wrapper.name);
                 self.walk_callable_prototype(&core_interface_method_prototype_wrapper.prototype);
-                match &core_interface_method_prototype_wrapper.terminal {
-                    InterfaceMethodTerminalNode::HasDefaultBody(colon, block) => {
-                        self.walk_token(colon);
-                        self.walk_block(block);
-                    }
-                    InterfaceMethodTerminalNode::NoDefaultBody(newline) => self.walk_token(newline),
-                }
+                self.walk_token(&core_interface_method_prototype_wrapper.newline);
             }
             ASTNode::StructDeclaration(struct_decl_node) => {
                 let core_struct_decl = struct_decl_node.core_ref();
@@ -661,7 +665,7 @@ pub trait Visitor {
                 self.walk_identifier_in_decl(&core_enum_variant_decl.variant);
                 if let Some((lparen, ty, rparen)) = &core_enum_variant_decl.ty {
                     self.walk_token(lparen);
-                    self.walk_type_expression(ty);
+                    self.walk_ty_expression(ty);
                     self.walk_token(rparen);
                 }
                 self.walk_token(&core_enum_variant_decl.newline);
@@ -673,26 +677,26 @@ pub trait Visitor {
                 self.walk_token(&core_lambda_decl.lambda_keyword);
                 self.walk_token(&core_lambda_decl.equal);
                 self.walk_token(&core_lambda_decl.lparen);
-                if let Some(type_tuple) = &core_lambda_decl.type_tuple {
-                    self.walk_comma_separated_type_expressions(type_tuple);
+                if let Some(ty_tuple) = &core_lambda_decl.ty_tuple {
+                    self.walk_comma_separated_ty_expressions(ty_tuple);
                 }
                 self.walk_token(&core_lambda_decl.rparen);
-                if let Some((right_arrow, return_type)) = &core_lambda_decl.return_type {
+                if let Some((right_arrow, return_ty)) = &core_lambda_decl.return_ty {
                     self.walk_token(right_arrow);
-                    self.walk_type_expression(return_type);
+                    self.walk_ty_expression(return_ty);
                 }
                 self.walk_token(&core_lambda_decl.newline);
             }
             ASTNode::CallablePrototype(callable_prototype) => {
                 let core_callable_prototype = callable_prototype.core_ref();
                 self.walk_token(&core_callable_prototype.lparen);
-                if let Some(name_type_specs) = &core_callable_prototype.params {
-                    self.walk_comma_separated_name_type_specs(name_type_specs);
+                if let Some(name_ty_specs) = &core_callable_prototype.params {
+                    self.walk_comma_separated_name_ty_specs(name_ty_specs);
                 }
                 self.walk_token(&core_callable_prototype.rparen);
-                if let Some((right_arrow, return_type)) = &core_callable_prototype.return_type {
+                if let Some((right_arrow, return_ty)) = &core_callable_prototype.return_ty {
                     self.walk_token(right_arrow);
-                    self.walk_type_expression(return_type);
+                    self.walk_ty_expression(return_ty);
                 }
             }
             ASTNode::CallableBody(callable_body) => {
@@ -706,8 +710,8 @@ pub trait Visitor {
                 self.walk_token(&core_lambda_decl_node.lambda_keyword);
                 self.walk_callable_body(&core_lambda_decl_node.body);
             }
-            ASTNode::FunctionDeclaration(function_decl_node) => {
-                let core_func_decl = function_decl_node.core_ref();
+            ASTNode::FunctionDeclaration(func_decl_node) => {
+                let core_func_decl = func_decl_node.core_ref();
                 self.walk_token(&core_func_decl.def_keyword);
                 self.walk_identifier_in_decl(&core_func_decl.name);
                 self.walk_callable_body(&core_func_decl.body);
@@ -724,7 +728,7 @@ pub trait Visitor {
                 self.walk_identifier_in_decl(&core_variable_decl.name);
                 if let Some((colon, ty_expr)) = &core_variable_decl.ty_annotation {
                     self.walk_token(colon);
-                    self.walk_type_expression(ty_expr);
+                    self.walk_ty_expression(ty_expr);
                 }
                 self.walk_token(&core_variable_decl.equal);
                 self.walk_r_variable_decl(&core_variable_decl.r_node);
@@ -752,62 +756,62 @@ pub trait Visitor {
                     }
                 }
             }
-            ASTNode::NameTypeSpec(name_type_spec_node) => {
-                let core_name_type_spec = name_type_spec_node.core_ref();
-                self.walk_identifier_in_decl(&core_name_type_spec.name);
-                self.walk_token(&core_name_type_spec.colon);
-                self.walk_type_expression(&core_name_type_spec.data_type);
+            ASTNode::NameTypeSpec(name_ty_spec_node) => {
+                let core_name_ty_spec = name_ty_spec_node.core_ref();
+                self.walk_identifier_in_decl(&core_name_ty_spec.name);
+                self.walk_token(&core_name_ty_spec.colon);
+                self.walk_ty_expression(&core_name_ty_spec.data_ty);
             }
-            ASTNode::TypeExpression(type_expression_node) => {
-                let core_type_expr = type_expression_node.core_ref();
-                match core_type_expr {
-                    CoreTypeExpressionNode::Atomic(atomic_type) => {
-                        self.walk_atomic_type(atomic_type);
+            ASTNode::TypeExpression(ty_expression_node) => {
+                let core_ty_expr = ty_expression_node.core_ref();
+                match core_ty_expr {
+                    CoreTypeExpressionNode::Atomic(atomic_ty) => {
+                        self.walk_atomic_ty(atomic_ty);
                     }
-                    CoreTypeExpressionNode::UserDefined(user_defined_type) => {
-                        self.walk_user_defined_type(user_defined_type);
+                    CoreTypeExpressionNode::UserDefined(user_defined_ty) => {
+                        self.walk_user_defined_ty(user_defined_ty);
                     }
-                    CoreTypeExpressionNode::Array(array_type) => {
-                        self.walk_array_type(array_type);
+                    CoreTypeExpressionNode::Array(array_ty) => {
+                        self.walk_array_ty(array_ty);
                     }
-                    CoreTypeExpressionNode::Tuple(tuple_type) => {
-                        self.walk_tuple_type(tuple_type);
+                    CoreTypeExpressionNode::Tuple(tuple_ty) => {
+                        self.walk_tuple_ty(tuple_ty);
                     }
-                    CoreTypeExpressionNode::HashMap(hashmap_type) => {
-                        self.walk_hashmap_type(hashmap_type);
+                    CoreTypeExpressionNode::HashMap(hashmap_ty) => {
+                        self.walk_hashmap_ty(hashmap_ty);
                     }
                     CoreTypeExpressionNode::MissingTokens(missing_tokens) => {
                         self.walk_missing_tokens(missing_tokens);
                     }
                 }
             }
-            ASTNode::AtomicType(atomic_type_node) => {
-                let core_atomic_type = atomic_type_node.core_ref();
-                self.walk_token(&core_atomic_type.kind)
+            ASTNode::AtomicType(atomic_ty_node) => {
+                let core_atomic_ty = atomic_ty_node.core_ref();
+                self.walk_token(&core_atomic_ty.kind)
             }
-            ASTNode::ArrayType(array_type_node) => {
-                let core_array_type = array_type_node.core_ref();
-                self.walk_token(&core_array_type.lsquare);
-                self.walk_type_expression(&core_array_type.sub_type);
-                self.walk_token(&core_array_type.rsquare);
+            ASTNode::ArrayType(array_ty_node) => {
+                let core_array_ty = array_ty_node.core_ref();
+                self.walk_token(&core_array_ty.lsquare);
+                self.walk_ty_expression(&core_array_ty.sub_ty);
+                self.walk_token(&core_array_ty.rsquare);
             }
-            ASTNode::TupleType(tuple_type_node) => {
-                let core_tuple_type = tuple_type_node.core_ref();
-                self.walk_token(&core_tuple_type.lparen);
-                self.walk_comma_separated_type_expressions(&core_tuple_type.types);
-                self.walk_token(&core_tuple_type.rparen);
+            ASTNode::TupleType(tuple_ty_node) => {
+                let core_tuple_ty = tuple_ty_node.core_ref();
+                self.walk_token(&core_tuple_ty.lparen);
+                self.walk_comma_separated_ty_expressions(&core_tuple_ty.types);
+                self.walk_token(&core_tuple_ty.rparen);
             }
-            ASTNode::HashmapType(hashmap_type_node) => {
-                let core_hashmap_type_node = hashmap_type_node.core_ref();
-                self.walk_token(&core_hashmap_type_node.lcurly);
-                self.walk_type_expression(&core_hashmap_type_node.key_type);
-                self.walk_token(&core_hashmap_type_node.colon);
-                self.walk_type_expression(&core_hashmap_type_node.value_type);
-                self.walk_token(&core_hashmap_type_node.rcurly);
+            ASTNode::HashmapType(hashmap_ty_node) => {
+                let core_hashmap_ty_node = hashmap_ty_node.core_ref();
+                self.walk_token(&core_hashmap_ty_node.lcurly);
+                self.walk_ty_expression(&core_hashmap_ty_node.key_ty);
+                self.walk_token(&core_hashmap_ty_node.colon);
+                self.walk_ty_expression(&core_hashmap_ty_node.value_ty);
+                self.walk_token(&core_hashmap_ty_node.rcurly);
             }
-            ASTNode::UserDefinedType(user_defined_type) => {
-                let core_user_defined_type = user_defined_type.core_ref();
-                self.walk_identifier_in_use(&core_user_defined_type.name)
+            ASTNode::UserDefinedType(user_defined_ty) => {
+                let core_user_defined_ty = user_defined_ty.core_ref();
+                self.walk_identifier_in_use(&core_user_defined_ty.name)
             }
             ASTNode::Expression(expression_node) => {
                 let core_expr = expression_node.core_ref();
@@ -897,7 +901,7 @@ pub trait Visitor {
             }
             ASTNode::CallExpression(call_expression_node) => {
                 let core_call_expr = call_expression_node.core_ref();
-                self.walk_identifier_in_use(&core_call_expr.function_name);
+                self.walk_identifier_in_use(&core_call_expr.func_name);
                 self.walk_token(&core_call_expr.lparen);
                 if let Some(params) = &core_call_expr.params {
                     self.walk_comma_separated_expressions(params);
@@ -1067,29 +1071,29 @@ pub trait Visitor {
             ASTNode::OkIdentifierInUse(ok_identifier_in_use) => {
                 let core_ok_identifier_in_use = ok_identifier_in_use.core_ref();
                 self.walk_ok_token(&core_ok_identifier_in_use.name);
-                if let Some((langle, generic_type_args, rangle)) =
-                    &core_ok_identifier_in_use.generic_type_args
+                if let Some((langle, generic_ty_args, rangle)) =
+                    &core_ok_identifier_in_use.generic_ty_args
                 {
                     self.walk_token(langle);
-                    self.walk_comma_separated_type_expressions(generic_type_args);
+                    self.walk_comma_separated_ty_expressions(generic_ty_args);
                     self.walk_token(rangle);
                 }
             }
             ASTNode::OkIdentifierInDecl(ok_identifier_in_decl) => {
                 let core_ok_identifier_in_decl = ok_identifier_in_decl.core_ref();
                 self.walk_ok_token(&core_ok_identifier_in_decl.name);
-                if let Some((langle, generic_type_decls, rangle)) =
-                    &core_ok_identifier_in_decl.generic_type_decls
+                if let Some((langle, generic_ty_decls, rangle)) =
+                    &core_ok_identifier_in_decl.generic_ty_decls
                 {
                     self.walk_token(langle);
-                    self.walk_comma_separated_generic_type_decls(generic_type_decls);
+                    self.walk_comma_separated_generic_ty_decls(generic_ty_decls);
                     self.walk_token(rangle);
                 }
             }
-            ASTNode::GenericTypeDecl(generic_type_decl) => {
-                let core_generic_type_decl = generic_type_decl.core_ref();
-                self.walk_identifier_in_decl(&core_generic_type_decl.generic_type_name);
-                if let Some((colon, interface_bounds)) = &core_generic_type_decl.interface_bounds {
+            ASTNode::GenericTypeDecl(generic_ty_decl) => {
+                let core_generic_ty_decl = generic_ty_decl.core_ref();
+                self.walk_identifier_in_decl(&core_generic_ty_decl.generic_ty_name);
+                if let Some((colon, interface_bounds)) = &core_generic_ty_decl.interface_bounds {
                     self.walk_token(colon);
                     self.walk_plus_separated_interfaces(interface_bounds);
                 }

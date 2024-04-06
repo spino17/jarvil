@@ -94,6 +94,12 @@ fn test_def() {
 }
 
 #[test]
+fn test_declare() {
+    let alt_vec = vec!["d", "dec", "decl", "declare", "declares", "declaring"];
+    assert_token_for_identifier(alt_vec, "declare", CoreToken::DECLARE_KEYWORD)
+}
+
+#[test]
 fn test_let() {
     let alt_vec = vec!["l", "leg", "let", "less", "lego", "letin"];
     assert_token_for_identifier(alt_vec, "let", CoreToken::LET)

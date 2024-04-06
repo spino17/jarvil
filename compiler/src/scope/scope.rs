@@ -204,11 +204,10 @@ impl<T: IsInitialized> ScopeArena<T> {
         else {
             return IntermediateLookupResult::Unresolved;
         };
-        if self.symbol_ref(symbol_index).data_ref().is_initialized() {
-            IntermediateLookupResult::Ok((symbol_index, depth, enclosing_func_scope_depth))
-        } else {
-            IntermediateLookupResult::NotInitialized(symbol_index.declaration_line_number(self))
+        if !self.symbol_ref(symbol_index).data_ref().is_initialized() {
+            return IntermediateLookupResult::NotInitialized(symbol_index.decl_line_number(self));
         }
+        IntermediateLookupResult::Ok((symbol_index, depth, enclosing_func_scope_depth))
     }
 
     pub fn parent_scope(&self, scope_index: ScopeIndex) -> Option<ScopeIndex> {

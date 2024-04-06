@@ -2,7 +2,7 @@ use super::core::IdentDeclId;
 use super::function::{CallableData, PartialConcreteCallableDataRef};
 use super::interfaces::InterfaceData;
 use super::variables::VariableData;
-use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
@@ -24,23 +24,13 @@ impl FieldsMap {
     pub fn try_field<'a>(
         &'a self,
         field_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
         namespace: &Namespace,
+        context: TypeGenericsInstantiationContext,
     ) -> Option<(Type, TextRange)> {
         let Some((ty, range)) = self.fields.get(field_name) else {
             return None;
         };
-        if ty.is_concretization_required() {
-            Some((
-                ty.concretize(
-                    &ConcretizationContext::new(global_concrete_types, None),
-                    namespace,
-                ),
-                *range,
-            ))
-        } else {
-            Some((ty.clone(), *range))
-        }
+        Some((ty.concretize(context, namespace), *range))
     }
 }
 
@@ -54,26 +44,20 @@ impl MethodsMap {
         MethodsMap { methods }
     }
 
-    pub fn methods_ref(&self) -> &FxHashMap<StrId, (CallableData, TextRange)> {
+    pub fn core_ref(&self) -> &FxHashMap<StrId, (CallableData, TextRange)> {
         &self.methods
     }
 
     pub fn try_method<'a>(
         &'a self,
         method_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        context: TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
         let Some((callable_data, range)) = self.methods.get(method_name) else {
             return None;
         };
         Some((
-            PartialConcreteCallableDataRef::new(
-                callable_data,
-                match global_concrete_types {
-                    Some(concrete_types) => Some(concrete_types),
-                    None => None,
-                },
-            ),
+            PartialConcreteCallableDataRef::new(callable_data, context),
             *range,
         ))
     }
@@ -110,7 +94,7 @@ impl<T> Default for UniqueKeyGenerator<T> {
 pub struct GlobalUniqueKeyGenerator {
     variables: UniqueKeyGenerator<VariableData>,
     types: UniqueKeyGenerator<UserDefinedTypeData>,
-    functions: UniqueKeyGenerator<CallableData>,
+    funcs: UniqueKeyGenerator<CallableData>,
     interfaces: UniqueKeyGenerator<InterfaceData>,
 }
 
@@ -119,11 +103,11 @@ impl GlobalUniqueKeyGenerator {
         self.variables.generate_unique_id()
     }
 
-    pub fn generate_unique_id_for_function(&mut self) -> IdentDeclId<CallableData> {
-        self.functions.generate_unique_id()
+    pub fn generate_unique_id_for_func(&mut self) -> IdentDeclId<CallableData> {
+        self.funcs.generate_unique_id()
     }
 
-    pub fn generate_unique_id_for_type(&mut self) -> IdentDeclId<UserDefinedTypeData> {
+    pub fn generate_unique_id_for_ty(&mut self) -> IdentDeclId<UserDefinedTypeData> {
         self.types.generate_unique_id()
     }
 

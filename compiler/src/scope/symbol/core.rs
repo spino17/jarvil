@@ -6,7 +6,7 @@ use crate::scope::mangled::MangledIdentifierName;
 use crate::{
     core::string_interner::StrId,
     scope::{
-        concrete::{ConcreteSymbolIndex, ConcreteTypesTuple},
+        concrete::{ConcreteSymbolIndex, TurbofishTypes},
         scope::{ScopeArena, ScopeIndex},
         traits::IsInitialized,
     },
@@ -123,7 +123,7 @@ impl<T: IsInitialized> SymbolIndex<T> {
         self.ident_name
     }
 
-    pub fn declaration_line_number(&self, arena: &ScopeArena<T>) -> TextRange {
+    pub fn decl_line_number(&self, arena: &ScopeArena<T>) -> TextRange {
         arena.symbol_ref(*self).decl_line_number()
     }
 
@@ -159,7 +159,7 @@ pub enum ConcreteSymbolDataEntry {
 }
 
 impl ConcreteSymbolDataEntry {
-    pub fn new(symbol_entry: SymbolDataEntry, concrete_types: Option<ConcreteTypesTuple>) -> Self {
+    pub fn new(symbol_entry: SymbolDataEntry, concrete_types: Option<TurbofishTypes>) -> Self {
         match symbol_entry {
             SymbolDataEntry::Variable(symbol_index) => ConcreteSymbolDataEntry::Variable(
                 ConcreteSymbolIndex::new(symbol_index, concrete_types),

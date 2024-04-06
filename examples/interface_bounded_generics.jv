@@ -1,0 +1,30 @@
+interface Printer:
+    def print()
+
+def print_list<T: Printer>(l: [T]):
+    for element in l:
+        element.print()
+
+
+type Int struct implements Printer:
+    val: int
+    def __init__(x: int):
+        self.val = x
+
+    def print():
+        print(self.val)
+
+type Str struct implements Printer:
+    val: str
+    def __init__(x: str):
+        self.val = x
+
+    def print():
+        print(self.val)
+
+
+def main():
+    let x = [Int(1), Int(2), Int(3)]
+    let y = [Str("Rust"), Str("is"), Str("love!")]
+    print_list(x) // automatically inferred `Int`
+    print_list(y) // automatically inferred `Str`

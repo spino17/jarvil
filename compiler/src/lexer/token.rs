@@ -2,15 +2,15 @@
 use crate::code::JarvilCodeHandler;
 use crate::constants::common::{
     AND, AS, ASSERT_KEYWORD, ASYNC_KEYWORD, ATOMIC_TYPE, AWAIT_KEYWORD, BLANK, BLOCK_COMMENT,
-    BREAK, CASE, CLASS_KEYWORD, COLON, COMMA, CONTINUE, DASH, DEF, DEL_KEYWORD, DOT, DOUBLE_COLON,
-    DOUBLE_EQUAL, DOUBLE_STAR, ELIF, ELSE, ENDMARKER, ENUM_KEYWORD, EQUAL, EXCEPT_KEYWORD, FALSE,
-    FINALLY_KEYWORD, FLOATING_POINT_NUMBER, FOR, FROM_KEYWORD, GLOBAL_KEYWORD, GREATER_EQUAL,
-    IDENTIFIER, IF, IMPLEMENTS_KEYWORD, IMPORT_KEYWORD, IN, INTEGER, INTERFACE_KEYWORD,
-    INVALID_CHAR, IS, LAMBDA_KEYWORD, LBRACE, LBRACKET, LESS_EQUAL, LET, LITERAL, LPAREN, LSQUARE,
-    MATCH, NEWLINE, NONE, NONLOCAL_KEYWORD, NOT, NOT_EQUAL, OR, PASS_KEYWORD, PEG_PARSER, PLUS,
-    RAISE_KEYWORD, RBRACE, RBRACKET, RETURN, RIGHT_ARROW, RPAREN, RSQUARE, SELF, SEMICOLON,
-    SINGLE_LINE_COMMENT, SLASH, STAR, STRUCT_KEYWORD, TRUE, TRY_KEYWORD, TYPE_KEYWORD,
-    UNCLOSED_BLOCK_COMMENT, UNCLOSED_STRING_LITERAL_DOUBLE_QUOTE,
+    BREAK, CASE, CLASS_KEYWORD, COLON, COMMA, CONTINUE, DASH, DECLARE_KEYWORD, DEF, DEL_KEYWORD,
+    DOT, DOUBLE_COLON, DOUBLE_EQUAL, DOUBLE_STAR, ELIF, ELSE, ENDMARKER, ENUM_KEYWORD, EQUAL,
+    EXCEPT_KEYWORD, FALSE, FINALLY_KEYWORD, FLOATING_POINT_NUMBER, FOR, FROM_KEYWORD,
+    GLOBAL_KEYWORD, GREATER_EQUAL, IDENTIFIER, IF, IMPLEMENTS_KEYWORD, IMPORT_KEYWORD, IN, INTEGER,
+    INTERFACE_KEYWORD, INVALID_CHAR, IS, LAMBDA_KEYWORD, LBRACE, LBRACKET, LESS_EQUAL, LET,
+    LITERAL, LPAREN, LSQUARE, MATCH, NEWLINE, NONE, NONLOCAL_KEYWORD, NOT, NOT_EQUAL, OR,
+    PASS_KEYWORD, PEG_PARSER, PLUS, RAISE_KEYWORD, RBRACE, RBRACKET, RETURN, RIGHT_ARROW, RPAREN,
+    RSQUARE, SELF, SEMICOLON, SINGLE_LINE_COMMENT, SLASH, STAR, STRUCT_KEYWORD, TRUE, TRY_KEYWORD,
+    TYPE_KEYWORD, UNCLOSED_BLOCK_COMMENT, UNCLOSED_STRING_LITERAL_DOUBLE_QUOTE,
     UNCLOSED_STRING_LITERAL_SINGLE_QUOTE, WHILE, WITH_KEYWORD, YIELD_KEYWORD,
 };
 use crate::core::string_interner::{Interner, StrId};
@@ -152,19 +152,20 @@ impl Serialize for Token {
 
 #[derive(Debug, Clone, PartialEq, Tokenify, Serialize)]
 pub enum CoreToken {
-    IF,             // 'if'
-    ELSE,           // 'else'
-    ELIF,           // 'elif'
-    FOR,            // 'for'
-    WHILE,          // 'while'
-    CONTINUE,       // 'continue'
-    BREAK,          // 'break'
-    MATCH,          // 'match'
-    CASE,           // 'case'
-    DEF,            // 'def'
-    RETURN,         // 'return'
-    LAMBDA_KEYWORD, // 'lambda'
-    TYPE_KEYWORD,   // 'type'
+    IF,              // 'if'
+    ELSE,            // 'else'
+    ELIF,            // 'elif'
+    FOR,             // 'for'
+    WHILE,           // 'while'
+    CONTINUE,        // 'continue'
+    BREAK,           // 'break'
+    MATCH,           // 'match'
+    CASE,            // 'case'
+    DEF,             // 'def'
+    RETURN,          // 'return'
+    LAMBDA_KEYWORD,  // 'lambda'
+    DECLARE_KEYWORD, // 'declare'
+    TYPE_KEYWORD,    // 'type'
     ATOMIC_TYPE,
     LET,                 // 'let'
     SELF,                // 'self'
@@ -424,6 +425,11 @@ impl CoreToken {
                                                 "",
                                                 value_iter,
                                                 CoreToken::DEL_KEYWORD,
+                                            ),
+                                            'c' => check_keyword(
+                                                "lare",
+                                                value_iter,
+                                                CoreToken::DECLARE_KEYWORD,
                                             ),
                                             _ => CoreToken::IDENTIFIER,
                                         },

@@ -1,6 +1,5 @@
-use super::enum_type::EnumTypeData;
-use crate::core::string_interner::Interner;
-use crate::scope::concrete::ConcreteTypesTuple;
+use super::enum_ty::EnumTypeData;
+use crate::scope::concrete::TurbofishTypes;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::helper::check_concrete_types_bounded_by_interfaces;
 use crate::scope::mangled::MangledIdentifierName;
@@ -8,9 +7,10 @@ use crate::scope::namespace::Namespace;
 use crate::scope::symbol::core::{SymbolDataEntry, SymbolIndex};
 use crate::scope::traits::{AbstractSymbol, IsInitialized};
 use crate::scope::{
-    symbol::types::generic_type::GenericTypeData, symbol::types::lambda_type::LambdaTypeData,
-    symbol::types::struct_type::StructTypeData,
+    symbol::types::generic_ty::GenericTypeData, symbol::types::lambda_ty::LambdaTypeData,
+    symbol::types::struct_ty::StructTypeData,
 };
+use crate::types::core::TypeStringifyContext;
 use text_size::TextRange;
 
 #[derive(Debug)]
@@ -117,8 +117,8 @@ impl UserDefinedTypeData {
 impl IsInitialized for UserDefinedTypeData {
     fn is_initialized(&self) -> bool {
         match self {
-            UserDefinedTypeData::Struct(struct_type_data) => struct_type_data.is_initialized(),
-            UserDefinedTypeData::Enum(enum_type_data) => enum_type_data.is_initialized(),
+            UserDefinedTypeData::Struct(struct_ty_data) => struct_ty_data.is_initialized(),
+            UserDefinedTypeData::Enum(enum_ty_data) => enum_ty_data.is_initialized(),
             UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => true,
         }
     }
@@ -141,46 +141,47 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
         SymbolDataEntry::Type(self.0)
     }
 
-    fn check_generic_type_args(
+    fn check_generic_ty_args(
         &self,
-        concrete_types: Option<&ConcreteTypesTuple>,
-        type_ranges: Option<&Vec<TextRange>>,
+        concrete_types: Option<&TurbofishTypes>,
+        ty_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
-        interner: &Interner,
-        namespace: &Namespace,
+        context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
-        match namespace.types_ref().symbol_ref(self.0).data_ref() {
+        match context
+            .namespace()
+            .types_ref()
+            .symbol_ref(self.0)
+            .data_ref()
+        {
             UserDefinedTypeData::Struct(struct_data) => {
-                let generic_type_decls = struct_data.generics();
+                let generic_ty_decls = struct_data.generics();
                 check_concrete_types_bounded_by_interfaces(
-                    generic_type_decls,
+                    generic_ty_decls,
                     concrete_types,
-                    type_ranges,
+                    ty_ranges,
                     is_concrete_types_none_allowed,
-                    interner,
-                    namespace,
+                    context,
                 )
             }
             UserDefinedTypeData::Lambda(lambda_data) => {
-                let generic_type_decls = lambda_data.generic_type_decls();
+                let generic_ty_decls = lambda_data.generics();
                 check_concrete_types_bounded_by_interfaces(
-                    generic_type_decls,
+                    generic_ty_decls,
                     concrete_types,
-                    type_ranges,
+                    ty_ranges,
                     false,
-                    interner,
-                    namespace,
+                    context,
                 )
             }
             UserDefinedTypeData::Enum(enum_data) => {
-                let generic_type_decls = enum_data.generics();
+                let generic_ty_decls = enum_data.generics();
                 check_concrete_types_bounded_by_interfaces(
-                    generic_type_decls,
+                    generic_ty_decls,
                     concrete_types,
-                    type_ranges,
+                    ty_ranges,
                     false,
-                    interner,
-                    namespace,
+                    context,
                 )
             }
             UserDefinedTypeData::Generic(_) => {

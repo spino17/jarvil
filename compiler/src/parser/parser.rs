@@ -1,40 +1,39 @@
 use super::resolver::BlockKind;
-use crate::ast::ast::Node;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,
     CallableKind, CallablePrototypeNode, ConditionalBlockNode, ConditionalStatementNode,
-    ErrornousNode, ExpressionNode, ForLoopStatementNode, GenericTypeDeclNode, IdentifierInDeclNode,
-    IdentifierInUseNode, InterfaceDeclarationNode, InterfaceMethodPrototypeWrapperNode,
-    MatchCaseStatementNode, NameTypeSpecNode, OkTokenNode, SelfKeywordNode, SkippedTokenNode,
-    StatementNode, SymbolSeparatedSequenceNode, TokenNode, TypeDeclarationNode, TypeExpressionNode,
-    UnaryExpressionNode, VariableDeclarationNode, WhileLoopStatementNode,
+    DeclareCallablePrototypeNode, DeclareFunctionPrototypeNode, ExpressionNode,
+    ForLoopStatementNode, GenericTypeDeclNode, IdentifierInDeclNode, IdentifierInUseNode,
+    InterfaceDeclarationNode, MatchCaseStatementNode, NameTypeSpecNode, OkTokenNode,
+    SelfKeywordNode, SkippedTokenNode, StatementNode, SymbolSeparatedSequenceNode, TokenNode,
+    TypeDeclarationNode, TypeExpressionNode, UnaryExpressionNode, VariableDeclarationNode,
+    WhileLoopStatementNode,
 };
+use crate::ast::traits::{ErrornousNode, Node};
 use crate::code::JarvilCodeHandler;
 use crate::constants::common::{ENDMARKER, IDENTIFIER, SELF};
 use crate::context;
-use crate::error::diagnostics::Diagnostics;
+use crate::error::error::JarvilProgramAnalysisErrors;
 use crate::lexer::token::{CoreToken, Token};
 use crate::parser::components;
 use crate::parser::helper::{IndentResult, IndentResultKind};
 use serde::Serialize;
-use std::cell::RefCell;
 
-pub trait Parser {
-    fn parse(self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCodeHandler);
-}
-
-pub struct JarvilParser {
+pub struct JarvilParser<'ctx> {
     token_vec: Vec<Token>,
     lookahead: usize,
     indent_level: i64,
-    code_handler: JarvilCodeHandler,
+    code_handler: &'ctx JarvilCodeHandler<'ctx>,
     ignore_all_errors: bool, // if this is set, no errors during parsing is saved inside error logs
     correction_indent: i64,
-    errors: RefCell<Vec<Diagnostics>>,
+    pub errors: &'ctx JarvilProgramAnalysisErrors,
 }
 
-impl JarvilParser {
-    pub fn new(code_handler: JarvilCodeHandler) -> Self {
+impl<'ctx> JarvilParser<'ctx> {
+    pub fn new(
+        code_handler: &'ctx JarvilCodeHandler<'ctx>,
+        errors: &'ctx JarvilProgramAnalysisErrors,
+    ) -> Self {
         JarvilParser {
             token_vec: Vec::new(),
             lookahead: 0,
@@ -42,27 +41,21 @@ impl JarvilParser {
             code_handler,
             ignore_all_errors: false,
             correction_indent: 0,
-            errors: RefCell::new(vec![]),
+            errors,
         }
+    }
+
+    pub fn parse(mut self, token_vec: Vec<Token>) -> BlockNode {
+        let code_node = self.code(token_vec);
+        code_node
     }
 
     pub fn ignore_all_errors(&self) -> bool {
         self.ignore_all_errors
     }
-
-    pub fn log_error(&self, err: Diagnostics) {
-        self.errors.borrow_mut().push(err);
-    }
 }
 
-impl Parser for JarvilParser {
-    fn parse(mut self, token_vec: Vec<Token>) -> (BlockNode, Vec<Diagnostics>, JarvilCodeHandler) {
-        let code_node = self.code(token_vec);
-        (code_node, self.errors.into_inner(), self.code_handler)
-    }
-}
-
-impl JarvilParser {
+impl<'ctx> JarvilParser<'ctx> {
     // ------------------- parsing utilities -------------------
     pub fn set_token_vec(&mut self, token_vec: Vec<Token>) {
         self.token_vec = token_vec;
@@ -167,24 +160,22 @@ impl JarvilParser {
         let token = self.curr_token();
         if token.is_eq(separator) {
             let separator_node = self.expect(separator);
-            let remaining_generic_type_args_node =
+            let remaining_generic_ty_args_node =
                 self.expect_symbol_separated_sequence(entity_parsing_fn, separator);
             return SymbolSeparatedSequenceNode::new_with_entities(
                 first_entity_node,
-                remaining_generic_type_args_node,
+                remaining_generic_ty_args_node,
                 separator_node,
             );
         }
         SymbolSeparatedSequenceNode::new_with_single_entity(first_entity_node)
     }
 
-    pub fn expect_generic_type_args(&mut self) -> SymbolSeparatedSequenceNode<TypeExpressionNode> {
-        self.expect_symbol_separated_sequence(|parser: &mut JarvilParser| parser.type_expr(), ",")
+    pub fn expect_generic_ty_args(&mut self) -> SymbolSeparatedSequenceNode<TypeExpressionNode> {
+        self.expect_symbol_separated_sequence(|parser: &mut JarvilParser| parser.ty_expr(), ",")
     }
 
-    pub fn expect_generic_type_decls(
-        &mut self,
-    ) -> SymbolSeparatedSequenceNode<GenericTypeDeclNode> {
+    pub fn expect_generic_ty_decls(&mut self) -> SymbolSeparatedSequenceNode<GenericTypeDeclNode> {
         let parsing_fn = |parser: &mut JarvilParser| {
             let identifier_in_decl_node = parser.expect_identifier();
             let token = parser.curr_token();
@@ -258,7 +249,7 @@ impl JarvilParser {
     pub fn expect_identifier_in_use(&mut self) -> IdentifierInUseNode {
         let angle_bracketed_content_parsing_fn = |parser: &mut JarvilParser| -> SymbolSeparatedSequenceNode<
             TypeExpressionNode,
-        > { parser.expect_generic_type_args() };
+        > { parser.expect_generic_ty_args() };
         let node_creation_method_with_some = |ident_name: OkTokenNode,
                                               symbol_separated_sequence: Option<(
             TokenNode,
@@ -281,7 +272,7 @@ impl JarvilParser {
     pub fn expect_identifier_in_decl(&mut self) -> IdentifierInDeclNode {
         let angle_bracketed_content_parsing_fn = |parser: &mut JarvilParser| -> SymbolSeparatedSequenceNode<
             GenericTypeDeclNode,
-        > { parser.expect_generic_type_decls() };
+        > { parser.expect_generic_ty_decls() };
         let node_creation_method_with_some = |ident_name: OkTokenNode,
                                               symbol_separated_sequence: Option<(
             TokenNode,
@@ -413,7 +404,7 @@ impl JarvilParser {
     }
 
     pub fn stmt(&mut self) -> StatementNode {
-        components::statement::core::stmt(self)
+        components::statement::stmt(self)
     }
 
     pub fn assignment(&mut self, expr: ExpressionNode) -> AssignmentNode {
@@ -431,8 +422,8 @@ impl JarvilParser {
         components::conditional::conditional_block(self, conditional_keyword_str)
     }
 
-    pub fn type_expr(&mut self) -> TypeExpressionNode {
-        components::expression::type_expression::type_expr(self)
+    pub fn ty_expr(&mut self) -> TypeExpressionNode {
+        components::expression::type_expression::ty_expr(self)
     }
 
     pub fn atomic_expr(&mut self) -> AtomicExpressionNode {
@@ -508,20 +499,20 @@ impl JarvilParser {
         components::variable_declaration::variable_decl(self)
     }
 
-    pub fn name_type_spec(&mut self) -> NameTypeSpecNode {
-        components::common::name_type_spec(self)
+    pub fn name_ty_spec(&mut self) -> NameTypeSpecNode {
+        components::common::name_ty_spec(self)
     }
 
-    pub fn name_type_specs(&mut self) -> SymbolSeparatedSequenceNode<NameTypeSpecNode> {
-        components::common::name_type_specs(self)
+    pub fn name_ty_specs(&mut self) -> SymbolSeparatedSequenceNode<NameTypeSpecNode> {
+        components::common::name_ty_specs(self)
     }
 
-    pub fn type_tuple(&mut self) -> (SymbolSeparatedSequenceNode<TypeExpressionNode>, usize) {
-        components::common::type_tuple(self)
+    pub fn ty_tuple(&mut self) -> (SymbolSeparatedSequenceNode<TypeExpressionNode>, usize) {
+        components::common::ty_tuple(self)
     }
 
-    pub fn function_stmt(&mut self, callable_kind: CallableKind) -> StatementNode {
-        components::common::function_stmt(self, callable_kind)
+    pub fn func_stmt(&mut self, callable_kind: CallableKind) -> StatementNode {
+        components::common::func_stmt(self, callable_kind)
     }
 
     pub fn callable_prototype(&mut self) -> CallablePrototypeNode {
@@ -533,15 +524,15 @@ impl JarvilParser {
     }
 
     pub fn struct_stmt(&mut self) -> StatementNode {
-        components::statement::core::struct_stmt(self)
+        components::statement::struct_stmt(self)
     }
 
     pub fn enum_stmt(&mut self) -> StatementNode {
-        components::statement::core::enum_stmt(self)
+        components::statement::enum_stmt(self)
     }
 
     pub fn case_branch_stmt(&mut self) -> StatementNode {
-        components::statement::core::case_branch_stmt(self)
+        components::statement::case_branch_stmt(self)
     }
 
     pub fn match_case(&mut self) -> MatchCaseStatementNode {
@@ -557,18 +548,22 @@ impl JarvilParser {
     }
 
     pub fn interface_stmt(&mut self) -> StatementNode {
-        components::statement::core::interface_stmt(self)
+        components::statement::interface_stmt(self)
     }
 
-    pub fn interface_method_prototype_wrapper(&mut self) -> InterfaceMethodPrototypeWrapperNode {
-        components::interface_declaration::interface_method_prototype_wrapper(self)
+    pub fn decl_callable_prototype(&mut self) -> DeclareCallablePrototypeNode {
+        components::common::decl_callable_prototype(self)
+    }
+
+    pub fn decl_func_prototype(&mut self) -> DeclareFunctionPrototypeNode {
+        components::common::decl_func_prototype(self)
     }
 
     pub fn interface_decl(&mut self) -> InterfaceDeclarationNode {
         components::interface_declaration::interface_decl(self)
     }
 
-    pub fn type_decl(&mut self) -> TypeDeclarationNode {
-        components::type_declaration::type_decl(self)
+    pub fn ty_decl(&mut self) -> TypeDeclarationNode {
+        components::type_declaration::ty_decl(self)
     }
 }

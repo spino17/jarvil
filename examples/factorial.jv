@@ -1,0 +1,20 @@
+type Result<T, E> enum:
+    Ok(T)
+    Err(E)
+
+def core_factorial(n: int) -> int:
+    if n == 0 or n == 1:
+        return 1
+    return n * core_factorial(n - 1)
+
+def factorial(n: int) -> Result<int, str>:
+    if 0 > n:
+        return Result<int, str>::Err("input should be a positive integer")
+    return Result<int, str>::Ok(core_factorial(n))
+
+def main():
+    match factorial(10):
+        case Result::Ok(val):
+            print(val)
+        case Result::Err(err):
+            print(err)

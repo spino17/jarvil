@@ -18,7 +18,7 @@ pub fn compile(code_str: &str) -> Result<String, String> {
     }));
     console_error_panic_hook::set_once();
     let code = JarvilCode::new(code_str);
-    let py_result = build_code(code, code_str.to_string());
+    let (py_result, _) = build_code(code);
     let mut buffer = String::new();
     match py_result {
         Ok(py_code) => Ok(py_code),

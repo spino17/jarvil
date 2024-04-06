@@ -1,11 +1,12 @@
+use super::core::TypeStringifyContext;
 use super::traits::{OperatorCompatiblity, TypeLike};
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
-use crate::core::string_interner::Interner;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
-use crate::scope::concrete::{ConcreteTypesTuple, ConcretizationContext};
+use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::interfaces::InterfaceBounds;
-use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::types::generic_ty::GenericTypeDeclarationPlaceCategory;
+use crate::scope::traits::InstantiationContext;
 use crate::types::core::{CoreType, Type};
 
 #[derive(Debug, Clone)]
@@ -63,7 +64,7 @@ impl TypeLike for Atomic {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        _context: &ConcretizationContext,
+        _context: TypeGenericsInstantiationContext,
         _namespace: &Namespace,
     ) -> bool {
         let CoreType::Atomic(atomic_data) = other_ty.core_ty() else {
@@ -77,11 +78,15 @@ impl TypeLike for Atomic {
         }
     }
 
-    fn concretize(&self, _context: &ConcretizationContext, _namespace: &Namespace) -> Type {
+    fn concretize<'a, T: InstantiationContext<'a> + Copy>(
+        &self,
+        _context: T,
+        _namespace: &Namespace,
+    ) -> Type {
         unreachable!()
     }
 
-    fn is_type_bounded_by_interfaces(
+    fn is_ty_bounded_by_interfaces(
         &self,
         _interface_bounds: &InterfaceBounds,
         _namespace: &Namespace,
@@ -89,11 +94,11 @@ impl TypeLike for Atomic {
         unreachable!()
     }
 
-    fn try_infer_type_or_check_equivalence(
+    fn try_infer_ty_or_check_equivalence(
         &self,
         _received_ty: &Type,
         _inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        _global_concrete_types: Option<&ConcreteTypesTuple>,
+        _global_concrete_types: Option<&TurbofishTypes>,
         _num_inferred_types: &mut usize,
         _inference_category: GenericTypeDeclarationPlaceCategory,
         _namespace: &Namespace,
@@ -101,7 +106,7 @@ impl TypeLike for Atomic {
         unreachable!()
     }
 
-    fn to_string(&self, _interner: &Interner, _namespace: &Namespace) -> String {
+    fn to_string(&self, _context: TypeStringifyContext) -> String {
         match self {
             Atomic::Int => String::from(INT),
             Atomic::Float => String::from(FLOAT),

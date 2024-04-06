@@ -1,6 +1,6 @@
 use super::parser::JarvilParser;
-use crate::ast::ast::Node;
 use crate::ast::ast::SkippedTokenNode;
+use crate::ast::traits::Node;
 use crate::error::diagnostics::{
     Diagnostics, IncorrectlyIndentedBlockError, InvalidLValueError, InvalidTrailingTokensError,
     NoValidStatementFoundInsideBlockBodyError, SingleSubTypeFoundInTupleError,
@@ -8,7 +8,7 @@ use crate::error::diagnostics::{
 use crate::{error::diagnostics::MissingTokenError, lexer::token::Token};
 use text_size::TextRange;
 
-impl JarvilParser {
+impl<'ctx> JarvilParser<'ctx> {
     pub fn log_missing_token_error(
         &self,
         expected_symbols: &[&'static str],
@@ -19,7 +19,7 @@ impl JarvilParser {
         }
         // -> TODO - check whether error on same line already exists
         let err = MissingTokenError::new(expected_symbols, received_token);
-        self.log_error(Diagnostics::MissingToken(err));
+        self.errors.log_error(Diagnostics::MissingToken(err));
     }
 
     pub fn log_trailing_skipped_tokens_error(&self, skipped_tokens: Vec<SkippedTokenNode>) {
@@ -34,7 +34,8 @@ impl JarvilParser {
                 .end()
                 .into(),
         );
-        self.log_error(Diagnostics::InvalidTrailingTokens(err));
+        self.errors
+            .log_error(Diagnostics::InvalidTrailingTokens(err));
     }
 
     pub fn log_incorrectly_indented_block_error(
@@ -48,7 +49,8 @@ impl JarvilParser {
         }
         // -> TODO - check whether error on same line already exists
         let err = IncorrectlyIndentedBlockError::new(expected_indent, received_indent, range);
-        self.log_error(Diagnostics::IncorrectlyIndentedBlock(err));
+        self.errors
+            .log_error(Diagnostics::IncorrectlyIndentedBlock(err));
     }
 
     pub fn log_no_valid_statement_inside_block_error(&self, range: TextRange) {
@@ -56,7 +58,8 @@ impl JarvilParser {
             return;
         }
         let err = NoValidStatementFoundInsideBlockBodyError::new(range);
-        self.log_error(Diagnostics::NoValidStatementFoundInsideBlockBody(err));
+        self.errors
+            .log_error(Diagnostics::NoValidStatementFoundInsideBlockBody(err));
     }
 
     pub fn log_invalid_l_value_error(&self, range: TextRange) {
@@ -65,14 +68,15 @@ impl JarvilParser {
         }
         // -> TODO - check whether error on same line already exists
         let err = InvalidLValueError::new(range);
-        self.log_error(Diagnostics::InvalidLValue(err));
+        self.errors.log_error(Diagnostics::InvalidLValue(err));
     }
 
-    pub fn log_single_sub_type_in_tuple_error(&self, range: TextRange) {
+    pub fn log_single_sub_ty_in_tuple_error(&self, range: TextRange) {
         if self.ignore_all_errors() {
             return;
         }
         let err = SingleSubTypeFoundInTupleError::new(range);
-        self.log_error(Diagnostics::SingleSubTypeFoundInTuple(err));
+        self.errors
+            .log_error(Diagnostics::SingleSubTypeFoundInTuple(err));
     }
 }

@@ -44,16 +44,16 @@ pub fn trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
     }
 }
 
-pub struct PythonCodeGenerator {
+pub struct PythonCodeGenerator<'ctx> {
     indent_level: usize,
     generated_code: String,
-    code_handler: JarvilCodeHandler,
+    code_handler: &'ctx JarvilCodeHandler<'ctx>,
     semantic_db: SemanticStateDatabase,
 }
 
-impl PythonCodeGenerator {
+impl<'ctx> PythonCodeGenerator<'ctx> {
     pub fn new(
-        code_handler: JarvilCodeHandler,
+        code_handler: &'ctx JarvilCodeHandler<'ctx>,
         semantic_db: SemanticStateDatabase,
     ) -> PythonCodeGenerator {
         PythonCodeGenerator {
@@ -77,17 +77,14 @@ impl PythonCodeGenerator {
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
-        let index = match self
-            .semantic_db
-            .namespace_ref()
-            .lookup_in_functions_namespace(
-                ScopeIndex::global(),
-                self.semantic_db.interner().intern("main"),
-            ) {
+        let index = match self.semantic_db.namespace_ref().lookup_in_funcs_namespace(
+            ScopeIndex::global(),
+            self.semantic_db.interner().intern("main"),
+        ) {
             LookupResult::Ok(lookup_data) => match lookup_data
                 .symbol_obj
                 .symbol_index()
-                .index(self.semantic_db.namespace_ref().functions_ref())
+                .index(self.semantic_db.namespace_ref().funcs_ref())
             {
                 Some(index) => index,
                 None => unreachable!(),
@@ -118,7 +115,7 @@ impl PythonCodeGenerator {
                     .mangled_name(self.semantic_db.namespace_ref().variables_ref())
                     .to_string(VAR_SUFFIX, self.semantic_db.interner()),
                 SymbolDataEntry::Function(symbol_index) => symbol_index
-                    .mangled_name(self.semantic_db.namespace_ref().functions_ref())
+                    .mangled_name(self.semantic_db.namespace_ref().funcs_ref())
                     .to_string(FUNC_SUFFIX, self.semantic_db.interner()),
                 SymbolDataEntry::Type(symbol_index) => symbol_index
                     .mangled_name(self.semantic_db.namespace_ref().types_ref())
@@ -141,7 +138,7 @@ impl PythonCodeGenerator {
                 .to_string(VAR_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Function(concrete_symbol_index) => concrete_symbol_index
                 .symbol_index()
-                .mangled_name(self.semantic_db.namespace_ref().functions_ref())
+                .mangled_name(self.semantic_db.namespace_ref().funcs_ref())
                 .to_string(FUNC_SUFFIX, self.semantic_db.interner()),
             ConcreteSymbolDataEntry::Type(concrete_symbol_index) => concrete_symbol_index
                 .symbol_index()
@@ -269,14 +266,14 @@ impl PythonCodeGenerator {
         let rparen = &core_callable_prototype.rparen;
         self.print_token_node(lparen);
         if let Some(params) = params {
-            self.walk_comma_separated_name_type_specs(params);
+            self.walk_comma_separated_name_ty_specs(params);
         }
         self.print_token_node(rparen);
     }
 
-    pub fn print_type_decl(&mut self, type_decl: &TypeDeclarationNode) {
-        let core_type_decl = type_decl.core_ref();
-        match core_type_decl {
+    pub fn print_ty_decl(&mut self, ty_decl: &TypeDeclarationNode) {
+        let core_ty_decl = ty_decl.core_ref();
+        match core_ty_decl {
             CoreTypeDeclarationNode::Struct(struct_decl) => {
                 let core_struct_decl = struct_decl.core_ref();
                 let struct_name = &core_struct_decl.name;
@@ -464,7 +461,7 @@ impl PythonCodeGenerator {
                 self.add_str_to_python_code("self");
                 if let Some(params) = params {
                     self.add_str_to_python_code(", ");
-                    self.walk_comma_separated_name_type_specs(params);
+                    self.walk_comma_separated_name_ty_specs(params);
                 }
                 self.print_token_node(rparen);
                 self.print_token_node(colon);
@@ -570,13 +567,14 @@ impl PythonCodeGenerator {
                 self.add_indention_to_python_code();
                 self.print_bounded_method_wrapper(bounded_method_wrapper)
             }
-            CoreStatementNode::TypeDeclaration(type_decl) => {
+            CoreStatementNode::TypeDeclaration(ty_decl) => {
                 self.add_indention_to_python_code();
-                self.print_type_decl(type_decl);
+                self.print_ty_decl(ty_decl);
             }
             CoreStatementNode::MatchCase(match_case_stmt) => self.print_match_case(match_case_stmt),
             CoreStatementNode::StructPropertyDeclaration(_)
-            | CoreStatementNode::InterfaceDeclaration(_) => {
+            | CoreStatementNode::InterfaceDeclaration(_)
+            | CoreStatementNode::DeclareFunctionPrototype(_) => {
                 self.add_str_to_python_code("\n");
             }
             CoreStatementNode::EnumVariantDeclaration(_)
@@ -586,7 +584,7 @@ impl PythonCodeGenerator {
     }
 }
 
-impl Visitor for PythonCodeGenerator {
+impl<'ctx> Visitor for PythonCodeGenerator<'ctx> {
     fn visit(&mut self, node: &ASTNode) -> Option<()> {
         match node {
             ASTNode::Block(block) => {
@@ -643,10 +641,10 @@ impl Visitor for PythonCodeGenerator {
                 self.print_conditional_block(conditional_block);
                 None
             }
-            ASTNode::NameTypeSpec(name_type_spec) => {
+            ASTNode::NameTypeSpec(name_ty_spec) => {
                 // This is where type-annotations are evapored in the generated Python code
-                let core_name_type_spec = name_type_spec.core_ref();
-                let name = &core_name_type_spec.name;
+                let core_name_ty_spec = name_ty_spec.core_ref();
+                let name = &core_name_ty_spec.name;
                 self.print_identifier_in_decl(name, true);
                 None
             }

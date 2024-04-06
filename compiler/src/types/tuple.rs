@@ -1,18 +1,19 @@
 use super::{
+    core::TypeStringifyContext,
     helper::try_infer_types_from_tuple,
     traits::{OperatorCompatiblity, TypeLike},
 };
 use crate::{
     constants::common::BOOL,
-    core::string_interner::Interner,
     lexer::token::BinaryOperatorKind,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::{ConcreteTypesTuple, ConcretizationContext},
+        concrete::{TurbofishTypes, TypeGenericsInstantiationContext},
         namespace::Namespace,
         symbol::{
-            interfaces::InterfaceBounds, types::generic_type::GenericTypeDeclarationPlaceCategory,
+            interfaces::InterfaceBounds, types::generic_ty::GenericTypeDeclarationPlaceCategory,
         },
+        traits::InstantiationContext,
     },
     types::core::{CoreType, Type},
 };
@@ -75,7 +76,7 @@ impl TypeLike for Tuple {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &ConcretizationContext,
+        context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let CoreType::Tuple(tuple_data) = other_ty.core_ty() else {
@@ -93,7 +94,11 @@ impl TypeLike for Tuple {
         true
     }
 
-    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
+    fn concretize<'a, T: InstantiationContext<'a> + Copy>(
+        &self,
+        context: T,
+        namespace: &Namespace,
+    ) -> Type {
         let mut concrete_types = vec![];
         for ty in &self.sub_types {
             concrete_types.push(ty.concretize(context, namespace));
@@ -101,7 +106,7 @@ impl TypeLike for Tuple {
         Type::new_with_tuple(concrete_types)
     }
 
-    fn is_type_bounded_by_interfaces(
+    fn is_ty_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
         _namespace: &Namespace,
@@ -110,11 +115,11 @@ impl TypeLike for Tuple {
         interface_bounds.len() == 0
     }
 
-    fn try_infer_type_or_check_equivalence(
+    fn try_infer_ty_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
@@ -135,13 +140,10 @@ impl TypeLike for Tuple {
         )
     }
 
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let mut str = self.sub_types[0].to_string(interner, namespace);
+    fn to_string(&self, context: TypeStringifyContext) -> String {
+        let mut str = self.sub_types[0].to_string(context);
         for i in 1..self.sub_types.len() {
-            str.push_str(&format!(
-                ", {}",
-                self.sub_types[i].to_string(interner, namespace)
-            ));
+            str.push_str(&format!(", {}", self.sub_types[i].to_string(context)));
         }
         format!("({})", str)
     }

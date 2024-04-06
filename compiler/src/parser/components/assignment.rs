@@ -1,6 +1,9 @@
 use super::expression::core::is_expression_starting_with;
 use crate::{
-    ast::ast::{AssignmentNode, ExpressionNode, Node, RAssignmentNode},
+    ast::{
+        ast::{AssignmentNode, ExpressionNode, RAssignmentNode},
+        traits::Node,
+    },
     lexer::token::Token,
     parser::parser::JarvilParser,
 };

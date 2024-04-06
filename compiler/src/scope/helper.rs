@@ -4,36 +4,35 @@ use super::symbol::{
     interfaces::InterfaceBounds,
     types::{
         core::UserDefinedTypeData,
-        generic_type::{GenericTypeData, GenericTypeParams},
+        generic_ty::{GenericTypeData, GenericTypeParams},
     },
 };
-use super::{concrete::ConcreteTypesTuple, errors::GenericTypeArgsCheckError};
+use super::{concrete::TurbofishTypes, errors::GenericTypeArgsCheckError};
 use crate::core::string_interner::Interner;
-use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
+use crate::scope::symbol::types::generic_ty::GenericTypeDeclarationPlaceCategory;
+use crate::types::core::TypeStringifyContext;
 use text_size::TextRange;
 
 pub fn check_concrete_types_bounded_by_interfaces(
-    generic_type_decls: Option<&GenericTypeParams>,
-    concrete_types: Option<&ConcreteTypesTuple>,
-    type_ranges: Option<&Vec<TextRange>>,
+    generic_ty_decls: Option<&GenericTypeParams>,
+    concrete_types: Option<&TurbofishTypes>,
+    ty_ranges: Option<&Vec<TextRange>>,
     is_concrete_types_none_allowed: bool,
-    interner: &Interner,
-    namespace: &Namespace,
+    context: TypeStringifyContext,
 ) -> Result<(), GenericTypeArgsCheckError> {
     match concrete_types {
-        Some(concrete_types) => match generic_type_decls {
-            Some(generic_type_decls) => generic_type_decls.check_concrete_types_bounded_by(
+        Some(concrete_types) => match generic_ty_decls {
+            Some(generic_ty_decls) => generic_ty_decls.check_concrete_types_bounded_by(
                 concrete_types,
-                match type_ranges {
-                    Some(type_ranges) => type_ranges,
+                match ty_ranges {
+                    Some(ty_ranges) => ty_ranges,
                     None => unreachable!(),
                 },
-                interner,
-                namespace,
+                context,
             ),
             None => Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected),
         },
-        None => match generic_type_decls {
+        None => match generic_ty_decls {
             Some(_) => {
                 if is_concrete_types_none_allowed {
                     Ok(())
@@ -52,7 +51,7 @@ pub fn fill_side_scope_with_generic_types(namespace: &mut Namespace, interner: &
         interner.intern("T"),
         UserDefinedTypeData::Generic(GenericTypeData::new(
             0,
-            GenericTypeDeclarationPlaceCategory::InStruct,
+            GenericTypeDeclarationPlaceCategory::InType,
             InterfaceBounds::default(),
         )),
         TextRange::default(),
@@ -62,7 +61,7 @@ pub fn fill_side_scope_with_generic_types(namespace: &mut Namespace, interner: &
         interner.intern("U"),
         UserDefinedTypeData::Generic(GenericTypeData::new(
             1,
-            GenericTypeDeclarationPlaceCategory::InStruct,
+            GenericTypeDeclarationPlaceCategory::InType,
             InterfaceBounds::default(),
         )),
         TextRange::default(),

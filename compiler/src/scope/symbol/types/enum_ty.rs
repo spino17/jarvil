@@ -1,12 +1,9 @@
+use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
-use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::symbol::types::generic_ty::GenericTypeParams;
 use crate::scope::traits::IsInitialized;
 use crate::types::core::Type;
-use crate::{
-    core::string_interner::StrId,
-    scope::concrete::{ConcreteTypesTuple, ConcretizationContext},
-    types::traits::TypeLike,
-};
+use crate::{core::string_interner::StrId, types::traits::TypeLike};
 use text_size::TextRange;
 
 #[derive(Debug, Default)]
@@ -38,23 +35,16 @@ impl EnumTypeData {
         self.generics.as_ref()
     }
 
-    pub fn try_type_for_variant<'a>(
+    pub fn try_ty_for_variant<'a>(
         &'a self,
         variant_name: StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
         namespace: &Namespace,
+        context: TypeGenericsInstantiationContext,
     ) -> Option<Option<Type>> {
         for (curr_variant_name, ty, _) in &self.variants {
             if *curr_variant_name == variant_name {
                 let Some(ty) = ty else { return Some(None) };
-                if ty.is_concretization_required() {
-                    return Some(Some(ty.concretize(
-                        &ConcretizationContext::new(global_concrete_types, None),
-                        namespace,
-                    )));
-                } else {
-                    return Some(Some(ty.clone()));
-                }
+                return Some(Some(ty.concretize(context, namespace)));
             }
         }
         None

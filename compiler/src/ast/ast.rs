@@ -18,15 +18,6 @@ use std::rc::Rc;
 use text_size::TextRange;
 use text_size::TextSize;
 
-pub trait Node {
-    fn range(&self) -> TextRange;
-    fn start_line_number(&self) -> usize;
-}
-
-pub trait ErrornousNode {
-    fn new_with_missing_tokens(expected_symbols: Vec<&'static str>, received_token: Token) -> Self;
-}
-
 #[derive(Debug, Clone, Nodify)]
 pub enum ASTNode {
     Block(BlockNode),
@@ -44,7 +35,8 @@ pub enum ASTNode {
     MatchCase(MatchCaseStatementNode),
     CaseBranch(CaseBranchStatementNode),
     InterfaceDeclaration(InterfaceDeclarationNode),
-    InterfaceMethodPrototypeWrapper(InterfaceMethodPrototypeWrapperNode),
+    DeclareFunctionPrototype(DeclareFunctionPrototypeNode),
+    InterfaceMethodPrototypeWrapper(DeclareCallablePrototypeNode),
     VariableDeclaration(VariableDeclarationNode),
     Assignment(AssignmentNode),
     OkAssignment(OkAssignmentNode),
@@ -151,7 +143,8 @@ pub enum CoreStatementNode {
     CaseBranch(CaseBranchStatementNode),
     EnumVariantDeclaration(EnumVariantDeclarationNode),
     InterfaceDeclaration(InterfaceDeclarationNode),
-    InterfaceMethodPrototypeWrapper(InterfaceMethodPrototypeWrapperNode),
+    InterfaceMethodPrototypeWrapper(DeclareCallablePrototypeNode),
+    DeclareFunctionPrototype(DeclareFunctionPrototypeNode),
 }
 
 #[derive(Debug, Serialize)]
@@ -194,17 +187,17 @@ pub struct CoreInterfaceDeclarationNode {
 }
 
 #[derive(Debug, Serialize)]
-pub enum InterfaceMethodTerminalNode {
-    NoDefaultBody(TokenNode), // newline
-    HasDefaultBody(TokenNode, BlockNode),
+pub struct CoreDeclareFunctionPrototypeNode {
+    pub declare_keyword: TokenNode,
+    pub decl: DeclareCallablePrototypeNode,
 }
 
 #[derive(Debug, Serialize)]
-pub struct CoreInterfaceMethodPrototypeWrapperNode {
+pub struct CoreDeclareCallablePrototypeNode {
     pub def_keyword: TokenNode,
     pub name: IdentifierInDeclNode,
     pub prototype: CallablePrototypeNode,
-    pub terminal: InterfaceMethodTerminalNode,
+    pub newline: TokenNode,
 }
 
 #[derive(Debug, Serialize)]
@@ -308,7 +301,7 @@ pub struct CoreStructDeclarationNode {
 
 #[derive(Debug, Serialize)]
 pub struct CoreStructPropertyDeclarationNode {
-    pub name_type_spec: NameTypeSpecNode,
+    pub name_ty_spec: NameTypeSpecNode,
     pub newline: TokenNode,
 }
 
@@ -335,9 +328,9 @@ pub struct CoreLambdaTypeDeclarationNode {
     pub lambda_keyword: TokenNode,
     pub equal: TokenNode,
     pub lparen: TokenNode,
-    pub type_tuple: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>>,
+    pub ty_tuple: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>>,
     pub rparen: TokenNode,
-    pub return_type: Option<(TokenNode, TypeExpressionNode)>, // (`->`, <type_expr>)
+    pub return_ty: Option<(TokenNode, TypeExpressionNode)>, // (`->`, <type_expr>)
     pub newline: TokenNode,
 }
 
@@ -359,7 +352,7 @@ pub struct CoreAtomicTypeNode {
 #[derive(Debug, Serialize)]
 pub struct CoreArrayTypeNode {
     pub lsquare: TokenNode,
-    pub sub_type: TypeExpressionNode,
+    pub sub_ty: TypeExpressionNode,
     pub rsquare: TokenNode,
 }
 
@@ -373,9 +366,9 @@ pub struct CoreTupleTypeNode {
 #[derive(Debug, Serialize)]
 pub struct CoreHashMapTypeNode {
     pub lcurly: TokenNode,
-    pub key_type: TypeExpressionNode,
+    pub key_ty: TypeExpressionNode,
     pub colon: TokenNode,
-    pub value_type: TypeExpressionNode,
+    pub value_ty: TypeExpressionNode,
     pub rcurly: TokenNode,
 }
 
@@ -389,7 +382,7 @@ pub struct CoreCallablePrototypeNode {
     pub lparen: TokenNode,
     pub params: Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
     pub rparen: TokenNode,
-    pub return_type: Option<(TokenNode, TypeExpressionNode)>, // (`->`, <type_expr>)
+    pub return_ty: Option<(TokenNode, TypeExpressionNode)>, // (`->`, <type_expr>)
 }
 
 #[derive(Debug, Serialize)]
@@ -420,8 +413,6 @@ pub struct CoreBoundedMethodWrapperNode {
 pub struct CoreLambdaDeclarationNode {
     pub lambda_keyword: TokenNode,
     pub body: CallableBodyNode,
-    #[serde(skip_serializing)]
-    pub name: IdentifierInDeclNode,
 }
 
 #[derive(Debug, Serialize)]
@@ -489,7 +480,7 @@ pub struct CoreComparisonNode {
 
 #[derive(Debug, Serialize)]
 pub struct CoreCallExpressionNode {
-    pub function_name: IdentifierInUseNode,
+    pub func_name: IdentifierInUseNode,
     pub lparen: TokenNode,
     pub params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     pub rparen: TokenNode,
@@ -589,7 +580,7 @@ pub struct CoreEnumVariantExprOrClassMethodCallNode {
 pub struct CoreNameTypeSpecNode {
     pub name: IdentifierInDeclNode,
     pub colon: TokenNode,
-    pub data_type: TypeExpressionNode,
+    pub data_ty: TypeExpressionNode,
 }
 
 #[derive(Debug, Node, Serialize)]
@@ -646,7 +637,7 @@ pub enum CoreIdentifierInDeclNode {
 #[derive(Debug, Serialize)]
 pub struct CoreOkIdentifierInUseNode {
     pub name: OkTokenNode,
-    pub generic_type_args: Option<(
+    pub generic_ty_args: Option<(
         TokenNode,
         SymbolSeparatedSequenceNode<TypeExpressionNode>,
         TokenNode,
@@ -656,7 +647,7 @@ pub struct CoreOkIdentifierInUseNode {
 #[derive(Debug, Serialize)]
 pub struct CoreOkIdentifierInDeclNode {
     pub name: OkTokenNode,
-    pub generic_type_decls: Option<(
+    pub generic_ty_decls: Option<(
         TokenNode,
         SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
         TokenNode,
@@ -665,7 +656,7 @@ pub struct CoreOkIdentifierInDeclNode {
 
 #[derive(Debug, Serialize)]
 pub struct CoreGenericTypeDeclNode {
-    pub generic_type_name: IdentifierInDeclNode,
+    pub generic_ty_name: IdentifierInDeclNode,
     pub interface_bounds: Option<(TokenNode, SymbolSeparatedSequenceNode<IdentifierInUseNode>)>, // (colon, ...)
 }
 
@@ -682,7 +673,9 @@ pub struct StatementNode(pub Rc<CoreStatementNode>);
 #[derive(Debug, Clone)]
 pub struct InterfaceDeclarationNode(pub Rc<CoreInterfaceDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct InterfaceMethodPrototypeWrapperNode(pub Rc<CoreInterfaceMethodPrototypeWrapperNode>);
+pub struct DeclareFunctionPrototypeNode(pub Rc<CoreDeclareFunctionPrototypeNode>);
+#[derive(Debug, Clone)]
+pub struct DeclareCallablePrototypeNode(pub Rc<CoreDeclareCallablePrototypeNode>);
 #[derive(Debug, Clone)]
 pub struct ReturnStatementNode(pub Rc<CoreReturnStatementNode>);
 #[derive(Debug, Clone)]

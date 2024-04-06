@@ -1,13 +1,33 @@
-use anyon::{core::AbstractCommand, error::AnyonError, helper::cmd_from_command_line_args};
+use anyon::{
+    build::{execute_build_or_run, BuildMode},
+    error::AnyonError,
+    new::execute_new,
+};
+use clap::{Parser, Subcommand};
 use miette::{GraphicalReportHandler, GraphicalTheme};
 use owo_colors::Style;
-use std::env::args;
 
-fn check_and_execute_cmd(args: Vec<String>) -> Result<(), AnyonError> {
-    let mut anyon_obj = cmd_from_command_line_args(args)?;
-    anyon_obj.check_cmd()?;
-    anyon_obj.execute_cmd()?;
-    Ok(())
+#[derive(Parser)]
+#[command(name = "Anyon")]
+#[command(version, about = "Jarvil's Package Manager and Build System")]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    New { project_name: String },
+    Build,
+    Run,
+}
+
+fn execute_cmd(commands: &Commands) -> Result<(), AnyonError> {
+    match commands {
+        Commands::New { project_name } => execute_new(project_name),
+        Commands::Build => execute_build_or_run(BuildMode::Build),
+        Commands::Run => execute_build_or_run(BuildMode::Run),
+    }
 }
 
 fn main() {
@@ -22,9 +42,9 @@ fn main() {
         Box::new(GraphicalReportHandler::new_themed(my_theme))
     }));
 
-    let args: Vec<String> = args().collect();
-    let result = check_and_execute_cmd(args);
-    if let Err(err) = result {
+    let cli = Cli::parse();
+    let Some(commands) = &cli.command else { return };
+    if let Err(err) = execute_cmd(commands) {
         println!("{:?}", err);
     }
 }

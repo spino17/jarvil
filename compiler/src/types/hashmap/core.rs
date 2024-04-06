@@ -1,41 +1,38 @@
 use crate::{
     constants::common::BOOL,
-    core::string_interner::Interner,
     lexer::token::BinaryOperatorKind,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
-        concrete::{ConcreteTypesTuple, ConcretizationContext},
+        concrete::{TurbofishTypes, TypeGenericsInstantiationContext},
         namespace::Namespace,
         symbol::{
-            interfaces::InterfaceBounds, types::generic_type::GenericTypeDeclarationPlaceCategory,
+            interfaces::InterfaceBounds, types::generic_ty::GenericTypeDeclarationPlaceCategory,
         },
+        traits::InstantiationContext,
     },
     types::{
-        core::{CoreType, Type},
+        core::{CoreType, Type, TypeStringifyContext},
         traits::{CollectionType, OperatorCompatiblity, TypeLike},
     },
 };
 
 #[derive(Debug, Clone)]
 pub struct HashMap {
-    key_type: Type,
-    value_type: Type,
+    key_ty: Type,
+    value_ty: Type,
 }
 
 impl HashMap {
-    pub fn new(key_type: Type, value_type: Type) -> HashMap {
-        HashMap {
-            key_type,
-            value_type,
-        }
+    pub fn new(key_ty: Type, value_ty: Type) -> HashMap {
+        HashMap { key_ty, value_ty }
     }
 
     pub fn key_ty(&self) -> &Type {
-        &self.key_type
+        &self.key_ty
     }
 
     pub fn value_ty(&self) -> &Type {
-        &self.value_type
+        &self.value_ty
     }
 }
 
@@ -44,33 +41,37 @@ impl TypeLike for HashMap {
         let CoreType::HashMap(hashmap_data) = other_ty.core_ty() else {
             return false;
         };
-        self.key_type.is_eq(&hashmap_data.key_type, namespace)
-            && self.value_type.is_eq(&hashmap_data.value_type, namespace)
+        self.key_ty.is_eq(&hashmap_data.key_ty, namespace)
+            && self.value_ty.is_eq(&hashmap_data.value_ty, namespace)
     }
 
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &ConcretizationContext,
+        context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let CoreType::HashMap(hashmap_data) = other_ty.core_ty() else {
             return false;
         };
-        self.key_type
-            .is_structurally_eq(&hashmap_data.key_type, context, namespace)
+        self.key_ty
+            .is_structurally_eq(&hashmap_data.key_ty, context, namespace)
             && self
-                .value_type
-                .is_structurally_eq(&hashmap_data.value_type, context, namespace)
+                .value_ty
+                .is_structurally_eq(&hashmap_data.value_ty, context, namespace)
     }
 
-    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
-        let concrete_key_ty = self.key_type.concretize(context, namespace);
-        let concrete_value_ty = self.value_type.concretize(context, namespace);
+    fn concretize<'a, T: InstantiationContext<'a> + Copy>(
+        &self,
+        context: T,
+        namespace: &Namespace,
+    ) -> Type {
+        let concrete_key_ty = self.key_ty.concretize(context, namespace);
+        let concrete_value_ty = self.value_ty.concretize(context, namespace);
         Type::new_with_hashmap(concrete_key_ty, concrete_value_ty)
     }
 
-    fn is_type_bounded_by_interfaces(
+    fn is_ty_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
         _namespace: &Namespace,
@@ -79,11 +80,11 @@ impl TypeLike for HashMap {
         interface_bounds.len() == 0
     }
 
-    fn try_infer_type_or_check_equivalence(
+    fn try_infer_ty_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
@@ -91,16 +92,16 @@ impl TypeLike for HashMap {
         let CoreType::HashMap(hashmap_ty) = received_ty.core_ty() else {
             return Err(());
         };
-        self.key_type.try_infer_type_or_check_equivalence(
-            &hashmap_ty.key_type,
+        self.key_ty.try_infer_ty_or_check_equivalence(
+            &hashmap_ty.key_ty,
             inferred_concrete_types,
             global_concrete_types,
             num_inferred_types,
             inference_category,
             namespace,
         )?;
-        self.value_type.try_infer_type_or_check_equivalence(
-            &hashmap_ty.value_type,
+        self.value_ty.try_infer_ty_or_check_equivalence(
+            &hashmap_ty.value_ty,
             inferred_concrete_types,
             global_concrete_types,
             num_inferred_types,
@@ -110,11 +111,11 @@ impl TypeLike for HashMap {
         Ok(())
     }
 
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
+    fn to_string(&self, context: TypeStringifyContext) -> String {
         format!(
             "{{{} : {}}}",
-            self.key_type.to_string(interner, namespace),
-            self.value_type.to_string(interner, namespace)
+            self.key_ty.to_string(context),
+            self.value_ty.to_string(context)
         )
     }
 }
@@ -141,17 +142,17 @@ impl OperatorCompatiblity for HashMap {
             return None;
         };
         if self
-            .key_type
+            .key_ty
             .check_operator(
-                &other_hashmap.key_type,
+                &other_hashmap.key_ty,
                 &BinaryOperatorKind::DoubleEqual,
                 namespace,
             )
             .is_some()
             && self
-                .value_type
+                .value_ty
                 .check_operator(
-                    &other_hashmap.value_type,
+                    &other_hashmap.value_ty,
                     &BinaryOperatorKind::DoubleEqual,
                     namespace,
                 )
@@ -180,7 +181,7 @@ impl OperatorCompatiblity for HashMap {
 }
 
 impl CollectionType for HashMap {
-    fn concrete_types(&self) -> ConcreteTypesTuple {
-        ConcreteTypesTuple::new(vec![self.key_type.clone(), self.value_type.clone()])
+    fn concrete_types(&self) -> TurbofishTypes {
+        TurbofishTypes::new(vec![self.key_ty.clone(), self.value_ty.clone()])
     }
 }

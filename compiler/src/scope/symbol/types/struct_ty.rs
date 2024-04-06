@@ -1,10 +1,10 @@
 use crate::core::string_interner::StrId;
-use crate::scope::concrete::ConcreteTypesTuple;
+use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::common::{FieldsMap, MethodsMap};
 use crate::scope::symbol::function::{CallableData, CallableKind, PartialConcreteCallableDataRef};
 use crate::scope::symbol::interfaces::InterfaceBounds;
-use crate::scope::symbol::types::generic_type::GenericTypeParams;
+use crate::scope::symbol::types::generic_ty::GenericTypeParams;
 use crate::scope::traits::IsInitialized;
 use crate::types::core::Type;
 use rustc_hash::FxHashMap;
@@ -66,28 +66,26 @@ impl StructTypeData {
     pub fn try_field<'a>(
         &'a self,
         field_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
         namespace: &Namespace,
+        context: TypeGenericsInstantiationContext,
     ) -> Option<(Type, TextRange)> {
-        self.fields
-            .try_field(field_name, global_concrete_types, namespace)
+        self.fields.try_field(field_name, namespace, context)
     }
 
     pub fn try_method<'a>(
         &'a self,
         method_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        context: TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
-        self.methods.try_method(method_name, global_concrete_types)
+        self.methods.try_method(method_name, context)
     }
 
     pub fn try_class_method<'a>(
         &'a self,
         class_method_name: &StrId,
-        global_concrete_types: Option<&'a ConcreteTypesTuple>,
+        context: TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
-        self.class_methods
-            .try_method(class_method_name, global_concrete_types)
+        self.class_methods.try_method(class_method_name, context)
     }
 
     pub fn methods_ref(&self) -> &MethodsMap {

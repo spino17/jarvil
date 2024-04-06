@@ -1,42 +1,41 @@
 use super::core::{SymbolDataEntry, SymbolIndex};
-use crate::core::string_interner::Interner;
-use crate::scope::concrete::ConcreteTypesTuple;
+use crate::scope::concrete::TurbofishTypes;
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::mangled::MangledIdentifierName;
 use crate::scope::namespace::Namespace;
 use crate::scope::traits::{AbstractSymbol, IsInitialized};
-use crate::types::core::Type;
+use crate::types::core::{Type, TypeStringifyContext};
 use text_size::TextRange;
 
 #[derive(Debug)]
 pub struct VariableData {
-    data_type: Type,
+    data_ty: Type,
     is_init: bool,
 }
 
 impl VariableData {
-    pub fn new(variable_type: &Type, is_init: bool) -> Self {
+    pub fn new(variable_ty: &Type, is_init: bool) -> Self {
         VariableData {
-            data_type: variable_type.clone(),
+            data_ty: variable_ty.clone(),
             is_init,
         }
     }
 
     pub fn ty(&self) -> &Type {
-        &self.data_type
+        &self.data_ty
     }
 
-    pub fn set_data_type(&mut self, data_type: &Type) {
-        self.data_type = data_type.clone();
+    pub fn set_data_ty(&mut self, data_ty: &Type) {
+        self.data_ty = data_ty.clone();
     }
 
     pub fn set_is_init(&mut self, is_init: bool) {
         self.is_init = is_init
     }
 
-    pub fn set_data_type_from_optional_annotation(&mut self, ty: Type) {
+    pub fn set_data_ty_from_optional_annotation(&mut self, ty: Type) {
         self.is_init = true;
-        self.data_type = ty;
+        self.data_ty = ty;
     }
 }
 
@@ -49,7 +48,7 @@ impl IsInitialized for VariableData {
 impl Default for VariableData {
     fn default() -> Self {
         VariableData {
-            data_type: Type::new_with_unset(),
+            data_ty: Type::new_with_unset(),
             is_init: false,
         }
     }
@@ -72,13 +71,12 @@ impl AbstractSymbol for VariableSymbolData {
         SymbolDataEntry::Variable(self.0)
     }
 
-    fn check_generic_type_args(
+    fn check_generic_ty_args(
         &self,
-        concrete_types: Option<&ConcreteTypesTuple>,
-        _type_ranges: Option<&Vec<TextRange>>,
+        concrete_types: Option<&TurbofishTypes>,
+        _ty_ranges: Option<&Vec<TextRange>>,
         is_concrete_types_none_allowed: bool,
-        _interner: &Interner,
-        _namespace: &Namespace,
+        _context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(!is_concrete_types_none_allowed);
         if concrete_types.is_some() {

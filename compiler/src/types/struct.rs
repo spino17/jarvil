@@ -1,27 +1,25 @@
-use super::core::{CoreType, Type};
+use super::core::{CoreType, Type, TypeStringifyContext};
 use super::helper::{try_infer_types_from_tuple, user_defined_ty_compare_fn};
 use super::traits::{OperatorCompatiblity, TypeLike, UserDefinedType};
-use crate::core::string_interner::{Interner, StrId};
+use crate::core::string_interner::StrId;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
-use crate::scope::concrete::ConcreteTypesTuple;
+use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::core::SymbolIndex;
-use crate::scope::symbol::types::generic_type::GenericTypeDeclarationPlaceCategory;
-use crate::scope::{
-    concrete::ConcretizationContext, symbol::interfaces::InterfaceBounds,
-    symbol::types::core::UserDefinedTypeData,
-};
+use crate::scope::symbol::types::generic_ty::GenericTypeDeclarationPlaceCategory;
+use crate::scope::traits::InstantiationContext;
+use crate::scope::{symbol::interfaces::InterfaceBounds, symbol::types::core::UserDefinedTypeData};
 
 #[derive(Debug)]
 pub struct Struct {
     symbol_index: SymbolIndex<UserDefinedTypeData>,
-    concrete_types: Option<ConcreteTypesTuple>,
+    concrete_types: Option<TurbofishTypes>,
 }
 
 impl Struct {
     pub fn new(
         symbol_index: SymbolIndex<UserDefinedTypeData>,
-        concrete_types: Option<ConcreteTypesTuple>,
+        concrete_types: Option<TurbofishTypes>,
     ) -> Struct {
         Struct {
             symbol_index,
@@ -35,7 +33,7 @@ impl UserDefinedType for Struct {
         self.symbol_index
     }
 
-    fn concrete_types(&self) -> Option<&ConcreteTypesTuple> {
+    fn concrete_types(&self) -> Option<&TurbofishTypes> {
         self.concrete_types.as_ref()
     }
 
@@ -50,14 +48,15 @@ impl TypeLike for Struct {
             return false;
         };
         let ty_cmp_func =
-            |ty1: &Type, ty2: &Type, _context: &ConcretizationContext, namespace: &Namespace| {
-                ty1.is_eq(ty2, namespace)
-            };
+            |ty1: &Type,
+             ty2: &Type,
+             _context: TypeGenericsInstantiationContext,
+             namespace: &Namespace| { ty1.is_eq(ty2, namespace) };
         user_defined_ty_compare_fn(
             self,
             struct_data,
             ty_cmp_func,
-            &ConcretizationContext::default(),
+            TypeGenericsInstantiationContext::default(),
             namespace,
         )
     }
@@ -65,20 +64,25 @@ impl TypeLike for Struct {
     fn is_structurally_eq(
         &self,
         other_ty: &Type,
-        context: &ConcretizationContext,
+        context: TypeGenericsInstantiationContext,
         namespace: &Namespace,
     ) -> bool {
         let CoreType::Struct(struct_data) = other_ty.core_ty() else {
             return false;
         };
         let ty_cmp_func =
-            |ty1: &Type, ty2: &Type, context: &ConcretizationContext, namespace: &Namespace| {
-                ty1.is_structurally_eq(ty2, context, namespace)
-            };
+            |ty1: &Type,
+             ty2: &Type,
+             context: TypeGenericsInstantiationContext,
+             namespace: &Namespace| { ty1.is_structurally_eq(ty2, context, namespace) };
         user_defined_ty_compare_fn(self, struct_data, ty_cmp_func, context, namespace)
     }
 
-    fn concretize(&self, context: &ConcretizationContext, namespace: &Namespace) -> Type {
+    fn concretize<'a, T: InstantiationContext<'a> + Copy>(
+        &self,
+        context: T,
+        namespace: &Namespace,
+    ) -> Type {
         let Some(concrete_types) = &self.concrete_types else {
             return Type::new_with_struct(self.symbol_index, None);
         };
@@ -88,11 +92,11 @@ impl TypeLike for Struct {
         }
         Type::new_with_struct(
             self.symbol_index,
-            Some(ConcreteTypesTuple::new(concretized_concrete_types)),
+            Some(TurbofishTypes::new(concretized_concrete_types)),
         )
     }
 
-    fn is_type_bounded_by_interfaces(
+    fn is_ty_bounded_by_interfaces(
         &self,
         interface_bounds: &InterfaceBounds,
         namespace: &Namespace,
@@ -107,11 +111,11 @@ impl TypeLike for Struct {
         }
     }
 
-    fn try_infer_type_or_check_equivalence(
+    fn try_infer_ty_or_check_equivalence(
         &self,
         received_ty: &Type,
         inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
-        global_concrete_types: Option<&ConcreteTypesTuple>,
+        global_concrete_types: Option<&TurbofishTypes>,
         num_inferred_types: &mut usize,
         inference_category: GenericTypeDeclarationPlaceCategory,
         namespace: &Namespace,
@@ -139,13 +143,13 @@ impl TypeLike for Struct {
         )
     }
 
-    fn to_string(&self, interner: &Interner, namespace: &Namespace) -> String {
-        let mut s = interner.lookup(self.name());
+    fn to_string(&self, context: TypeStringifyContext) -> String {
+        let mut s = context.interner().lookup(self.name());
         let Some(concrete_types) = &self.concrete_types else {
             return s;
         };
         s.push('<');
-        s.push_str(&concrete_types.to_string(interner, namespace));
+        s.push_str(&concrete_types.to_string(context));
         s.push('>');
         s
     }

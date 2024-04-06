@@ -1,18 +1,16 @@
-use crate::lexer::lexer::Lexer;
-use crate::parser::parser::Parser;
+use crate::lexer::lexer::JarvilLexer;
 use ast::ast::BlockNode;
-use ast::print::json_serialize_ast;
+use ast::print::serialize_ast;
 use code::{JarvilCode, JarvilCodeHandler};
 use codegen::python::PythonCodeGenerator;
-use error::diagnostics::Diagnostics;
-use lexer::lexer::CoreLexer;
+use error::error::JarvilProgramAnalysisErrors;
 use miette::Report;
 use parser::parser::JarvilParser;
-use parser::resolver::Resolver;
-use parser::type_checker::TypeChecker;
-use std::fs;
+use parser::resolver::JarvilResolver;
+use parser::type_checker::JarvilTypeChecker;
 
 pub mod ast;
+pub mod builtin;
 pub mod code;
 pub mod codegen;
 pub mod constants;
@@ -25,56 +23,51 @@ pub mod scope;
 #[cfg(test)]
 pub mod tests;
 pub mod types;
-use std::env;
-pub mod builtin;
-
-pub fn curr_dir_path() -> String {
-    let curr_dir = env::current_dir().expect("failed to get current directory");
-    let curr_dir_str = curr_dir.to_string_lossy();
-    curr_dir_str.to_string()
-}
 
 fn attach_source_code(err: Report, source: String) -> Report {
     let result: miette::Result<()> = Err(err);
     match result.map_err(|error| error.with_source_code(source)).err() {
         Some(err) => err,
-        None => unreachable!("the result should always unwrap to an error"),
+        None => unreachable!(),
     }
 }
 
-pub fn build_ast(mut code: JarvilCode) -> (BlockNode, Vec<Diagnostics>, JarvilCodeHandler) {
-    let core_lexer = CoreLexer::new();
-    let (token_vec, mut errors, code_lines) = core_lexer.tokenize(&mut code);
+pub fn build_ast<'ctx>(
+    code: &'ctx JarvilCode,
+    errors: &'ctx JarvilProgramAnalysisErrors,
+) -> (BlockNode, JarvilCodeHandler<'ctx>) {
+    // lexing
+    let core_lexer = JarvilLexer::new(errors);
+    let (token_vec, code_lines) = core_lexer.tokenize(code);
     let code_handler = JarvilCodeHandler::new(code, code_lines);
-    let parser = JarvilParser::new(code_handler);
-    let (ast, mut parse_errors, code) = parser.parse(token_vec);
-    errors.append(&mut parse_errors);
-    (ast, errors, code)
+
+    // parsing
+    let parser = JarvilParser::new(&code_handler, &errors);
+    let ast = parser.parse(token_vec);
+    (ast, code_handler)
 }
 
-pub fn build_code(code: JarvilCode, code_str: String) -> Result<String, Report> {
-    let (ast, mut errors, code_handler) = build_ast(code);
+pub fn build_code(code: JarvilCode) -> (Result<String, Report>, String) {
+    let errors = JarvilProgramAnalysisErrors::default();
+    let (ast, code_handler) = build_ast(&code, &errors);
 
-    // name-resolver
-    let resolver = Resolver::new(code_handler);
-    let (semantic_db, mut semantic_errors, code_handler) = resolver.resolve_ast(&ast);
-    errors.append(&mut semantic_errors);
+    // name resolution
+    let resolver = JarvilResolver::new(&code_handler, &errors);
+    let semantic_db = resolver.resolve_ast(&ast);
 
-    // TODO - remove this after testing
-    let ast_str = json_serialize_ast(&ast, &code_handler, semantic_db.interner()).unwrap();
-    fs::write("ast.json", ast_str).unwrap();
+    // type checking
+    let type_checker = JarvilTypeChecker::new(&code_handler, &errors, semantic_db);
+    let modified_semantic_db = type_checker.check_ast(&ast);
 
-    // type-checker
-    let type_checker = TypeChecker::new(code_handler, semantic_db);
-    let (semantic_db, code_handler) = type_checker.check_ast(&ast, &mut errors);
+    // ast json serialization
+    let ast_str = serialize_ast(&ast, &code_handler, modified_semantic_db.interner()).unwrap();
 
-    if !errors.is_empty() {
-        let err = &errors[0];
-        return Err(attach_source_code(err.report(), code_str));
+    if let Some(report) = errors.first_error_report() {
+        return (Err(attach_source_code(report, code.to_string())), ast_str);
     }
 
     // Python code-generation
-    let py_generator = PythonCodeGenerator::new(code_handler, semantic_db);
+    let py_generator = PythonCodeGenerator::new(&code_handler, modified_semantic_db);
     let py_code = py_generator.generate_python_code(&ast);
-    Ok(py_code)
+    (Ok(py_code), ast_str)
 }

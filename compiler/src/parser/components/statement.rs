@@ -8,9 +8,10 @@ use crate::parser::components::expression::core::is_expression_starting_with;
 use crate::parser::parser::JarvilParser;
 use crate::parser::resolver::BlockKind;
 
-pub const STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS: [&str; 3] = ["def", "type", "interface"];
+pub const STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS: [&str; 4] =
+    ["def", "type", "interface", "declare"];
 
-pub const STATEMENT_WITHIN_FUNCTION_STARTING_SYMBOLS: [&str; 10] = [
+pub const STATEMENT_WITHIN_FUNC_STARTING_SYMBOLS: [&str; 10] = [
     "let",
     "def",
     "for",
@@ -43,11 +44,12 @@ pub fn is_statement_at_global_scope_starting_with(token: &Token) -> bool {
         CoreToken::DEF => true,
         CoreToken::TYPE_KEYWORD => true,
         CoreToken::INTERFACE_KEYWORD => true,
+        CoreToken::DECLARE_KEYWORD => true,
         _ => false,
     }
 }
 
-pub fn is_statement_within_function_starting_with(token: &Token) -> bool {
+pub fn is_statement_within_func_starting_with(token: &Token) -> bool {
     match token.core_token() {
         CoreToken::LET => true,
         CoreToken::DEF => true,
@@ -88,9 +90,13 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
     let statement_node = match token.core_token() {
         CoreToken::LET => {
             let variable_decl_node = parser.variable_decl();
-            StatementNode::new_with_variable_declaration(variable_decl_node)
+            StatementNode::new_with_variable_decl(variable_decl_node)
         }
-        CoreToken::DEF => parser.function_stmt(CallableKind::Function),
+        CoreToken::DEF => parser.func_stmt(CallableKind::Function),
+        CoreToken::DECLARE_KEYWORD => {
+            let decl_func_prototype = parser.decl_func_prototype();
+            StatementNode::new_with_declare_func_prototype(decl_func_prototype)
+        }
         CoreToken::FOR => {
             let for_loop_node = parser.for_loop_stmt();
             StatementNode::new_with_for_loop(for_loop_node)
@@ -108,12 +114,12 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
             StatementNode::new_with_conditional(conditional_node)
         }
         CoreToken::TYPE_KEYWORD => {
-            let type_decl_node = parser.type_decl();
-            StatementNode::new_with_type_declaration(type_decl_node)
+            let ty_decl_node = parser.ty_decl();
+            StatementNode::new_with_ty_decl(ty_decl_node)
         }
         CoreToken::INTERFACE_KEYWORD => {
             let interface_decl = parser.interface_decl();
-            StatementNode::new_with_interface_declaration(interface_decl)
+            StatementNode::new_with_interface_decl(interface_decl)
         }
         CoreToken::RETURN => {
             let return_node = parser.expect("return");
@@ -172,12 +178,12 @@ pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = parser.curr_token();
     match token.core_token() {
         CoreToken::IDENTIFIER => {
-            let name_type_spec_node = parser.name_type_spec();
+            let name_ty_spec_node = parser.name_ty_spec();
             let newline_node = parser.expect_terminators();
-            let struct_stmt = StructPropertyDeclarationNode::new(name_type_spec_node, newline_node);
+            let struct_stmt = StructPropertyDeclarationNode::new(name_ty_spec_node, newline_node);
             StatementNode::new_with_struct_stmt(struct_stmt)
         }
-        CoreToken::DEF => parser.function_stmt(CallableKind::Method),
+        CoreToken::DEF => parser.func_stmt(CallableKind::Method),
         _ => unreachable!(),
     }
 }
@@ -186,17 +192,14 @@ pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = parser.curr_token();
     match token.core_token() {
         CoreToken::IDENTIFIER => {
-            let name_type_spec_node = parser.name_type_spec();
+            let name_ty_spec_node = parser.name_ty_spec();
             let newline_node = parser.expect_terminators();
-            let struct_stmt = StructPropertyDeclarationNode::new(name_type_spec_node, newline_node);
+            let struct_stmt = StructPropertyDeclarationNode::new(name_ty_spec_node, newline_node);
             StatementNode::new_with_struct_stmt(struct_stmt)
         }
         CoreToken::DEF => {
-            let interface_method_prototype_wrapper_node =
-                parser.interface_method_prototype_wrapper();
-            StatementNode::new_with_interface_method_prototype_wrapper(
-                interface_method_prototype_wrapper_node,
-            )
+            let decl_callable_prototype_node = parser.decl_callable_prototype();
+            StatementNode::new_with_interface_method_prototype_wrapper(decl_callable_prototype_node)
         }
         _ => unreachable!(),
     }
@@ -207,7 +210,7 @@ pub fn enum_stmt(parser: &mut JarvilParser) -> StatementNode {
     let variant_name_node = parser.expect_identifier();
     if parser.curr_token().is_eq("(") {
         let lparen_node = parser.expect("(");
-        let ty_node = parser.type_expr();
+        let ty_node = parser.ty_expr();
         let rparen_node = parser.expect(")");
         optional_ty_node = Some((lparen_node, ty_node, rparen_node));
     }

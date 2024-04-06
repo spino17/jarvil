@@ -9,17 +9,14 @@ Makefile.am
 .mypy_cache/
 .vscode/
 .DS_Store
+Makefile
 
 # ignores from my local machine
-*.jv
 *.ts
 __*
-macro_output.rs
-scratch-*.ipynb
-Makefile
-scratch*.jv
-constants.txt
-ast.json
+scratch-*.jv
+*.json
+tools/anyon/main.jv
 
 # Remove Cargo.lock from gitignore if creating an executable, leave it for libraries
 # More information here https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
