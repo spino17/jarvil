@@ -21,7 +21,7 @@ use crate::error::diagnostics::{
     MainFunctionWrongTypeError, NonVoidConstructorReturnTypeError, SelfNotFoundError,
 };
 use crate::error::error::JarvilProgramAnalysisErrors;
-use crate::error::helper::IdentifierKind as IdentKind;
+use crate::error::helper::IdentifierKind;
 use crate::scope::concrete::{MethodGenericsInstantiationContext, TurbofishTypes};
 use crate::scope::errors::GenericTypeArgsCheckError;
 use crate::scope::lookup::{LookupData, LookupResult};
@@ -357,7 +357,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         &mut self,
         identifier: &OkIdentifierInUseNode,
         lookup_fn: U,
-        ident_kind: IdentKind,
+        ident_kind: IdentifierKind,
         log_error: bool,
         is_concrete_types_none_allowed: bool,
     ) -> ResolveResult<T> {
@@ -415,7 +415,13 @@ impl<'ctx> JarvilResolver<'ctx> {
         let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: StrId| {
             namespace.lookup_in_variables_namespace(scope_index, key)
         };
-        self.try_resolving(identifier, lookup_fn, IdentKind::Variable, log_error, false)
+        self.try_resolving(
+            identifier,
+            lookup_fn,
+            IdentifierKind::Variable,
+            log_error,
+            false,
+        )
     }
 
     fn try_resolving_func(
@@ -426,7 +432,13 @@ impl<'ctx> JarvilResolver<'ctx> {
         let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: StrId| {
             namespace.lookup_in_funcs_namespace(scope_index, key)
         };
-        self.try_resolving(identifier, lookup_fn, IdentKind::Function, log_error, true)
+        self.try_resolving(
+            identifier,
+            lookup_fn,
+            IdentifierKind::Function,
+            log_error,
+            true,
+        )
     }
 
     fn try_resolving_user_defined_ty(
@@ -441,7 +453,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.try_resolving(
             identifier,
             lookup_fn,
-            IdentKind::UserDefinedType,
+            IdentifierKind::UserDefinedType,
             log_error,
             is_concrete_types_none_allowed,
         )
@@ -458,7 +470,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.try_resolving(
             identifier,
             lookup_fn,
-            IdentKind::Interface,
+            IdentifierKind::Interface,
             log_error,
             false,
         )
@@ -750,7 +762,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     match unresolved_identifier {
                         UnresolvedIdentifier::Unresolved(identifier) => {
                             let err = IdentifierNotDeclaredError::new(
-                                IdentKind::UserDefinedType,
+                                IdentifierKind::UserDefinedType,
                                 identifier.range(),
                             );
                             self.errors
@@ -772,7 +784,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 .token_value(&self.code_handler, self.semantic_db.interner());
                             let err = IdentifierUsedBeforeInitializedError::new(
                                 self.semantic_db.interner().lookup(name),
-                                IdentKind::UserDefinedType,
+                                IdentifierKind::UserDefinedType,
                                 decl_range,
                                 identifier.range(),
                             );
@@ -783,7 +795,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                             let err = err_for_generic_ty_args(
                                 &err,
                                 identifier.core_ref().name.range(),
-                                IdentKind::UserDefinedType,
+                                IdentifierKind::UserDefinedType,
                             );
                             self.errors.log_error(err);
                         }
@@ -907,7 +919,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
                 Err((param_name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::UserDefinedType,
+                        IdentifierKind::UserDefinedType,
                         self.semantic_db.interner().lookup(param_name),
                         previous_decl_range,
                         ok_identifier_in_decl.range(),
@@ -1004,7 +1016,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     }
                     Err((param_name, previous_decl_range)) => {
                         let err = IdentifierAlreadyDeclaredError::new(
-                            IdentKind::Variable,
+                            IdentifierKind::Variable,
                             self.semantic_db.interner().lookup(param_name),
                             previous_decl_range,
                             ok_identifier.range(),
@@ -1157,7 +1169,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::Variable,
+                        IdentifierKind::Variable,
                         self.semantic_db.interner().lookup(name),
                         previous_decl_range,
                         ok_identifier.range(),
@@ -1253,7 +1265,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::Function,
+                        IdentifierKind::Function,
                         self.semantic_db.interner().lookup(name),
                         previous_decl_range,
                         ok_identifier.range(),
@@ -1297,7 +1309,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::UserDefinedType,
+                        IdentifierKind::UserDefinedType,
                         self.semantic_db.interner().lookup(name),
                         previous_decl_range,
                         ok_identifier.range(),
@@ -1384,7 +1396,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
-                                    IdentKind::Field,
+                                    IdentifierKind::Field,
                                     self.semantic_db.interner().lookup(field_name),
                                     *previous_decl_range,
                                     ok_identifier.range(),
@@ -1459,7 +1471,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                             match constructor {
                                 Some((_, previous_decl_range)) => {
                                     let err = IdentifierAlreadyDeclaredError::new(
-                                        IdentKind::Constructor,
+                                        IdentifierKind::Constructor,
                                         self.semantic_db.interner().lookup(method_name_str),
                                         previous_decl_range,
                                         ok_bounded_method_name.range(),
@@ -1491,7 +1503,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                             ) {
                                 Some(previous_decl_range) => {
                                     let err = IdentifierAlreadyDeclaredError::new(
-                                        IdentKind::Method,
+                                        IdentifierKind::Method,
                                         self.semantic_db.interner().lookup(method_name_str),
                                         previous_decl_range,
                                         ok_bounded_method_name.range(),
@@ -1582,7 +1594,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::UserDefinedType,
+                        IdentifierKind::UserDefinedType,
                         self.semantic_db.interner().lookup(name),
                         previous_decl_range,
                         ok_identifier_in_decl.range(),
@@ -1641,7 +1653,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             match variants_map.get(&variant_name) {
                 Some(previous_decl_range) => {
                     let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::Variant,
+                        IdentifierKind::Variant,
                         self.semantic_db.interner().lookup(variant_name),
                         *previous_decl_range,
                         ok_identifier.range(),
@@ -1727,7 +1739,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             }
             Err((name, previous_decl_range)) => {
                 let err = IdentifierAlreadyDeclaredError::new(
-                    IdentKind::UserDefinedType,
+                    IdentifierKind::UserDefinedType,
                     self.semantic_db.interner().lookup(name),
                     previous_decl_range,
                     ok_identifier.range(),
@@ -1751,7 +1763,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
                     let err = IdentifierAlreadyDeclaredError::new(
-                        IdentKind::Interface,
+                        IdentifierKind::Interface,
                         self.semantic_db.interner().lookup(name),
                         previous_decl_range,
                         ok_identifier_in_decl.range(),
@@ -1803,7 +1815,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
-                                    IdentKind::Field,
+                                    IdentifierKind::Field,
                                     self.semantic_db.interner().lookup(field_name),
                                     *previous_decl_range,
                                     ok_identifier.range(),
@@ -1979,7 +1991,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     let err = err_for_generic_ty_args(
                         &err,
                         ok_identifier.core_ref().name.range(),
-                        IdentKind::Function,
+                        IdentifierKind::Function,
                     );
                     self.errors.log_error(err);
                 }
@@ -1989,7 +2001,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         ResolveResult::NotInitialized(decl_range, name) => {
                             let err = IdentifierUsedBeforeInitializedError::new(
                                 self.semantic_db.interner().lookup(name),
-                                IdentKind::UserDefinedType,
+                                IdentifierKind::UserDefinedType,
                                 decl_range,
                                 ok_identifier.range(),
                             );
@@ -2000,7 +2012,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                             let err = err_for_generic_ty_args(
                                 &err,
                                 ok_identifier.core_ref().name.range(),
-                                IdentKind::UserDefinedType,
+                                IdentifierKind::UserDefinedType,
                             );
                             self.errors.log_error(err);
                         }
@@ -2020,7 +2032,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 ResolveResult::NotInitialized(decl_range, name) => {
                                     let err = IdentifierUsedBeforeInitializedError::new(
                                         self.semantic_db.interner().lookup(name),
-                                        IdentKind::Variable,
+                                        IdentifierKind::Variable,
                                         decl_range,
                                         ok_identifier.range(),
                                     );
@@ -2040,7 +2052,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                     let err = err_for_generic_ty_args(
                                         &err,
                                         ok_identifier.core_ref().name.range(),
-                                        IdentKind::Variable,
+                                        IdentifierKind::Variable,
                                     );
                                     self.errors.log_error(err);
                                 }
