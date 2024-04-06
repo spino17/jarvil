@@ -217,7 +217,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.semantic_db
     }
 
-    pub fn open_block(&mut self, block_kind: BlockKind) {
+    fn open_block(&mut self, block_kind: BlockKind) {
         let new_scope_index = self
             .semantic_db
             .namespace_mut_ref()
@@ -231,7 +231,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         });
     }
 
-    pub fn close_block(&mut self, block: Option<&BlockNode>) {
+    fn close_block(&mut self, block: Option<&BlockNode>) {
         let parent_scope_index = match self
             .semantic_db
             .namespace_ref()
@@ -252,17 +252,17 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn set_curr_class_context_is_containing_self(&mut self, value: bool) {
+    fn set_curr_class_context_is_containing_self(&mut self, value: bool) {
         let len = self.context.class_context_stack.len();
         self.context.class_context_stack[len - 1].is_containing_self = value;
     }
 
-    pub fn curr_class_context_is_containing_self(&self) -> bool {
+    fn curr_class_context_is_containing_self(&self) -> bool {
         let len = self.context.class_context_stack.len();
         self.context.class_context_stack[len - 1].is_containing_self
     }
 
-    pub fn set_to_variable_non_locals(
+    fn set_to_variable_non_locals(
         &mut self,
         name: MangledIdentifierName<VariableData>,
         enclosing_func_scope_depth: Option<usize>,
@@ -275,7 +275,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn check_enclosing_loop_scope(&self) -> bool {
+    fn check_enclosing_loop_scope(&self) -> bool {
         let mut index = self.context.block_context_stack.len() - 1;
         loop {
             let block_kind = self.context.block_context_stack[index].block_kind;
@@ -293,7 +293,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn enclosing_generics_declarative_scope_index(&self) -> (ScopeIndex, Option<ScopeIndex>) {
+    fn enclosing_generics_declarative_scope_index(&self) -> (ScopeIndex, Option<ScopeIndex>) {
         let mut index = self.context.block_context_stack.len() - 1;
         loop {
             let block_context = &self.context.block_context_stack[index];
@@ -311,7 +311,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn bind_decl_to_identifier_in_decl(
+    fn bind_decl_to_identifier_in_decl(
         &mut self,
         node: &OkIdentifierInDeclNode,
         symbol_entry: SymbolDataEntry,
@@ -321,7 +321,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             .insert(node.clone(), symbol_entry);
     }
 
-    pub fn bind_decl_to_identifier_in_use<T: AbstractSymbol>(
+    fn bind_decl_to_identifier_in_use<T: AbstractSymbol>(
         &mut self,
         node: &OkIdentifierInUseNode,
         symbol_obj: &T,
@@ -343,7 +343,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         Ok(concrete_types)
     }
 
-    pub fn bind_decl_to_self_keyword(
+    fn bind_decl_to_self_keyword(
         &mut self,
         node: &OkSelfKeywordNode,
         symbol_index: SymbolIndex<VariableData>,
@@ -353,10 +353,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             .insert(node.clone(), symbol_index);
     }
 
-    pub fn try_resolving<
-        T: AbstractSymbol,
-        U: Fn(&Namespace, ScopeIndex, StrId) -> LookupResult<T>,
-    >(
+    fn try_resolving<T: AbstractSymbol, U: Fn(&Namespace, ScopeIndex, StrId) -> LookupResult<T>>(
         &mut self,
         identifier: &OkIdentifierInUseNode,
         lookup_fn: U,
@@ -410,7 +407,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn try_resolving_variable(
+    fn try_resolving_variable(
         &mut self,
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
@@ -421,7 +418,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.try_resolving(identifier, lookup_fn, IdentKind::Variable, log_error, false)
     }
 
-    pub fn try_resolving_func(
+    fn try_resolving_func(
         &mut self,
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
@@ -432,7 +429,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.try_resolving(identifier, lookup_fn, IdentKind::Function, log_error, true)
     }
 
-    pub fn try_resolving_user_defined_ty(
+    fn try_resolving_user_defined_ty(
         &mut self,
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
@@ -450,7 +447,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         )
     }
 
-    pub fn try_resolving_interface(
+    fn try_resolving_interface(
         &mut self,
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
@@ -467,7 +464,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         )
     }
 
-    pub fn try_resolving_self_keyword(
+    fn try_resolving_self_keyword(
         &mut self,
         self_keyword: &OkSelfKeywordNode,
     ) -> Option<(SymbolIndex<VariableData>, usize)> {
@@ -489,7 +486,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn try_declare_and_bind<
+    fn try_declare_and_bind<
         V: IsInitialized,
         T: AbstractSymbol,
         U: Fn(
@@ -522,7 +519,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn try_declare_and_bind_variable(
+    fn try_declare_and_bind_variable(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<VariableSymbolData, (StrId, TextRange)> {
@@ -540,7 +537,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
-    pub fn try_declare_and_bind_func(
+    fn try_declare_and_bind_func(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<FunctionSymbolData, (StrId, TextRange)> {
@@ -558,7 +555,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
-    pub fn try_declare_and_bind_struct_ty(
+    fn try_declare_and_bind_struct_ty(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
@@ -576,7 +573,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
-    pub fn try_declare_and_bind_enum_ty(
+    fn try_declare_and_bind_enum_ty(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
@@ -594,7 +591,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
-    pub fn try_declare_and_bind_interface(
+    fn try_declare_and_bind_interface(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
     ) -> Result<InterfaceSymbolData, (StrId, TextRange)> {
@@ -744,7 +741,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn ty_from_expression(&mut self, ty_expr: &TypeExpressionNode) -> Type {
+    fn ty_from_expression(&mut self, ty_expr: &TypeExpressionNode) -> Type {
         let ty = match ty_expr.ty_before_resolved(self, self.scope_index) {
             TypeResolveKind::Resolved(ty) => ty,
             TypeResolveKind::Invalid => Type::new_with_unknown(),
@@ -939,7 +936,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn declare_callable_prototype(
+    fn declare_callable_prototype(
         &mut self,
         callable_prototype: &CallablePrototypeNode,
         optional_identifier_in_decl: Option<&OkIdentifierInDeclNode>,
@@ -1026,7 +1023,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         )
     }
 
-    pub fn visit_callable_body(
+    fn resolve_callable_body(
         &mut self,
         symbol_obj: Option<&FunctionSymbolData>,
         optional_identifier_in_decl: Option<&OkIdentifierInDeclNode>,
@@ -1058,7 +1055,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         (param_types_vec, return_ty, return_ty_range)
     }
 
-    pub fn visit_method_body(
+    fn resolve_method_body(
         &mut self,
         callable_body: &CallableBodyNode,
         optional_identifier_in_decl: Option<&OkIdentifierInDeclNode>,
@@ -1089,7 +1086,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         )
     }
 
-    pub fn visit_constructor_body(
+    fn resolve_constructor_body(
         &mut self,
         callable_body: &CallableBodyNode,
     ) -> (Vec<Type>, Type, Option<TextRange>, FxHashSet<StrId>) {
@@ -1149,7 +1146,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         )
     }
 
-    pub fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
+    fn declare_variable(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
         let mut symbol_obj: Option<VariableSymbolData> = None;
 
@@ -1193,7 +1190,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 let prototype = &core_lambda_r_assign.body.core_ref().prototype;
 
                 let (params_vec, return_ty, _) =
-                    self.visit_callable_body(None, None, Some(body), prototype);
+                    self.resolve_callable_body(None, None, Some(body), prototype);
 
                 let lambda_ty = Type::new_with_lambda_unnamed(CallablePrototypeData::new(
                     params_vec, return_ty,
@@ -1242,7 +1239,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn declare_func(&mut self, func_wrapper: &FunctionWrapperNode) {
+    fn declare_func(&mut self, func_wrapper: &FunctionWrapperNode) {
         let core_func_decl = func_wrapper.core_ref().func_decl.core_ref();
         let func_name = &core_func_decl.name;
         let body = &core_func_decl.body.core_ref().block;
@@ -1267,7 +1264,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             }
         }
 
-        let (param_types_vec, return_ty, _) = self.visit_callable_body(
+        let (param_types_vec, return_ty, _) = self.resolve_callable_body(
             symbol_obj.as_ref(),
             optional_ok_identifier_node,
             Some(body),
@@ -1281,7 +1278,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn declare_struct_ty(&mut self, struct_decl: &StructDeclarationNode) {
+    fn declare_struct_ty(&mut self, struct_decl: &StructDeclarationNode) {
         self.context.class_context_stack.push(ClassContext {
             is_containing_self: false,
         });
@@ -1437,11 +1434,11 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 return_ty,
                                 return_ty_range,
                                 temp_initialized_fields,
-                            ) = self.visit_constructor_body(&core_func_decl.body);
+                            ) = self.resolve_constructor_body(&core_func_decl.body);
                             initialized_fields = temp_initialized_fields;
                             (param_types_vec, return_ty, return_ty_range, None)
                         } else {
-                            self.visit_method_body(
+                            self.resolve_method_body(
                                 &core_func_decl.body,
                                 optional_ok_identifier_node,
                             )
@@ -1572,7 +1569,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         self.context.class_context_stack.pop();
     }
 
-    pub fn declare_enum_ty(&mut self, enum_ty_decl: &EnumDeclarationNode) {
+    fn declare_enum_ty(&mut self, enum_ty_decl: &EnumDeclarationNode) {
         let core_enum_ty_decl = enum_ty_decl.core_ref();
         let name = &core_enum_ty_decl.name;
         let mut optional_ok_identifier_in_decl = None;
@@ -1669,7 +1666,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn declare_lambda_ty(&mut self, lambda_ty_decl: &LambdaTypeDeclarationNode) {
+    fn declare_lambda_ty(&mut self, lambda_ty_decl: &LambdaTypeDeclarationNode) {
         let core_lambda_ty_decl = lambda_ty_decl.core_ref();
         let mut types_vec: Vec<Type> = vec![];
         let ty_tuple = &core_lambda_ty_decl.ty_tuple;
@@ -1741,7 +1738,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn declare_interface(&mut self, interface_decl: &InterfaceDeclarationNode) {
+    fn declare_interface(&mut self, interface_decl: &InterfaceDeclarationNode) {
         let core_interface_decl = interface_decl.core_ref();
         let name = &core_interface_decl.name;
         let mut optional_ok_identifier_in_decl = None;
@@ -1863,7 +1860,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn resolve_match_case(&mut self, match_case: &MatchCaseStatementNode) {
+    fn resolve_match_case(&mut self, match_case: &MatchCaseStatementNode) {
         let core_match_case = match_case.core_ref();
         let block = &core_match_case.block;
 

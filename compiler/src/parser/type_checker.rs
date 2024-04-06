@@ -223,14 +223,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         self.semantic_db
     }
 
-    pub fn is_resolved(&self, node: &OkIdentifierInDeclNode) -> bool {
-        self.semantic_db
-            .identifier_in_decl_binding_table_ref()
-            .get(node)
-            .is_some()
-    }
-
-    pub fn ty_from_expression(&self, ty_expr: &TypeExpressionNode) -> Type {
+    fn ty_from_expression(&self, ty_expr: &TypeExpressionNode) -> Type {
         self.semantic_db.ty_from_expr(ty_expr)
     }
 
@@ -251,7 +244,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         (Some(TurbofishTypes::new(concrete_types)), Some(ty_ranges))
     }
 
-    pub fn is_unary_expr_int_valued(&self, unary: &UnaryExpressionNode) -> Option<i32> {
+    fn is_unary_expr_int_valued(&self, unary: &UnaryExpressionNode) -> Option<i32> {
         match unary.core_ref() {
             CoreUnaryExpressionNode::Unary(unary) => {
                 let core_unary = unary.core_ref();
@@ -284,7 +277,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn is_valid_index_for_tuple(
+    fn is_valid_index_for_tuple(
         &self,
         index_value: i32,
         tuple_len: usize,
@@ -302,7 +295,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn is_binary_operation_valid(
+    fn is_binary_operation_valid(
         &self,
         l_ty: &Type,
         r_ty: &Type,
@@ -913,7 +906,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_atom_start(&self, atom_start: &AtomStartNode) -> Type {
+    fn check_atom_start(&self, atom_start: &AtomStartNode) -> Type {
         let core_atom_start = atom_start.core_ref();
         match core_atom_start {
             CoreAtomStartNode::Identifier(token) => match token.core_ref() {
@@ -1449,7 +1442,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_atom(&self, atom: &AtomNode) -> (Type, Option<Type>) {
+    fn check_atom(&self, atom: &AtomNode) -> (Type, Option<Type>) {
         let core_atom = atom.core_ref();
         match core_atom {
             CoreAtomNode::AtomStart(atom_start) => (self.check_atom_start(atom_start), None),
@@ -1462,12 +1455,12 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_r_assign(&self, r_assign: &RAssignmentNode) -> Type {
+    fn check_r_assign(&self, r_assign: &RAssignmentNode) -> Type {
         let core_r_assign = r_assign.core_ref();
         self.check_expr(&core_r_assign.expr.core_ref().expr)
     }
 
-    pub fn check_token(&self, token: &TokenNode, kind: AtomicTokenExprKind) -> Type {
+    fn check_token(&self, token: &TokenNode, kind: AtomicTokenExprKind) -> Type {
         match token.core_ref() {
             CoreTokenNode::Ok(_) => match kind {
                 AtomicTokenExprKind::Integer => Type::new_with_atomic(INT),
@@ -1479,7 +1472,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_array_expr(&self, array_expr: &ArrayExpressionNode) -> Type {
+    fn check_array_expr(&self, array_expr: &ArrayExpressionNode) -> Type {
         let core_array_expr = array_expr.core_ref();
         let Some(initials) = &core_array_expr.initials else {
             //let err = ExpressionTypeCannotBeInferredError::new(array_expr.range());
@@ -1509,7 +1502,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         Type::new_with_array(first_expr_ty)
     }
 
-    pub fn check_hashmap_expr(&self, hashmap_expr: &HashMapExpressionNode) -> Type {
+    fn check_hashmap_expr(&self, hashmap_expr: &HashMapExpressionNode) -> Type {
         let core_hashmap_expr = hashmap_expr.core_ref();
         let Some(initials) = &core_hashmap_expr.initials else {
             //let err = ExpressionTypeCannotBeInferredError::new(hashmap_expr.range());
@@ -1554,7 +1547,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         Type::new_with_hashmap(first_key_ty, first_value_ty)
     }
 
-    pub fn check_tuple_expr(&self, tuple_expr: &TupleExpressionNode) -> Type {
+    fn check_tuple_expr(&self, tuple_expr: &TupleExpressionNode) -> Type {
         let mut sub_types = vec![];
         for expr in tuple_expr.core_ref().initials.iter() {
             sub_types.push(self.check_expr(expr));
@@ -1562,7 +1555,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         Type::new_with_tuple(sub_types)
     }
 
-    pub fn check_atomic_expr(&self, atomic_expr: &AtomicExpressionNode) -> Type {
+    fn check_atomic_expr(&self, atomic_expr: &AtomicExpressionNode) -> Type {
         let core_atomic_expr = atomic_expr.core_ref();
         match core_atomic_expr {
             CoreAtomicExpressionNode::Bool(token) => {
@@ -1594,7 +1587,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_only_unary_expr(&self, only_unary_expr: &OnlyUnaryExpressionNode) -> Type {
+    fn check_only_unary_expr(&self, only_unary_expr: &OnlyUnaryExpressionNode) -> Type {
         let core_only_unary_expr = only_unary_expr.core_ref();
         let unary_expr = &core_only_unary_expr.unary_expr;
         let operand_ty = self.check_unary_expr(unary_expr);
@@ -1636,7 +1629,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_unary_expr(&self, unary_expr: &UnaryExpressionNode) -> Type {
+    fn check_unary_expr(&self, unary_expr: &UnaryExpressionNode) -> Type {
         let core_unary_expr = unary_expr.core_ref();
         match core_unary_expr {
             CoreUnaryExpressionNode::Atomic(atomic) => self.check_atomic_expr(atomic),
@@ -1644,7 +1637,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_binary_expr(&self, binary_expr: &BinaryExpressionNode) -> Type {
+    fn check_binary_expr(&self, binary_expr: &BinaryExpressionNode) -> Type {
         let core_binary_expr = binary_expr.core_ref();
         let left_expr = &core_binary_expr.left_expr;
         let right_expr = &core_binary_expr.right_expr;
@@ -1671,7 +1664,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_comp_expr(&self, comp_expr: &ComparisonNode) -> Type {
+    fn check_comp_expr(&self, comp_expr: &ComparisonNode) -> Type {
         let core_comp_expr = comp_expr.core_ref();
         let operands = &core_comp_expr.operands;
         let operators = &core_comp_expr.operators;
@@ -1716,7 +1709,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         Type::new_with_atomic(BOOL)
     }
 
-    pub fn check_expr(&self, expr: &ExpressionNode) -> Type {
+    fn check_expr(&self, expr: &ExpressionNode) -> Type {
         let core_expr = expr.core_ref();
         match core_expr {
             CoreExpressionNode::Unary(unary_expr) => self.check_unary_expr(unary_expr),
@@ -1727,7 +1720,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_assignment(&self, assignment: &AssignmentNode) {
+    fn check_assignment(&self, assignment: &AssignmentNode) {
         let core_assignment = assignment.core_ref();
         let (l_ty, r_assign, range) = match core_assignment {
             CoreAssignmentNode::Ok(ok_assignment) => {
@@ -1777,7 +1770,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
+    fn check_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
         let r_variable_decl = &core_variable_decl.r_node;
         let core_r_variable_decl = r_variable_decl.core_ref();
@@ -1828,7 +1821,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_callable_prototype(&self, callable_prototype: &CallablePrototypeNode) -> Type {
+    fn check_callable_prototype(&self, callable_prototype: &CallablePrototypeNode) -> Type {
         let core_callable_prototype = callable_prototype.0.as_ref();
         let return_ty_node = &core_callable_prototype.return_ty;
         match return_ty_node {
@@ -1837,7 +1830,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_callable_body(&mut self, prototype: &CallablePrototypeNode, body: &BlockNode) {
+    fn check_callable_body(&mut self, prototype: &CallablePrototypeNode, body: &BlockNode) {
         let return_ty = self.check_callable_prototype(prototype);
         self.context.func_stack.push(return_ty.clone());
         let mut has_return_stmt: Option<TextRange> = None;
@@ -1866,7 +1859,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         self.context.func_stack.pop();
     }
 
-    pub fn check_bounded_method(&mut self, bounded_method_wrapper: &BoundedMethodWrapperNode) {
+    fn check_bounded_method(&mut self, bounded_method_wrapper: &BoundedMethodWrapperNode) {
         let core_bounded_method_wrapper = bounded_method_wrapper.0.as_ref();
         let body = core_bounded_method_wrapper
             .func_decl
@@ -1876,7 +1869,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         self.check_callable_body(&body.prototype, &body.block);
     }
 
-    pub fn check_return_stmt(&self, return_stmt: &ReturnStatementNode) {
+    fn check_return_stmt(&self, return_stmt: &ReturnStatementNode) {
         let core_return_stmt = return_stmt.core_ref();
         let func_stack_len = self.context.func_stack.len();
         if func_stack_len == 0 {
@@ -1902,7 +1895,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_struct_decl(&mut self, struct_decl: &StructDeclarationNode) {
+    fn check_struct_decl(&mut self, struct_decl: &StructDeclarationNode) {
         let core_struct_decl = struct_decl.core_ref();
         self.walk_block(&core_struct_decl.block);
         let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() else {
@@ -1967,7 +1960,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         self.walk_block(&core_conditional_block.block);
     }
 
-    pub fn check_conditional_stmt(&mut self, conditional_stmt: &ConditionalStatementNode) {
+    fn check_conditional_stmt(&mut self, conditional_stmt: &ConditionalStatementNode) {
         let core_conditional_stmt = conditional_stmt.core_ref();
         self.check_conditional_block(&core_conditional_stmt.if_block);
         for elif in &core_conditional_stmt.elifs {
@@ -1978,7 +1971,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_match_case_stmt(&mut self, match_case: &MatchCaseStatementNode) {
+    fn check_match_case_stmt(&mut self, match_case: &MatchCaseStatementNode) {
         let core_match_case = match_case.core_ref();
         let expr = &core_match_case.expr;
         let match_block = &core_match_case.block;
@@ -2148,7 +2141,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn check_while_loop_stmt(&mut self, while_loop_stmt: &WhileLoopStatementNode) {
+    fn check_while_loop_stmt(&mut self, while_loop_stmt: &WhileLoopStatementNode) {
         let core_while_loop = while_loop_stmt.core_ref();
         let condition_expr = &core_while_loop.condition_expr;
         let ty = self.check_expr(condition_expr);
@@ -2164,7 +2157,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         self.walk_block(&core_while_loop.block);
     }
 
-    pub fn check_for_loop_stmt(&mut self, for_loop_stmt: &ForLoopStatementNode) {
+    fn check_for_loop_stmt(&mut self, for_loop_stmt: &ForLoopStatementNode) {
         let core_for_loop = for_loop_stmt.core_ref();
         let iterable_expr = &core_for_loop.iterable_expr;
         let iterable_expr_ty = self.check_expr(iterable_expr);
@@ -2213,7 +2206,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         self.walk_block(&core_for_loop.block);
     }
 
-    pub fn check_stmt(&mut self, stmt: &StatementNode) {
+    fn check_stmt(&mut self, stmt: &StatementNode) {
         match stmt.core_ref() {
             CoreStatementNode::Expression(expr_stmt) => {
                 let core_expr_stmt = expr_stmt.core_ref();
@@ -2268,7 +2261,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
-    pub fn log_params_ty_and_count_check_error(
+    fn log_params_ty_and_count_check_error(
         &self,
         range: TextRange,
         result: PrototypeEquivalenceCheckError,
