@@ -19,20 +19,20 @@ use crate::{
 // "/", "*"
 // "+", "-", "not", (...)
 
-pub fn is_expression_starting_with(token: &Token) -> bool {
-    is_unary_expression_starting_with(token)
+pub fn is_expr_starting_with(token: &Token) -> bool {
+    is_unary_expr_starting_with(token)
 }
 
 pub fn expr(parser: &mut JarvilParser) -> ExpressionNode {
     parser.pratt_expr(0)
 }
 
-pub fn is_unary_expression_starting_with(token: &Token) -> bool {
+pub fn is_unary_expr_starting_with(token: &Token) -> bool {
     match token.core_token() {
         CoreToken::PLUS => true,
         CoreToken::DASH => true,
         CoreToken::NOT => true,
-        _ => is_atomic_expression_starting_with(token),
+        _ => is_atomic_expr_starting_with(token),
     }
 }
 
@@ -65,7 +65,7 @@ pub fn unary_expr(parser: &mut JarvilParser) -> UnaryExpressionNode {
     }
 }
 
-pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
+pub fn is_atomic_expr_starting_with(token: &Token) -> bool {
     match token.core_token() {
         CoreToken::INTEGER => true,
         CoreToken::FLOATING_POINT_NUMBER => true,
@@ -81,7 +81,7 @@ pub fn is_atomic_expression_starting_with(token: &Token) -> bool {
     }
 }
 
-pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&str; 10] = [
+pub const ATOMIC_EXPR_STARTING_SYMBOLS: [&str; 10] = [
     TRUE,
     FALSE,
     INTEGER,
@@ -96,10 +96,10 @@ pub const ATOMIC_EXPRESSION_STARTING_SYMBOLS: [&str; 10] = [
 
 pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
     let token = parser.curr_token();
-    if !is_atomic_expression_starting_with(token) {
-        parser.log_missing_token_error(&ATOMIC_EXPRESSION_STARTING_SYMBOLS, token);
+    if !is_atomic_expr_starting_with(token) {
+        parser.log_missing_token_error(&ATOMIC_EXPR_STARTING_SYMBOLS, token);
         return AtomicExpressionNode::new_with_missing_tokens(
-            ATOMIC_EXPRESSION_STARTING_SYMBOLS.to_vec(),
+            ATOMIC_EXPR_STARTING_SYMBOLS.to_vec(),
             token.clone(),
         );
     }

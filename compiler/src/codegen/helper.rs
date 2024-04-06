@@ -23,7 +23,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                         self.print_identifier_in_use(&core_call_expr.func_name, false);
                         self.walk_token(&core_call_expr.lparen);
                         if let Some(params) = &core_call_expr.params {
-                            self.walk_comma_separated_expressions(params);
+                            self.walk_comma_separated_expr(params);
                         }
                         self.walk_token(&core_call_expr.rparen);
                     }
@@ -40,7 +40,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 self.print_atom_node_without_trivia(&core_call.atom);
                 self.walk_token(&core_call.lparen);
                 if let Some(params) = &core_call.params {
-                    self.walk_comma_separated_expressions(params);
+                    self.walk_comma_separated_expr(params);
                 }
                 self.walk_token(&core_call.rparen);
             }
@@ -57,7 +57,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 self.walk_identifier_in_use(&core_method_access.method_name);
                 self.walk_token(&core_method_access.lparen);
                 if let Some(params) = &core_method_access.params {
-                    self.walk_comma_separated_expressions(params);
+                    self.walk_comma_separated_expr(params);
                 }
                 self.walk_token(&core_method_access.rparen);
             }
@@ -65,13 +65,13 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 let core_index_access = index_access.core_ref();
                 self.print_atom_node_without_trivia(&core_index_access.atom);
                 self.walk_token(&core_index_access.lsquare);
-                self.walk_expression(&core_index_access.index);
+                self.walk_expr(&core_index_access.index);
                 self.walk_token(&core_index_access.rsquare);
             }
         }
     }
 
-    pub fn print_expression_without_trivia(&mut self, expr: &ExpressionNode) {
+    pub fn print_expr_without_trivia(&mut self, expr: &ExpressionNode) {
         let core_expr = expr.core_ref();
         match core_expr {
             CoreExpressionNode::Unary(unary_expr) => {
@@ -99,7 +99,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                                 self.print_token_node_without_trivia(
                                     &core_parenthesised_expr.lparen,
                                 );
-                                self.walk_expression(&core_parenthesised_expr.expr);
+                                self.walk_expr(&core_parenthesised_expr.expr);
                                 self.walk_token(&core_parenthesised_expr.rparen);
                             }
                             CoreAtomicExpressionNode::Atom(atom) => {
@@ -109,7 +109,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                                 let core_array_expr = array_expr.core_ref();
                                 self.print_token_node_without_trivia(&core_array_expr.lsquare);
                                 if let Some(initials) = &core_array_expr.initials {
-                                    self.walk_comma_separated_expressions(initials);
+                                    self.walk_comma_separated_expr(initials);
                                 }
                                 self.walk_token(&core_array_expr.rsquare);
                             }
@@ -124,7 +124,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                             CoreAtomicExpressionNode::TupleExpression(tuple_expr) => {
                                 let core_tuple_expr = tuple_expr.core_ref();
                                 self.print_token_node_without_trivia(&core_tuple_expr.lround);
-                                self.walk_comma_separated_expressions(&core_tuple_expr.initials);
+                                self.walk_comma_separated_expr(&core_tuple_expr.initials);
                                 self.walk_token(&core_tuple_expr.rround);
                             }
                             CoreAtomicExpressionNode::MissingTokens(_) => {
@@ -135,23 +135,23 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                     CoreUnaryExpressionNode::Unary(only_unary_expr) => {
                         let core_only_unary_expr = only_unary_expr.core_ref();
                         self.print_token_node_without_trivia(&core_only_unary_expr.operator);
-                        self.walk_unary_expression(&core_only_unary_expr.unary_expr);
+                        self.walk_unary_expr(&core_only_unary_expr.unary_expr);
                     }
                 }
             }
             CoreExpressionNode::Binary(binary_expr) => {
                 let core_binary_expr = binary_expr.core_ref();
-                self.print_expression_without_trivia(&core_binary_expr.left_expr);
+                self.print_expr_without_trivia(&core_binary_expr.left_expr);
                 self.walk_token(&core_binary_expr.operator);
-                self.walk_expression(&core_binary_expr.right_expr);
+                self.walk_expr(&core_binary_expr.right_expr);
             }
             CoreExpressionNode::Comparison(comp_expr) => {
                 let core_comp_expr = comp_expr.core_ref();
                 let operator_len = core_comp_expr.operators.len();
-                self.print_expression_without_trivia(&core_comp_expr.operands[0]);
+                self.print_expr_without_trivia(&core_comp_expr.operands[0]);
                 for i in 0..operator_len {
                     self.walk_token(&core_comp_expr.operators[i]);
-                    self.walk_expression(&core_comp_expr.operands[i + 1]);
+                    self.walk_expr(&core_comp_expr.operands[i + 1]);
                 }
             }
         }

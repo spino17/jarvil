@@ -4,8 +4,7 @@ use crate::constants::common::{ATOMIC_TYPE, IDENTIFIER};
 use crate::lexer::token::CoreToken;
 use crate::parser::parser::JarvilParser;
 
-pub const TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS: [&str; 5] =
-    [ATOMIC_TYPE, IDENTIFIER, "[", "{", "("];
+pub const TYPE_EXPR_EXPECTED_STARTING_SYMBOLS: [&str; 5] = [ATOMIC_TYPE, IDENTIFIER, "[", "{", "("];
 
 pub fn ty_expr(parser: &mut JarvilParser) -> TypeExpressionNode {
     let token = parser.curr_token();
@@ -48,9 +47,9 @@ pub fn ty_expr(parser: &mut JarvilParser) -> TypeExpressionNode {
             )
         }
         _ => {
-            parser.log_missing_token_error(&TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS, token);
+            parser.log_missing_token_error(&TYPE_EXPR_EXPECTED_STARTING_SYMBOLS, token);
             TypeExpressionNode::new_with_missing_tokens(
-                TYPE_EXPRESSION_EXPECTED_STARTING_SYMBOLS.to_vec(),
+                TYPE_EXPR_EXPECTED_STARTING_SYMBOLS.to_vec(),
                 token.clone(),
             )
         }

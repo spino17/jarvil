@@ -4,7 +4,7 @@ use crate::ast::ast::{
     TokenNode, TypeExpressionNode,
 };
 use crate::lexer::token::{CoreToken, Token};
-use crate::parser::components::expression::core::is_expression_starting_with;
+use crate::parser::components::expression::core::is_expr_starting_with;
 use crate::parser::parser::JarvilParser;
 use crate::parser::resolver::BlockKind;
 
@@ -60,7 +60,7 @@ pub fn is_statement_within_func_starting_with(token: &Token) -> bool {
         CoreToken::INTERFACE_KEYWORD => true,
         CoreToken::RETURN => true,
         CoreToken::MATCH => true,
-        _ => is_expression_starting_with(token),
+        _ => is_expr_starting_with(token),
     }
 }
 
@@ -77,7 +77,7 @@ pub fn is_statement_within_control_flow_starting_with(token: &Token) -> bool {
         CoreToken::BREAK => true,
         CoreToken::CONTINUE => true,
         CoreToken::MATCH => true,
-        _ => is_expression_starting_with(token),
+        _ => is_expr_starting_with(token),
     }
 }
 
@@ -166,7 +166,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
                 }
                 _ => {
                     let newline_node = parser.expect_terminators();
-                    StatementNode::new_with_expression(expr_node, newline_node)
+                    StatementNode::new_with_expr(expr_node, newline_node)
                 }
             }
         }

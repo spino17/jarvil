@@ -223,7 +223,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         self.semantic_db
     }
 
-    fn ty_from_expression(&self, ty_expr: &TypeExpressionNode) -> Type {
+    fn ty_from_expr(&self, ty_expr: &TypeExpressionNode) -> Type {
         self.semantic_db.ty_from_expr(ty_expr)
     }
 
@@ -237,7 +237,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let mut concrete_types: Vec<Type> = vec![];
         let mut ty_ranges: Vec<TextRange> = vec![];
         for generic_ty_expr in generic_ty_args.iter() {
-            let ty = self.ty_from_expression(generic_ty_expr);
+            let ty = self.ty_from_expr(generic_ty_expr);
             concrete_types.push(ty);
             ty_ranges.push(generic_ty_expr.range())
         }
@@ -1825,7 +1825,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let core_callable_prototype = callable_prototype.0.as_ref();
         let return_ty_node = &core_callable_prototype.return_ty;
         match return_ty_node {
-            Some((_, return_ty_expr)) => self.ty_from_expression(return_ty_expr),
+            Some((_, return_ty_expr)) => self.ty_from_expr(return_ty_expr),
             None => Type::new_with_void(),
         }
     }

@@ -335,7 +335,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 if let Some((lparen, params, rparen)) = params {
                     self.print_token_node(lparen);
                     if let Some(params) = params {
-                        self.walk_comma_separated_expressions(params);
+                        self.walk_comma_separated_expr(params);
                     }
                     self.print_token_node(rparen);
                 }
@@ -351,7 +351,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                             if let Some(params) = params {
                                 self.add_str_to_python_code(", data=");
                                 let expr = &params.core_ref().entity;
-                                self.walk_expression(expr);
+                                self.walk_expr(expr);
                             }
                         }
                         self.add_str_to_python_code(")");
@@ -408,7 +408,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 let case_block = &core_case_branch.block;
                 self.add_indention_to_python_code();
                 self.add_str_to_python_code(conditional_keyword_str);
-                self.walk_expression(expr);
+                self.walk_expr(expr);
                 self.add_str_to_python_code(&format!(".index == {}:", index));
                 self.open_block();
                 self.print_token_node(&case_block.core_ref().newline);
@@ -416,7 +416,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                     self.add_indention_to_python_code();
                     self.print_identifier_in_decl(variable_name, true);
                     self.add_str_to_python_code(" = ");
-                    self.walk_expression(expr);
+                    self.walk_expr(expr);
                     self.add_str_to_python_code(".data\n")
                 }
                 for stmt in &case_block.core_ref().stmts {
@@ -474,7 +474,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
         self.add_indention_to_python_code();
         let core_conditional_block = conditional_block.core_ref();
         self.print_token_node_without_trivia(&core_conditional_block.condition_keyword);
-        self.walk_expression(&core_conditional_block.condition_expr);
+        self.walk_expr(&core_conditional_block.condition_expr);
         self.walk_token(&core_conditional_block.colon);
         self.walk_block(&core_conditional_block.block);
     }
@@ -484,7 +484,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
             CoreStatementNode::Expression(expr_stmt) => {
                 self.add_indention_to_python_code();
                 let core_expr_stmt = expr_stmt.core_ref();
-                self.print_expression_without_trivia(&core_expr_stmt.expr);
+                self.print_expr_without_trivia(&core_expr_stmt.expr);
                 self.walk_token(&core_expr_stmt.newline);
             }
             CoreStatementNode::Assignment(assignment) => {
@@ -508,7 +508,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 let core_return_stmt = return_stmt.core_ref();
                 self.print_token_node_without_trivia(&core_return_stmt.return_keyword);
                 if let Some(expr) = &core_return_stmt.expr {
-                    self.walk_expression(expr);
+                    self.walk_expr(expr);
                 }
                 self.print_token_node(&core_return_stmt.newline);
             }
@@ -529,7 +529,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 self.add_indention_to_python_code();
                 let core_while_loop = while_loop_stmt.core_ref();
                 self.print_token_node_without_trivia(&core_while_loop.while_keyword);
-                self.walk_expression(&core_while_loop.condition_expr);
+                self.walk_expr(&core_while_loop.condition_expr);
                 self.walk_token(&core_while_loop.colon);
                 self.walk_block(&core_while_loop.block);
             }
@@ -539,7 +539,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 self.print_token_node_without_trivia(&core_for_loop.for_keyword);
                 self.walk_identifier_in_decl(&core_for_loop.loop_variable);
                 self.walk_token(&core_for_loop.in_keyword);
-                self.walk_expression(&core_for_loop.iterable_expr);
+                self.walk_expr(&core_for_loop.iterable_expr);
                 self.walk_token(&core_for_loop.colon);
                 self.walk_block(&core_for_loop.block);
             }

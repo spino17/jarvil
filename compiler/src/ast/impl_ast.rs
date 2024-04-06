@@ -196,7 +196,7 @@ impl Node for SkippedTokensNode {
 }
 
 impl StatementNode {
-    pub fn new_with_expression(expr: ExpressionNode, newline: TokenNode) -> Self {
+    pub fn new_with_expr(expr: ExpressionNode, newline: TokenNode) -> Self {
         let node = Rc::new(CoreStatementNode::Expression(ExpressionStatementNode::new(
             expr, newline,
         )));
