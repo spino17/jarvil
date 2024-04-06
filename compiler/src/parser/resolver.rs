@@ -6,7 +6,7 @@ use crate::ast::ast::{
     EnumVariantExprOrClassMethodCallNode, ForLoopStatementNode, FunctionWrapperNode,
     IdentifierInUseNode, InterfaceDeclarationNode, LambdaTypeDeclarationNode,
     MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
-    SelfKeywordNode, SymbolSeparatedSequenceNode, UnresolvedIdentifier, UserDefinedTypeNode,
+    SelfKeywordNode, UnresolvedIdentifier, UserDefinedTypeNode,
 };
 use crate::ast::iterators::SymbolSeparatedSequenceIterator;
 use crate::code::JarvilCodeHandler;
