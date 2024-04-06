@@ -6,8 +6,9 @@ use crate::ast::ast::{
     EnumVariantExprOrClassMethodCallNode, ForLoopStatementNode, FunctionWrapperNode,
     IdentifierInUseNode, InterfaceDeclarationNode, LambdaTypeDeclarationNode,
     MatchCaseStatementNode, OkIdentifierInDeclNode, OkIdentifierInUseNode, OkSelfKeywordNode,
-    SelfKeywordNode, UnresolvedIdentifier, UserDefinedTypeNode,
+    SelfKeywordNode, SymbolSeparatedSequenceNode, UnresolvedIdentifier, UserDefinedTypeNode,
 };
+use crate::ast::iterators::SymbolSeparatedSequenceIterator;
 use crate::code::JarvilCodeHandler;
 use crate::core::string_interner::{Interner, StrId};
 use crate::error::diagnostics::{
@@ -811,6 +812,35 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
+    fn interface_bounds_from_iter(
+        &mut self,
+        iter: SymbolSeparatedSequenceIterator<IdentifierInUseNode>,
+    ) -> InterfaceBounds {
+        let mut interface_bounds = InterfaceBounds::default();
+        for interface_expr in iter {
+            if let CoreIdentifierInUseNode::Ok(interface_expr) = interface_expr.core_ref() {
+                if let Some(interface_obj) = self.interface_obj_from_expression(interface_expr) {
+                    if let Some(previous_decl_range) = interface_bounds.insert(
+                        interface_obj,
+                        interface_expr.range(),
+                        self.semantic_db.namespace_ref(),
+                    ) {
+                        let name = interface_expr
+                            .token_value(&self.code_handler, self.semantic_db.interner());
+                        let err = InterfaceAlreadyExistInBoundsDeclarationError::new(
+                            self.semantic_db.interner().lookup(name),
+                            previous_decl_range,
+                            interface_expr.range(),
+                        );
+                        self.errors
+                            .log_error(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
+                    }
+                }
+            }
+        }
+        interface_bounds
+    }
+
     fn extract_angle_bracket_content_from_identifier_in_use(
         &mut self,
         ok_identifier_in_use: &OkIdentifierInUseNode,
@@ -851,32 +881,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 ok_identifier_in_decl.token_value(&self.code_handler, self.semantic_db.interner());
             let mut interface_bounds = InterfaceBounds::default();
             if let Some((_, interface_bounds_node)) = &core_generic_ty_decl.interface_bounds {
-                for interface_expr in interface_bounds_node.iter() {
-                    let CoreIdentifierInUseNode::Ok(interface_expr) = interface_expr.core_ref()
-                    else {
-                        continue;
-                    };
-                    let Some(interface_obj) = self.interface_obj_from_expression(interface_expr)
-                    else {
-                        continue;
-                    };
-                    let Some(previous_decl_range) = interface_bounds.insert(
-                        interface_obj,
-                        interface_expr.range(),
-                        self.semantic_db.namespace_ref(),
-                    ) else {
-                        continue;
-                    };
-                    let name =
-                        interface_expr.token_value(&self.code_handler, self.semantic_db.interner());
-                    let err = InterfaceAlreadyExistInBoundsDeclarationError::new(
-                        self.semantic_db.interner().lookup(name),
-                        previous_decl_range,
-                        interface_expr.range(),
-                    );
-                    self.errors
-                        .log_error(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
-                }
+                interface_bounds = self.interface_bounds_from_iter(interface_bounds_node.iter())
             }
             let unique_id = self
                 .semantic_db
@@ -1344,33 +1349,9 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         let mut implementing_interfaces: Option<InterfaceBounds> = None;
         if let Some((_, interfaces_node)) = implementing_interfaces_node {
-            let mut interfaces = InterfaceBounds::default();
-            for interface_expr in interfaces_node.iter() {
-                let CoreIdentifierInUseNode::Ok(interface_expr) = interface_expr.core_ref() else {
-                    continue;
-                };
-                let Some(interface_obj) = self.interface_obj_from_expression(interface_expr) else {
-                    continue;
-                };
-                let Some(previous_decl_range) = interfaces.insert(
-                    interface_obj,
-                    interface_expr.range(),
-                    self.semantic_db.namespace_ref(),
-                ) else {
-                    continue;
-                };
-                let name =
-                    interface_expr.token_value(&self.code_handler, self.semantic_db.interner());
-                let err = InterfaceAlreadyExistInBoundsDeclarationError::new(
-                    self.semantic_db.interner().lookup(name),
-                    previous_decl_range,
-                    interface_expr.range(),
-                );
-                self.errors
-                    .log_error(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
-            }
-            if interfaces.len() > 0 {
-                implementing_interfaces = Some(interfaces);
+            let interface_bounds = self.interface_bounds_from_iter(interfaces_node.iter());
+            if interface_bounds.len() > 0 {
+                implementing_interfaces = Some(interface_bounds);
             }
         }
 
