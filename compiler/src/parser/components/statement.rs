@@ -208,7 +208,7 @@ pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
 pub fn enum_stmt(parser: &mut JarvilParser) -> StatementNode {
     let mut optional_ty_node: Option<(TokenNode, TypeExpressionNode, TokenNode)> = None;
     let variant_name_node = parser.expect_identifier();
-    if parser.curr_token().is_eq("(") {
+    if parser.check_curr_token("(") {
         let lparen_node = parser.expect("(");
         let ty_node = parser.ty_expr();
         let rparen_node = parser.expect(")");
@@ -230,7 +230,7 @@ pub fn case_branch_stmt(parser: &mut JarvilParser) -> StatementNode {
     let enum_name_node = parser.expect_identifier();
     let double_colon_node = parser.expect("::");
     let variant_name_node = parser.expect_identifier();
-    if parser.curr_token().is_eq("(") {
+    if parser.check_curr_token("(") {
         let lparen_node = parser.expect("(");
         let variable_name_node = parser.expect_identifier();
         let rparen_node = parser.expect(")");

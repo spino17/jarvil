@@ -35,11 +35,11 @@ pub fn conditional(parser: &mut JarvilParser) -> ConditionalStatementNode {
     let if_block_node = parser.conditional_block("if");
     let mut elifs: Vec<ConditionalBlockNode> = vec![];
     let mut else_block_node: Option<(TokenNode, TokenNode, BlockNode)> = None;
-    while parser.curr_token().is_eq("elif") {
+    while parser.check_curr_token("elif") {
         let elif_block_node = parser.conditional_block("elif");
         elifs.push(elif_block_node);
     }
-    if parser.curr_token().is_eq("else") {
+    if parser.check_curr_token("else") {
         let else_keyword_node = parser.expect("else");
         let colon_node = parser.expect(":");
         let block_node = parser.block(

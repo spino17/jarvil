@@ -96,7 +96,7 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
                     )> = None;
                     let double_colon_node = parser.expect("::");
                     let ty_name = parser.expect_identifier_in_use();
-                    if parser.curr_token().is_eq("(") {
+                    if parser.check_curr_token("(") {
                         let lparen_node = parser.expect("(");
                         let mut params_node: Option<SymbolSeparatedSequenceNode<ExpressionNode>> =
                             None;

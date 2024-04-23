@@ -19,7 +19,7 @@ pub fn ty_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
                 SymbolSeparatedSequenceNode<IdentifierInUseNode>,
             )> = None;
             let struct_keyword_node = parser.expect("struct");
-            if parser.curr_token().is_eq("implements") {
+            if parser.check_curr_token("implements") {
                 let implements_keyword_node = parser.expect("implements");
                 let interfaces_nodes = parser.expect_symbol_separated_sequence(
                     |parser: &mut JarvilParser| parser.expect_identifier_in_use(),
