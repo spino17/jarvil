@@ -18,8 +18,8 @@ use crate::error::diagnostics::{
     ClassMethodExpectedParenthesisError, EnumVariantDoesNotExistError,
     EnumVariantsMissingFromMatchCaseStatementError, ExpectedValueForEnumVariantError,
     GenericTypeArgsNotExpectedError, IncorrectEnumNameError, IncorrectExpressionTypeError,
-    InferredTypesNotBoundedByInterfacesError, InterfaceMethodsInStructCheckError,
-    MissingTokenError, NonIterableExpressionError, NotAllConcreteTypesInferredError,
+    InferredTypesNotBoundedByInterfacesError, InterfaceObjsInStructCheckError, MissingTokenError,
+    NonIterableExpressionError, NotAllConcreteTypesInferredError,
     PropertyResolvedToMultipleInterfaceObjectsError,
     RightSideExpressionTypeMismatchedWithTypeFromAnnotationError, TypeInferenceFailedError,
     UnexpectedValueProvidedToEnumVariantError,
@@ -1915,6 +1915,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             return;
         };
         let struct_methods = struct_data.methods_ref();
+        let struct_fields = struct_data.fields_ref();
 
         for (interface_obj, range) in implementing_interfaces.iter() {
             let interface_concrete_symbol_index = interface_obj.core_symbol();
@@ -1923,20 +1924,20 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 .semantic_db
                 .interface_symbol_ref(interface_concrete_symbol_index.symbol_index());
             let context = TypeGenericsInstantiationContext::new(concrete_types);
-            let partial_concrete_interface_methods =
-                interface_data.partially_concrete_interface_methods(context);
-            if let Err((missing_interface_method_names, errors)) =
-                partial_concrete_interface_methods.is_struct_implements_interface_methods(
+            let partial_concrete_interface_bounded_objs =
+                interface_data.partially_concrete_interface_bounded_objects(context);
+            if let Err(errors) = partial_concrete_interface_bounded_objs
+                .is_struct_implements_interface_specs(
+                    struct_fields,
                     struct_methods,
                     self.semantic_db.namespace_ref(),
                 )
             {
-                let err = InterfaceMethodsInStructCheckError::new(
-                    missing_interface_method_names,
+                let err = InterfaceObjsInStructCheckError::new(
                     errors,
                     interface_obj.to_string(self.err_logging_context()),
                     *range,
-                    self.semantic_db.interner(),
+                    self.err_logging_context(),
                 );
                 self.errors
                     .log_error(Diagnostics::InterfaceMethodsInStructCheck(err));

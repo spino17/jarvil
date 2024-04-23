@@ -3,6 +3,7 @@ use super::core::SymbolIndex;
 use super::function::CallableData;
 use super::function::PartialConcreteCallableDataRef;
 use crate::core::string_interner::StrId;
+use crate::error;
 use crate::scope::concrete::ConcreteSymbolIndex;
 use crate::scope::concrete::TurbofishTypes;
 use crate::scope::concrete::TypeGenericsInstantiationContext;
@@ -71,11 +72,11 @@ impl InterfaceData {
         self.methods.has_method(method_name)
     }
 
-    pub fn partially_concrete_interface_methods<'a>(
+    pub fn partially_concrete_interface_bounded_objects<'a>(
         &'a self,
         context: TypeGenericsInstantiationContext<'a>,
-    ) -> PartialConcreteInterfaceMethods {
-        PartialConcreteInterfaceMethods::new(&self.methods, context)
+    ) -> PartialConcreteInterfaceBoundedObjects {
+        PartialConcreteInterfaceBoundedObjects::new(&self.fields, &self.methods, context)
     }
 }
 
@@ -231,22 +232,69 @@ impl InterfaceBounds {
 }
 
 #[derive(Debug)]
-pub enum PartialConcreteInterfaceMethodsCheckError {
+pub enum PartialConcreteInterfaceSpecsCheckError {
     GenericTypesDeclarationExpected(TextRange),
     GenericTypesDeclarationNotExpected(TextRange),
     PrototypeEquivalenceCheckFailed(TextRange),
     GenericTypesDeclarationCheckFailed(TextRange),
+    FieldTypeEquivalenceCheckFailed(Type, Type, TextRange),
+    MissingField,
+    MissingMethod,
 }
 
 #[derive(Debug)]
-pub struct PartialConcreteInterfaceMethods<'a> {
+pub struct PartialConcreteInterfaceBoundedObjects<'a> {
+    fields: &'a FieldsMap,
     methods: &'a MethodsMap,
     context: TypeGenericsInstantiationContext<'a>,
 }
 
-impl<'a> PartialConcreteInterfaceMethods<'a> {
-    pub fn new(methods: &'a MethodsMap, context: TypeGenericsInstantiationContext<'a>) -> Self {
-        PartialConcreteInterfaceMethods { methods, context }
+impl<'a> PartialConcreteInterfaceBoundedObjects<'a> {
+    pub fn new(
+        fields: &'a FieldsMap,
+        methods: &'a MethodsMap,
+        context: TypeGenericsInstantiationContext<'a>,
+    ) -> Self {
+        PartialConcreteInterfaceBoundedObjects {
+            fields,
+            methods,
+            context,
+        }
+    }
+
+    fn is_struct_implements_interface_fields(
+        &self,
+        struct_fields: &FieldsMap,
+        namespace: &Namespace,
+    ) -> Result<(), Vec<(&StrId, PartialConcreteInterfaceSpecsCheckError)>> {
+        let struct_fields_map_ref = struct_fields.core_ref();
+        let mut errors: Vec<(&StrId, PartialConcreteInterfaceSpecsCheckError)> = vec![];
+        for (interface_field_name, (interface_field_ty, _)) in self.fields.core_ref() {
+            match struct_fields_map_ref.get(interface_field_name) {
+                Some((struct_field_ty, range)) => {
+                    let concrete_interface_field_ty =
+                        interface_field_ty.concretize(self.context, namespace);
+                    if !struct_field_ty.is_eq(&concrete_interface_field_ty, namespace) {
+                        errors.push((
+                            interface_field_name,
+                            PartialConcreteInterfaceSpecsCheckError::FieldTypeEquivalenceCheckFailed(
+                                concrete_interface_field_ty.clone(),
+                                struct_field_ty.clone(),
+                                *range,
+                            ),
+                        ));
+                    }
+                }
+                None => errors.push((
+                    interface_field_name,
+                    PartialConcreteInterfaceSpecsCheckError::MissingField,
+                )),
+            }
+        }
+        if !errors.is_empty() {
+            return Err(errors);
+        }
+        Ok(())
     }
 
     fn compare_interface_method_with_struct_method(
@@ -255,7 +303,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         struct_method_callable_data: &CallableData,
         range: TextRange,
         namespace: &Namespace,
-    ) -> Result<(), PartialConcreteInterfaceMethodsCheckError> {
+    ) -> Result<(), PartialConcreteInterfaceSpecsCheckError> {
         let interface_method_generic_ty_decls = &interface_method_callable_data.generics();
         let struct_method_generic_ty_decls = &struct_method_callable_data.generics();
         match interface_method_generic_ty_decls {
@@ -266,7 +314,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                         if interface_method_generic_ty_decls.len()
                             != struct_method_generic_ty_decls.len()
                         {
-                            return Err(PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range));
+                            return Err(PartialConcreteInterfaceSpecsCheckError::GenericTypesDeclarationCheckFailed(range));
                         }
                         // check if the interface bounds each generic type in the declaration match
                         let generic_ty_decls_len = interface_method_generic_ty_decls.len();
@@ -276,7 +324,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                             let struct_generic_bound =
                                 struct_method_generic_ty_decls.interface_bounds(index);
                             if !interface_generic_bound.is_eq(struct_generic_bound, namespace) {
-                                return Err(PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationCheckFailed(range));
+                                return Err(PartialConcreteInterfaceSpecsCheckError::GenericTypesDeclarationCheckFailed(range));
                             }
                         }
                         // check if prototypes match
@@ -288,12 +336,12 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                                 namespace,
                             )
                         {
-                            return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
+                            return Err(PartialConcreteInterfaceSpecsCheckError::PrototypeEquivalenceCheckFailed(range));
                         }
                         Ok(())
                     }
                     None => Err(
-                        PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationExpected(
+                        PartialConcreteInterfaceSpecsCheckError::GenericTypesDeclarationExpected(
                             range,
                         ),
                     ),
@@ -301,7 +349,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
             }
             None => match struct_method_generic_ty_decls {
                 Some(_) => Err(
-                    PartialConcreteInterfaceMethodsCheckError::GenericTypesDeclarationNotExpected(
+                    PartialConcreteInterfaceSpecsCheckError::GenericTypesDeclarationNotExpected(
                         range,
                     ),
                 ),
@@ -314,7 +362,7 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                             namespace,
                         )
                     {
-                        return Err(PartialConcreteInterfaceMethodsCheckError::PrototypeEquivalenceCheckFailed(range));
+                        return Err(PartialConcreteInterfaceSpecsCheckError::PrototypeEquivalenceCheckFailed(range));
                     }
                     Ok(())
                 }
@@ -322,20 +370,13 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
         }
     }
 
-    pub fn is_struct_implements_interface_methods(
+    fn is_struct_implements_interface_methods(
         &self,
         struct_methods: &MethodsMap,
         namespace: &Namespace,
-    ) -> Result<
-        (),
-        (
-            Option<Vec<&StrId>>,
-            Option<Vec<(&StrId, PartialConcreteInterfaceMethodsCheckError)>>,
-        ),
-    > {
+    ) -> Result<(), Vec<(&StrId, PartialConcreteInterfaceSpecsCheckError)>> {
         let struct_methods_map_ref = struct_methods.core_ref();
-        let mut missing_interface_method_names: Vec<&StrId> = vec![];
-        let mut errors: Vec<(&StrId, PartialConcreteInterfaceMethodsCheckError)> = vec![];
+        let mut errors: Vec<(&StrId, PartialConcreteInterfaceSpecsCheckError)> = vec![];
         for (interface_method_name, (interface_method_callable_data, _)) in self.methods.core_ref()
         {
             match struct_methods_map_ref.get(interface_method_name) {
@@ -349,19 +390,26 @@ impl<'a> PartialConcreteInterfaceMethods<'a> {
                         errors.push((interface_method_name, err));
                     }
                 }
-                None => missing_interface_method_names.push(interface_method_name),
+                None => errors.push((
+                    interface_method_name,
+                    PartialConcreteInterfaceSpecsCheckError::MissingMethod,
+                )),
             }
         }
-        let mut final_err = (None, None);
-        if !missing_interface_method_names.is_empty() {
-            final_err.0 = Some(missing_interface_method_names);
-        }
         if !errors.is_empty() {
-            final_err.1 = Some(errors);
+            return Err(errors);
         }
-        if final_err.0.is_some() || final_err.1.is_some() {
-            return Err(final_err);
-        }
+        Ok(())
+    }
+
+    pub fn is_struct_implements_interface_specs(
+        &self,
+        struct_fields: &FieldsMap,
+        struct_methods: &MethodsMap,
+        namespace: &Namespace,
+    ) -> Result<(), Vec<(&StrId, PartialConcreteInterfaceSpecsCheckError)>> {
+        let _ = self.is_struct_implements_interface_fields(struct_fields, namespace)?;
+        let _ = self.is_struct_implements_interface_methods(struct_methods, namespace)?;
         Ok(())
     }
 }

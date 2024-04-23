@@ -21,6 +21,10 @@ impl FieldsMap {
         FieldsMap { fields }
     }
 
+    pub fn core_ref(&self) -> &FxHashMap<StrId, (Type, TextRange)> {
+        &self.fields
+    }
+
     pub fn try_field<'a>(
         &'a self,
         field_name: &StrId,

@@ -91,6 +91,10 @@ impl StructTypeData {
     pub fn methods_ref(&self) -> &MethodsMap {
         &self.methods
     }
+
+    pub fn fields_ref(&self) -> &FieldsMap {
+        &self.fields
+    }
 }
 
 impl IsInitialized for StructTypeData {
