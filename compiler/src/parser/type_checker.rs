@@ -8,8 +8,8 @@ use crate::ast::ast::{
     ConditionalStatementNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
     EnumVariantExprOrClassMethodCallNode, ForLoopStatementNode, HashMapExpressionNode,
     IdentifierInUseNode, IndexAccessNode, MatchCaseStatementNode, MethodAccessNode,
-    OkIdentifierInDeclNode, OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode,
-    TupleExpressionNode, WhileLoopStatementNode,
+    OkIdentifierInUseNode, PropertyAccessNode, StructDeclarationNode, TupleExpressionNode,
+    WhileLoopStatementNode,
 };
 use crate::code::JarvilCodeHandler;
 use crate::core::common::RefOrOwned;

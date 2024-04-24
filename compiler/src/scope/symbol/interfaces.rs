@@ -3,7 +3,6 @@ use super::core::SymbolIndex;
 use super::function::CallableData;
 use super::function::PartialConcreteCallableDataRef;
 use crate::core::string_interner::StrId;
-use crate::error;
 use crate::scope::concrete::ConcreteSymbolIndex;
 use crate::scope::concrete::TurbofishTypes;
 use crate::scope::concrete::TypeGenericsInstantiationContext;

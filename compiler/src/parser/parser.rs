@@ -148,14 +148,15 @@ impl<'ctx> JarvilParser<'ctx> {
         }
     }
 
-    pub fn expect_symbol_separated_sequence<
-        T: Node + Serialize + Clone,
-        U: Fn(&mut JarvilParser) -> T,
-    >(
+    pub fn expect_symbol_separated_sequence<T, U>(
         &mut self,
         entity_parsing_fn: U,
         separator: &'static str,
-    ) -> SymbolSeparatedSequenceNode<T> {
+    ) -> SymbolSeparatedSequenceNode<T>
+    where
+        T: Node + Serialize + Clone,
+        U: Fn(&mut JarvilParser) -> T,
+    {
         let first_entity_node = entity_parsing_fn(self);
         let token = self.curr_token();
         if token.is_eq(separator) {
@@ -197,18 +198,18 @@ impl<'ctx> JarvilParser<'ctx> {
         self.expect_symbol_separated_sequence(parsing_fn, ",")
     }
 
-    pub fn expect_identifier_in<
-        T,
-        U: Node + Serialize + Clone,
-        F: Fn(&mut JarvilParser) -> SymbolSeparatedSequenceNode<U>,
-        V: Fn(OkTokenNode, Option<(TokenNode, SymbolSeparatedSequenceNode<U>, TokenNode)>) -> T,
-        W: Fn(Vec<&'static str>, Token) -> T,
-    >(
+    pub fn expect_identifier_in<T, U, F, V, W>(
         &mut self,
         angle_bracketed_content_parsing_fn: F,
         node_creation_method_with_some: V,
         node_creation_method_with_err: W,
-    ) -> T {
+    ) -> T
+    where
+        U: Node + Serialize + Clone,
+        F: Fn(&mut JarvilParser) -> SymbolSeparatedSequenceNode<U>,
+        V: Fn(OkTokenNode, Option<(TokenNode, SymbolSeparatedSequenceNode<U>, TokenNode)>) -> T,
+        W: Fn(Vec<&'static str>, Token) -> T,
+    {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
         if token.is_eq(symbol) {

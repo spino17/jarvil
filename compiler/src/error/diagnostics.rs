@@ -1,5 +1,4 @@
 use super::helper::{range_to_span, IdentifierKind, PropertyKind};
-use crate::parser::errors;
 use crate::types::core::TypeStringifyContext;
 use crate::types::traits::TypeLike;
 use crate::{
