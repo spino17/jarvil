@@ -18,13 +18,17 @@ use crate::parser::helper::IndentResultKind;
 use crate::parser::parser::JarvilParser;
 use crate::parser::resolver::BlockKind;
 
-pub fn block<F: Fn(&Token) -> bool, G: Fn(&mut JarvilParser) -> StatementNode>(
+pub fn block<F, G>(
     parser: &mut JarvilParser,
     is_starting_with_fn: F,
     statement_parsing_fn: G,
     expected_symbols: &[&'static str],
     kind: BlockKind,
-) -> BlockNode {
+) -> BlockNode
+where
+    F: Fn(&Token) -> bool,
+    G: Fn(&mut JarvilParser) -> StatementNode,
+{
     let newline_node = parser.expect_terminators();
     parser.set_indent_level(parser.curr_indent_level() + 1);
     let mut stmts_vec: Vec<StatementIndentWrapperNode> = vec![];
