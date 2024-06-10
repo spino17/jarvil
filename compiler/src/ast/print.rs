@@ -40,6 +40,8 @@ pub fn serialize_ast(
 ) -> Result<String> {
     let serialized_ast = serde_json::to_string(ast)?;
     let mut deserialized: Value = serde_json::from_str(&serialized_ast)?;
+
     process_value(&mut deserialized, code, interner);
+
     serde_json::to_string(&deserialized)
 }

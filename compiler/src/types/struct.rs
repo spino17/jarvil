@@ -1,7 +1,7 @@
 use super::core::{CoreType, Type, TypeStringifyContext};
 use super::helper::{try_infer_types_from_tuple, user_defined_ty_compare_fn};
 use super::traits::{OperatorCompatiblity, TypeLike, UserDefinedType};
-use crate::core::string_interner::StrId;
+use crate::core::string_interner::IdentName;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
@@ -37,7 +37,7 @@ impl UserDefinedType for Struct {
         self.concrete_types.as_ref()
     }
 
-    fn name(&self) -> StrId {
+    fn name(&self) -> IdentName {
         self.symbol_index.identifier_name()
     }
 }
@@ -52,6 +52,7 @@ impl TypeLike for Struct {
              ty2: &Type,
              _context: TypeGenericsInstantiationContext,
              namespace: &Namespace| { ty1.is_eq(ty2, namespace) };
+
         user_defined_ty_compare_fn(
             self,
             struct_data,
@@ -75,6 +76,7 @@ impl TypeLike for Struct {
              ty2: &Type,
              context: TypeGenericsInstantiationContext,
              namespace: &Namespace| { ty1.is_structurally_eq(ty2, context, namespace) };
+
         user_defined_ty_compare_fn(self, struct_data, ty_cmp_func, context, namespace)
     }
 
@@ -87,9 +89,11 @@ impl TypeLike for Struct {
             return Type::new_with_struct(self.symbol_index, None);
         };
         let mut concretized_concrete_types = vec![];
+
         for ty in concrete_types.iter() {
             concretized_concrete_types.push(ty.concretize(context, namespace));
         }
+
         Type::new_with_struct(
             self.symbol_index,
             Some(TurbofishTypes::new(concretized_concrete_types)),
@@ -105,6 +109,7 @@ impl TypeLike for Struct {
             .types_ref()
             .symbol_ref(self.symbol_index)
             .data_ref();
+
         match ty_data.struct_data_ref().implementing_interfaces() {
             Some(ty_interface_bounds) => interface_bounds.is_subset(ty_interface_bounds, namespace),
             None => false,
@@ -123,15 +128,18 @@ impl TypeLike for Struct {
         let CoreType::Struct(struct_ty) = received_ty.core_ty() else {
             return Err(());
         };
+
         if self.name() != struct_ty.name() {
             return Err(());
         }
+
         let Some(generics_containing_types_tuple) = &self.concrete_types else {
             return Ok(());
         };
         let Some(base_types_tuple) = &struct_ty.concrete_types else {
             unreachable!()
         };
+
         try_infer_types_from_tuple(
             base_types_tuple.core_ref(),
             generics_containing_types_tuple.core_ref(),
@@ -148,6 +156,7 @@ impl TypeLike for Struct {
         let Some(concrete_types) = &self.concrete_types else {
             return s;
         };
+
         s.push('<');
         s.push_str(&concrete_types.to_string(context));
         s.push('>');
@@ -162,9 +171,11 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
+
         if self.name() != other_struct.name() {
             return None;
         }
+
         // TODO - This will be replaced with checking whether struct implements `Add` interface
         None
     }
@@ -173,9 +184,11 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
+
         if self.name() != other_struct.name() {
             return None;
         }
+
         // TODO - This will be replaced with checking whether struct implements `Subtract` interface
         None
     }
@@ -184,9 +197,11 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
+
         if self.name() != other_struct.name() {
             return None;
         }
+
         // TODO - This will be replaced with checking whether struct implements `Multiply` interface
         None
     }
@@ -195,9 +210,11 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
+
         if self.name() != other_struct.name() {
             return None;
         }
+
         // TODO - This will be replaced with checking whether struct implements `Divide` interface
         None
     }
@@ -206,9 +223,11 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
+
         if self.name() != other_struct.name() {
             return None;
         }
+
         // TODO - This will be replaced with checking whether struct implements `DoubleEqual` interface
         None
     }
@@ -217,9 +236,11 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
+
         if self.name() != other_struct.name() {
             return None;
         }
+
         // TODO - This will be replaced with checking whether struct implements `Greater` interface
         None
     }
@@ -228,9 +249,11 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
+
         if self.name() != other_struct.name() {
             return None;
         }
+
         // TODO - This will be replaced with checking whether struct implements `Less` interface
         None
     }
@@ -239,9 +262,11 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
+
         if self.name() != other_struct.name() {
             return None;
         }
+
         // TODO - This will be replaced with checking whether struct implements `And` interface
         None
     }
@@ -250,9 +275,11 @@ impl OperatorCompatiblity for Struct {
         let CoreType::Struct(other_struct) = other.core_ty() else {
             return None;
         };
+
         if self.name() != other_struct.name() {
             return None;
         }
+
         // TODO - This will be replaced with checking whether struct implements `Or` interface
         None
     }

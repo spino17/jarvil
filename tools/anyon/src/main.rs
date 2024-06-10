@@ -44,6 +44,7 @@ fn main() {
 
     let cli = Cli::parse();
     let Some(commands) = &cli.command else { return };
+
     if let Err(err) = execute_cmd(commands) {
         println!("{:?}", err);
     }

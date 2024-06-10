@@ -1,10 +1,10 @@
 use super::symbol::core::IdentDeclId;
-use crate::core::string_interner::{Interner, StrId};
+use crate::core::string_interner::{IdentName, Interner};
 use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Clone)]
 pub struct MangledIdentifierName<T> {
-    pub jarvil_identifer_name: StrId,
+    pub jarvil_identifer_name: IdentName,
     pub unique_id: Option<IdentDeclId<T>>,
 }
 
@@ -29,6 +29,7 @@ impl<T> MangledIdentifierName<T> {
         let Some(id) = self.unique_id else {
             return interner.lookup(self.jarvil_identifer_name).to_string();
         };
+
         format!(
             "{}_{}_{}",
             interner.lookup(self.jarvil_identifer_name),

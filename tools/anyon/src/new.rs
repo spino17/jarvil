@@ -11,6 +11,8 @@ pub fn execute_new(project_name: &str) -> Result<(), AnyonError> {
         "def main():\n{}print(\"Hello, World!\")",
         whitespaces_from_indent_level(1)
     );
+
     fs::write(main_file_path, default_main_func)?;
+
     Ok(())
 }

@@ -14,15 +14,20 @@ use crate::{
 pub fn pratt_expr(parser: &mut JarvilParser, precedence: u8) -> ExpressionNode {
     let prefix_node = parser.unary_expr();
     let mut left_expr_node: ExpressionNode = ExpressionNode::new_with_unary(prefix_node);
+
     loop {
         let (operator_precedence, operator_str) = parser.curr_token_precedence_and_name();
+
         if precedence >= operator_precedence {
             // equality gives left-assosiativity for equal precedence operators
             break;
         }
+
         let operator_node = parser.expect(operator_str);
+
         left_expr_node = parser.infix(&left_expr_node, &operator_node, operator_precedence);
     }
+
     left_expr_node
 }
 
@@ -48,17 +53,23 @@ pub fn infix_comparison_expr(
     let mut operands: Vec<ExpressionNode> = vec![left_expr_node.clone()];
     let mut operators: Vec<TokenNode> = vec![operator_node.clone()];
     let right_expr_node = parser.pratt_expr(operator_precedence);
+
     operands.push(right_expr_node);
+
     loop {
         let (operator_precedence, operator_str) = parser.curr_token_precedence_and_name();
+
         if !is_comparison(operator_precedence) {
             break;
         }
+
         let operator_node = parser.expect(operator_str);
         let right_expr_node = parser.pratt_expr(operator_precedence);
+
         operands.push(right_expr_node);
         operators.push(operator_node);
     }
+
     if operators.len() == 1 {
         return ExpressionNode::new_with_binary(
             operators[0].clone(),
@@ -66,6 +77,7 @@ pub fn infix_comparison_expr(
             operands[1].clone(),
         );
     }
+
     ExpressionNode::new_with_comparison(operands, operators)
 }
 
@@ -76,6 +88,7 @@ pub fn infix_binary_expr(
     operator_precedence: u8,
 ) -> ExpressionNode {
     let right_expr_node = parser.pratt_expr(operator_precedence);
+
     ExpressionNode::new_with_binary(
         operator_node.clone(),
         left_expr_node.clone(),

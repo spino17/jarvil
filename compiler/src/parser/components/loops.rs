@@ -20,6 +20,7 @@ pub fn while_loop_stmt(parser: &mut JarvilParser) -> WhileLoopStatementNode {
         &STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS,
         BlockKind::Loop,
     );
+
     WhileLoopStatementNode::new(
         while_keyword_node,
         condition_expr_node,
@@ -40,6 +41,7 @@ pub fn for_loop_stmt(parser: &mut JarvilParser) -> ForLoopStatementNode {
         &STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS,
         BlockKind::Loop,
     );
+
     ForLoopStatementNode::new(
         for_keyword_node,
         loop_variable_node,

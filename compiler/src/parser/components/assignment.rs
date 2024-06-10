@@ -18,6 +18,7 @@ pub fn assignment(parser: &mut JarvilParser, l_expr: ExpressionNode) -> Assignme
     let expr_node = parser.expr();
     let newline = parser.expect_terminators();
     let r_assign_node = RAssignmentNode::new_with_expr(expr_node, newline);
+
     match l_expr.is_valid_l_value() {
         Some(atom_node) => AssignmentNode::new(atom_node, r_assign_node, equal_node),
         None => {

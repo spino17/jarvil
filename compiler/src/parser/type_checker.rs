@@ -13,7 +13,7 @@ use crate::ast::ast::{
 };
 use crate::code::JarvilCodeHandler;
 use crate::core::common::RefOrOwned;
-use crate::core::string_interner::StrId;
+use crate::core::string_interner::IdentName;
 use crate::error::diagnostics::{
     ClassMethodExpectedParenthesisError, EnumVariantDoesNotExistError,
     EnumVariantsMissingFromMatchCaseStatementError, ExpectedValueForEnumVariantError,
@@ -139,7 +139,7 @@ pub enum PrototypeEquivalenceCheckError {
 pub enum AtomStartTypeCheckError {
     PrototypeEquivalenceCheckFailed(PrototypeEquivalenceCheckError),
     IdentifierNotCallable(String),
-    ConstructorNotFoundForTypeError(StrId),
+    ConstructorNotFoundForTypeError(IdentName),
 }
 
 impl From<PrototypeEquivalenceCheckError> for AtomStartTypeCheckError {
@@ -236,11 +236,13 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         };
         let mut concrete_types: Vec<Type> = vec![];
         let mut ty_ranges: Vec<TextRange> = vec![];
+
         for generic_ty_expr in generic_ty_args.iter() {
             let ty = self.ty_from_expr(generic_ty_expr);
             concrete_types.push(ty);
             ty_ranges.push(generic_ty_expr.range())
         }
+
         (Some(TurbofishTypes::new(concrete_types)), Some(ty_ranges))
     }
 
@@ -250,6 +252,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 let core_unary = unary.core_ref();
                 let operator_kind = &core_unary.operator_kind;
                 let operand_value = self.is_unary_expr_int_valued(&core_unary.unary_expr);
+
                 match operand_value {
                     Some(value) => match operator_kind {
                         UnaryOperatorKind::Plus => Some(value),
@@ -264,6 +267,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     match integer_valued_token.core_ref() {
                         CoreTokenNode::Ok(ok_token) => {
                             let value = ok_token.token_value_str(&self.code_handler);
+
                             match value.parse::<i32>() {
                                 Ok(value) => Some(value),
                                 Err(_) => None,
@@ -326,11 +330,13 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
         for (index, received_param) in received_params_iter.enumerate() {
             let param_ty = self.check_expr(received_param);
+
             if index >= expected_params_len {
                 return Err(PrototypeEquivalenceCheckError::MoreParams(
                     expected_params_len,
                 ));
             }
+
             let expected_ty = &expected_params[index];
             let inference_result = expected_ty.try_infer_ty_or_check_equivalence(
                 &param_ty,
@@ -340,9 +346,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 inference_category,
                 self.semantic_db.namespace_ref(),
             );
+
             if let Err(()) = inference_result {
                 return Err(PrototypeEquivalenceCheckError::TypeInferenceFailed);
             }
+
             params_len += 1;
         }
 
@@ -352,6 +360,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 params_len,
             )));
         }
+
         if num_inferred_types != generic_ty_decls_len {
             return Err(PrototypeEquivalenceCheckError::NotAllConcreteTypesInferred);
         }
@@ -367,6 +376,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
         for (index, inferred_ty) in unpacked_inferred_concrete_types.iter().enumerate() {
             let interface_bounds = generic_ty_decls.interface_bounds(index);
+
             if !inferred_ty
                 .is_ty_bounded_by_interfaces(interface_bounds, self.semantic_db.namespace_ref())
             {
@@ -385,6 +395,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 ),
             );
         }
+
         Ok(TurbofishTypes::new(unpacked_inferred_concrete_types))
     }
 
@@ -394,6 +405,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<(), PrototypeEquivalenceCheckError> {
         let expected_params_len = expected_param_data.len();
+
         let Some(received_params) = received_params else {
             return if expected_params_len != 0 {
                 Err(PrototypeEquivalenceCheckError::LessParams((
@@ -404,18 +416,22 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 Ok(())
             };
         };
+
         let received_params_iter = received_params.iter();
         let mut index = 0;
         let mut mismatch_types_vec: Vec<(String, String, usize, TextRange)> = vec![];
 
         for received_param in received_params_iter {
             let param_ty = self.check_expr(received_param);
+
             if index >= expected_params_len {
                 return Err(PrototypeEquivalenceCheckError::MoreParams(
                     expected_params_len,
                 ));
             }
+
             let expected_param_ty = &expected_param_data[index];
+
             if !param_ty.is_eq(expected_param_ty, self.semantic_db.namespace_ref()) {
                 mismatch_types_vec.push((
                     expected_param_ty.to_string(self.err_logging_context()),
@@ -433,6 +449,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 index,
             )));
         }
+
         if !mismatch_types_vec.is_empty() {
             return Err(PrototypeEquivalenceCheckError::MismatchedType(
                 mismatch_types_vec,
@@ -459,6 +476,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     self.semantic_db.namespace_ref(),
                     context.into_method_context(),
                 );
+
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
                 )
@@ -481,9 +499,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 }
             }
         };
+
         match prototype_result {
             CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
                 let return_ty = prototype.is_received_params_valid(self, params)?;
+
                 Ok(return_ty)
             }
             CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_ty_decls) => {
@@ -495,6 +515,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     GenericTypeDeclarationPlaceCategory::InCallable,
                 )?;
                 let context = FunctionGenericsInstantiationContext::new(Some(&concrete_types));
+
                 Ok(func_data.concretized_return_ty(
                     self.semantic_db.namespace_ref(),
                     context.into_method_context(),
@@ -509,13 +530,16 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
         debug_assert!(concrete_symbol_index.concrete_types().is_none());
+
         let lambda_ty = self
             .semantic_db
             .variable_symbol_ref(concrete_symbol_index.symbol_index())
             .ty();
+
         match lambda_ty.core_ty() {
             CoreType::Lambda(lambda_data) => {
                 let return_ty = lambda_data.is_received_params_valid(self, params)?;
+
                 Ok(return_ty)
             }
             _ => Err(AtomStartTypeCheckError::IdentifierNotCallable(
@@ -526,7 +550,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_user_defined_ty_call_expr(
         &self,
-        name: StrId,
+        name: IdentName,
         concrete_symbol_index: &ConcreteSymbolIndex<UserDefinedTypeData>,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, AtomStartTypeCheckError> {
@@ -538,8 +562,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 name,
             ));
         };
+
         let concrete_types = concrete_symbol_index.concrete_types();
         let constructor_meta_data = struct_data.constructor();
+
         let prototype_result = match concrete_types {
             Some(concrete_types) => {
                 // CASE 1
@@ -548,6 +574,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     self.semantic_db.namespace_ref(),
                     context.into_method_context(),
                 );
+
                 CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(
                     concrete_prototype,
                 )
@@ -572,13 +599,16 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 }
             }
         };
+
         match prototype_result {
             CallExpressionPrototypeEquivalenceCheckResult::HasConcretePrototype(prototype) => {
                 self.check_params_ty_and_count(prototype.params(), params)?;
+
                 let return_ty = Type::new_with_struct(
                     concrete_symbol_index.symbol_index(),
                     concrete_types.cloned(), // expensive clone
                 );
+
                 Ok(return_ty)
             }
             CallExpressionPrototypeEquivalenceCheckResult::NeedsTypeInference(generic_ty_decls) => {
@@ -589,6 +619,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     params,
                     GenericTypeDeclarationPlaceCategory::InType,
                 )?;
+
                 Ok(Type::new_with_struct(
                     concrete_symbol_index.symbol_index(),
                     Some(concrete_types),
@@ -620,6 +651,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         else {
             return Type::new_with_unknown();
         };
+
         let result = match concrete_symbol_entry {
             ConcreteSymbolDataEntry::Variable(concrete_symbol_index) => {
                 self.check_variable_call_expr(&concrete_symbol_index, params)
@@ -630,10 +662,12 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             ConcreteSymbolDataEntry::Type(concrete_symbol_index) => {
                 let name =
                     ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+
                 self.check_user_defined_ty_call_expr(name, &concrete_symbol_index, params)
             }
             ConcreteSymbolDataEntry::Interface(_) => unreachable!(),
         };
+
         match result {
             Ok(return_ty) => return_ty,
             Err(err) => {
@@ -643,11 +677,13 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             self.semantic_db.interner().lookup(struct_name),
                             func_name.range(),
                         );
+
                         self.errors
                             .log_error(Diagnostics::ConstructorNotFoundForType(err));
                     }
                     AtomStartTypeCheckError::IdentifierNotCallable(ty_str) => {
                         let err = IdentifierNotCallableError::new(ty_str, func_name.range());
+
                         self.errors
                             .log_error(Diagnostics::IdentifierNotCallable(err));
                     }
@@ -660,6 +696,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                         );
                     }
                 }
+
                 Type::new_with_unknown()
             }
         }
@@ -670,7 +707,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         struct_data: &StructTypeData,
         concrete_types: Option<&TurbofishTypes>,
         ty_node: &OkIdentifierInUseNode,
-        ty_name: StrId,
+        ty_name: IdentName,
         property_name: &IdentifierInUseNode,
         params: &Option<(
             TokenNode,
@@ -681,19 +718,24 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let CoreIdentifierInUseNode::Ok(property_name) = property_name.core_ref() else {
             return Type::new_with_unknown();
         };
+
         let params = match params {
             Some((_, params, _)) => params,
             None => {
                 let err =
                     ClassMethodExpectedParenthesisError::new(property_name.range().end().into());
+
                 self.errors
                     .log_error(Diagnostics::ClassMethodExpectedParenthesis(err));
+
                 return Type::new_with_unknown();
             }
         };
+
         let class_method_name =
             property_name.token_value(&self.code_handler, self.semantic_db.interner());
         let context = TypeGenericsInstantiationContext::new(concrete_types);
+
         match struct_data.try_class_method(&class_method_name, context) {
             Some((partial_concrete_callable_data, _)) => {
                 let (concrete_types, ty_ranges) =
@@ -704,6 +746,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     ty_ranges,
                     params,
                 );
+
                 match result {
                     Ok(return_ty) => return_ty,
                     Err(err) => {
@@ -724,9 +767,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                     ty_node.core_ref().name.range(),
                                     IdentifierKind::Method
                                 );
-                                    self.errors.log_error(err);
-                                }
+
+                                self.errors.log_error(err);
                             }
+                        }
+
                         Type::new_with_unknown()
                     }
                 }
@@ -736,8 +781,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     self.semantic_db.interner().lookup(ty_name),
                     property_name.range(),
                 );
+
                 self.errors
                     .log_error(Diagnostics::ClassmethodDoesNotExist(err));
+
                 Type::new_with_unknown()
             }
         }
@@ -747,7 +794,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         &self,
         enum_data: &EnumTypeData,
         concrete_symbol_index: &ConcreteSymbolIndex<UserDefinedTypeData>,
-        ty_name: StrId,
+        ty_name: IdentName,
         property_name: &IdentifierInUseNode,
         params: &Option<(
             TokenNode,
@@ -760,17 +807,22 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         };
         let variant_name =
             property_name.token_value(&self.code_handler, self.semantic_db.interner());
+
         if property_name.core_ref().generic_ty_args.is_some() {
             let err = GenericTypeArgsNotExpectedError::new(
                 IdentifierKind::Variant,
                 property_name.range(),
             );
+
             self.errors
                 .log_error(Diagnostics::GenericTypeArgsNotExpected(err));
+
             return Type::new_with_unknown();
         }
+
         let concrete_types = concrete_symbol_index.concrete_types();
         let context = TypeGenericsInstantiationContext::new(concrete_types);
+
         match enum_data.try_ty_for_variant(variant_name, self.semantic_db.namespace_ref(), context)
         {
             Some(expected_ty) => match params {
@@ -779,6 +831,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                         Some(expected_ty) => {
                             let core_params = params.core_ref();
                             let expr = &core_params.entity;
+
                             if let Some((comma, _)) = &core_params.remaining_entities {
                                 let err = MissingTokenError::new(
                                     &[")"],
@@ -789,18 +842,24 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                         }
                                     },
                                 );
+
                                 self.errors.log_error(Diagnostics::MissingToken(err));
+
                                 return Type::new_with_unknown();
                             }
+
                             let expr_ty = self.check_expr(expr);
+
                             if !expr_ty.is_eq(&expected_ty, self.semantic_db.namespace_ref()) {
                                 let err = IncorrectExpressionTypeError::new(
                                     expected_ty.to_string(self.err_logging_context()),
                                     expr_ty.to_string(self.err_logging_context()),
                                     expr.range(),
                                 );
+
                                 self.errors
                                     .log_error(Diagnostics::IncorrectExpressionType(err));
+
                                 return Type::new_with_unknown();
                             }
                         }
@@ -809,8 +868,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                 self.semantic_db.interner().lookup(variant_name).to_string(),
                                 params.range(),
                             );
+
                             self.errors
                                 .log_error(Diagnostics::UnexpectedValueProvidedToEnumVariant(err));
+
                             return Type::new_with_unknown();
                         }
                     },
@@ -824,7 +885,9 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                 }
                             },
                         );
+
                         self.errors.log_error(Diagnostics::MissingToken(err));
+
                         return Type::new_with_unknown();
                     }
                 },
@@ -834,8 +897,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             expected_ty.to_string(self.err_logging_context()),
                             property_name.range(),
                         );
+
                         self.errors
                             .log_error(Diagnostics::ExpectedValueForEnumVariant(err));
+
                         return Type::new_with_unknown();
                     }
                 }
@@ -845,11 +910,14 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     self.semantic_db.interner().lookup(ty_name).to_string(),
                     property_name.range(),
                 );
+
                 self.errors
                     .log_error(Diagnostics::EnumVariantDoesNotExist(err));
+
                 return Type::new_with_unknown();
             }
         }
+
         Type::new_with_enum(
             concrete_symbol_index.symbol_index(),
             concrete_types.cloned(),
@@ -869,6 +937,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             return Type::new_with_unknown();
         };
         let ty_name = ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+
         match self
             .semantic_db
             .ty_symbol_for_identifier_in_use(ok_identifier)
@@ -896,8 +965,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     UserDefinedTypeData::Lambda(_) | UserDefinedTypeData::Generic(_) => {
                         let err =
                             PropertyNotSupportedError::new("classmethod".to_string(), ty.range());
+
                         self.errors
                             .log_error(Diagnostics::PropertyNotSupported(err));
+
                         Type::new_with_unknown()
                     }
                 }
@@ -927,6 +998,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             },
             CoreAtomStartNode::SelfKeyword(self_keyword) => {
                 let core_self_keyword = self_keyword.core_ref();
+
                 match core_self_keyword {
                     CoreSelfKeywordNode::Ok(ok_self_keyword) => {
                         match self.semantic_db.self_keyword_symbol_ref(ok_self_keyword) {
@@ -958,18 +1030,22 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         match &atom_ty.core_ty() {
             CoreType::Lambda(lambda_data) => {
                 let result = lambda_data.is_received_params_valid(self, params);
+
                 match result {
                     Ok(return_ty) => (return_ty, Some(atom_ty)),
                     Err(err) => {
                         self.log_params_ty_and_count_check_error(atom.range(), err);
+
                         (Type::new_with_unknown(), Some(atom_ty))
                     }
                 }
             }
             _ => {
                 let err = ExpressionNotCallableError::new(atom.range());
+
                 self.errors
                     .log_error(Diagnostics::ExpressionNotCallable(err));
+
                 (Type::new_with_unknown(), Some(atom_ty))
             }
         }
@@ -983,23 +1059,29 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let CoreIdentifierInUseNode::Ok(ok_identifier) = property.core_ref() else {
             return (Type::new_with_unknown(), Some(atom_ty));
         };
+
         if ok_identifier.core_ref().generic_ty_args.is_some() {
             let err = GenericTypeArgsNotExpectedError::new(
                 IdentifierKind::Field,
                 ok_identifier.core_ref().name.range(),
             );
+
             self.errors
                 .log_error(Diagnostics::GenericTypeArgsNotExpected(err));
+
             return (Type::new_with_unknown(), Some(atom_ty));
         }
+
         let property_name_str =
             ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+
         let result = match atom_ty.core_ty() {
             CoreType::Struct(struct_ty) => {
                 let concrete_types = struct_ty.concrete_types();
                 let ty_data = self.semantic_db.ty_symbol_ref(struct_ty.symbol_index());
                 let struct_data = ty_data.struct_data_ref();
                 let context = TypeGenericsInstantiationContext::new(concrete_types);
+
                 match struct_data.try_field(
                     &property_name_str,
                     self.semantic_db.namespace_ref(),
@@ -1019,6 +1101,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             CoreType::Generic(generic_ty) => {
                 let ty_data = self.semantic_db.ty_symbol_ref(generic_ty.symbol_index());
                 let generic_data = ty_data.generic_data_ref();
+
                 match generic_data.try_field(&property_name_str, self.err_logging_context()) {
                     GenericTypePropertyQueryResult::Ok((ty, _)) => Ok(ty),
                     GenericTypePropertyQueryResult::AmbigiousPropertyResolution(
@@ -1049,10 +1132,12 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 ),
             )),
         };
+
         match result {
             Ok(property_ty) => (property_ty, Some(atom_ty)),
             Err(err) => {
                 self.errors.log_error(err);
+
                 (Type::new_with_unknown(), Some(atom_ty))
             }
         }
@@ -1074,6 +1159,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let ty_data = self.semantic_db.ty_symbol_ref(struct_ty.symbol_index());
         let struct_data = ty_data.struct_data_ref();
         let context = TypeGenericsInstantiationContext::new(concrete_types);
+
         // first check if it's a property
         match struct_data.try_field(&method_name, self.semantic_db.namespace_ref(), context) {
             Some((propetry_ty, _)) => {
@@ -1091,6 +1177,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     match propetry_ty.core_ty() {
                         CoreType::Lambda(lambda_ty) => {
                             let return_ty = lambda_ty.is_received_params_valid(self, params)?;
+
                             Ok(return_ty)
                         }
                         _ => Err(MethodAccessTypeCheckError::FieldNotCallable(propetry_ty)),
@@ -1111,6 +1198,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             ty_ranges,
                             params,
                         )?;
+
                         Ok(return_ty)
                     }
                     None => Err(MethodAccessTypeCheckError::MethodNotFound),
@@ -1130,6 +1218,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let ty_data = self.semantic_db.ty_symbol_ref(generic_ty.symbol_index());
         let generic_data = ty_data.generic_data_ref();
         let interface_bounds = generic_data.interface_bounds();
+
         match generic_data.try_field(&method_name, self.err_logging_context()) {
             GenericTypePropertyQueryResult::Ok((propetry_ty, _)) => {
                 if method_name_ok_identifier
@@ -1146,6 +1235,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     match propetry_ty.core_ty() {
                         CoreType::Lambda(lambda_ty) => {
                             let return_ty = lambda_ty.is_received_params_valid(self, params)?;
+
                             Ok(return_ty)
                         }
                         _ => Err(MethodAccessTypeCheckError::FieldNotCallable(propetry_ty)),
@@ -1169,6 +1259,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             .interface_symbol_ref(concrete_symbol_index.symbol_index());
                         let concrete_types = concrete_symbol_index.concrete_types();
                         let context = TypeGenericsInstantiationContext::new(concrete_types);
+
                         match interface_data.try_method(&method_name, context) {
                             Some((partial_concrete_callable_data, _)) => {
                                 let (concrete_types, ty_ranges) = self
@@ -1182,6 +1273,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                         ty_ranges,
                                         params,
                                     )?;
+
                                 Ok(return_ty)
                             }
                             None => Err(MethodAccessTypeCheckError::MethodNotFound),
@@ -1214,6 +1306,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         ) else {
             return Err(MethodAccessTypeCheckError::MethodNotFound);
         };
+
         if method_name_ok_identifier
             .core_ref()
             .generic_ty_args
@@ -1225,6 +1318,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             ))
         } else {
             let return_ty = prototype.is_received_params_valid(self, params)?;
+
             Ok(return_ty)
         }
     }
@@ -1243,6 +1337,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         ) else {
             return Err(MethodAccessTypeCheckError::MethodNotFound);
         };
+
         if method_name_ok_identifier
             .core_ref()
             .generic_ty_args
@@ -1254,6 +1349,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             ))
         } else {
             let return_ty = prototype.is_received_params_valid(self, params)?;
+
             Ok(return_ty)
         }
     }
@@ -1267,6 +1363,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let CoreIdentifierInUseNode::Ok(ok_identifier) = method.core_ref() else {
             return (Type::new_with_unknown(), Some(atom_ty));
         };
+
         let result = match &atom_ty.core_ty() {
             CoreType::Struct(struct_ty) => {
                 self.check_method_access_for_struct_ty(struct_ty, ok_identifier, params)
@@ -1282,6 +1379,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             }
             _ => Err(MethodAccessTypeCheckError::MethodNotFound),
         };
+
         match result {
             Ok(return_ty) => (return_ty, Some(atom_ty)),
             Err(err) => {
@@ -1293,6 +1391,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             method.range(),
                             atom.range(),
                         );
+
                         self.errors
                             .log_error(Diagnostics::PropertyDoesNotExist(err));
                     }
@@ -1301,6 +1400,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             ty.to_string(self.err_logging_context()),
                             ok_identifier.range(),
                         );
+
                         self.errors.log_error(Diagnostics::FieldNotCallable(err));
                     }
                     MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
@@ -1312,6 +1412,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             ok_identifier.core_ref().name.range(),
                             kind,
                         );
+
                         self.errors.log_error(err);
                     }
                     MethodAccessTypeCheckError::PrototypeEquivalenceCheckFailed(
@@ -1330,11 +1431,13 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             method_containing_interface_objs,
                             PropertyKind::Method,
                         );
+
                         self.errors.log_error(
                             Diagnostics::PropertyResolvedToMultipleInterfaceObjects(err),
                         );
                     }
                 }
+
                 (Type::new_with_unknown(), Some(atom_ty))
             }
         }
@@ -1348,28 +1451,36 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let sub_types = tuple_ty.sub_types();
         let CoreExpressionNode::Unary(index_unary_expr) = index_expr.core_ref() else {
             let err = InvalidIndexExpressionForTupleError::new(index_expr.range());
+
             self.errors
                 .log_error(Diagnostics::InvalidIndexExpressionForTuple(err));
+
             return Type::new_with_unknown();
         };
         let Some(index_value) = self.is_unary_expr_int_valued(index_unary_expr) else {
             let err = UnresolvedIndexExpressionInTupleError::new(index_expr.range());
+
             self.errors
                 .log_error(Diagnostics::UnresolvedIndexExpressionInTuple(err));
+
             return Type::new_with_unknown();
         };
         match self.is_valid_index_for_tuple(index_value, sub_types.len()) {
             TupleIndexCheckResult::Ok(index_value) => sub_types[index_value].clone(),
             TupleIndexCheckResult::PositiveIndexOutOfBound => {
                 let err = TupleIndexOutOfBoundError::new(sub_types.len(), index_expr.range());
+
                 self.errors
                     .log_error(Diagnostics::TupleIndexOutOfBound(err));
+
                 Type::new_with_unknown()
             }
             TupleIndexCheckResult::NegativeIndexOutOfBound => {
                 let err = TupleIndexOutOfBoundError::new(sub_types.len(), index_expr.range());
+
                 self.errors
                     .log_error(Diagnostics::TupleIndexOutOfBound(err));
+
                 Type::new_with_unknown()
             }
         }
@@ -1381,6 +1492,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let (atom_ty, _) = self.check_atom(atom);
         let index_expr = &core_index_access.index;
         let index_ty = self.check_expr(index_expr);
+
         let result = match atom_ty.core_ty() {
             CoreType::Tuple(tuple_data) => {
                 return (
@@ -1425,6 +1537,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             }
             _ => None,
         };
+
         match result {
             Some(ty) => (ty, Some(atom_ty)),
             None => {
@@ -1435,8 +1548,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     index_expr.range(),
                     self.err_logging_context(),
                 );
+
                 self.errors
                     .log_error(Diagnostics::ExpressionIndexingNotValid(err));
+
                 (Type::new_with_unknown(), Some(atom_ty))
             }
         }
@@ -1457,6 +1572,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_r_assign(&self, r_assign: &RAssignmentNode) -> Type {
         let core_r_assign = r_assign.core_ref();
+
         self.check_expr(&core_r_assign.expr.core_ref().expr)
     }
 
@@ -1494,6 +1610,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     ty.to_string(self.err_logging_context()),
                     expr.range(),
                 );
+
                 self.errors
                     .log_error(Diagnostics::IncorrectExpressionType(err));
             }
@@ -1515,6 +1632,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             Some(key_value_pair) => {
                 let key_ty = self.check_expr(&key_value_pair.core_ref().key_expr);
                 let value_ty = self.check_expr(&key_value_pair.core_ref().value_expr);
+
                 (key_ty, value_ty)
             }
             None => unreachable!(),
@@ -1524,21 +1642,25 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             let core_key_value_pair = key_value_pair.core_ref();
             let key_ty = self.check_expr(&core_key_value_pair.key_expr);
             let value_ty = self.check_expr(&core_key_value_pair.value_expr);
+
             if !key_ty.is_eq(&first_key_ty, self.semantic_db.namespace_ref()) {
                 let err = IncorrectExpressionTypeError::new(
                     first_key_ty.to_string(self.err_logging_context()),
                     key_ty.to_string(self.err_logging_context()),
                     core_key_value_pair.key_expr.range(),
                 );
+
                 self.errors
                     .log_error(Diagnostics::IncorrectExpressionType(err));
             }
+
             if !value_ty.is_eq(&first_value_ty, self.semantic_db.namespace_ref()) {
                 let err = IncorrectExpressionTypeError::new(
                     first_value_ty.to_string(self.err_logging_context()),
                     value_ty.to_string(self.err_logging_context()),
                     core_key_value_pair.value_expr.range(),
                 );
+
                 self.errors
                     .log_error(Diagnostics::IncorrectExpressionType(err));
             }
@@ -1549,9 +1671,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_tuple_expr(&self, tuple_expr: &TupleExpressionNode) -> Type {
         let mut sub_types = vec![];
+
         for expr in tuple_expr.core_ref().initials.iter() {
             sub_types.push(self.check_expr(expr));
         }
+
         Type::new_with_tuple(sub_types)
     }
 
@@ -1593,6 +1717,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let operand_ty = self.check_unary_expr(unary_expr);
         let operator = &core_only_unary_expr.operator;
         let operator_kind = &core_only_unary_expr.operator_kind;
+
         match operator_kind {
             UnaryOperatorKind::Plus | UnaryOperatorKind::Minus => {
                 if operand_ty.is_numeric() {
@@ -1605,8 +1730,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                         unary_expr.range(),
                         operator.range(),
                     );
+
                     self.errors
                         .log_error(Diagnostics::UnaryOperatorInvalidUse(err));
+
                     Type::new_with_unknown()
                 }
             }
@@ -1621,8 +1748,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                         unary_expr.range(),
                         operator.range(),
                     );
+
                     self.errors
                         .log_error(Diagnostics::UnaryOperatorInvalidUse(err));
+
                     Type::new_with_unknown()
                 }
             }
@@ -1646,6 +1775,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let operator_kind = &core_binary_expr.operator_kind;
         let r_ty = self.check_expr(right_expr);
         let result = self.is_binary_operation_valid(&l_ty, &r_ty, operator_kind);
+
         match result {
             Some(ty) => ty,
             None => {
@@ -1657,8 +1787,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     operator.range(),
                     self.err_logging_context(),
                 );
+
                 self.errors
                     .log_error(Diagnostics::BinaryOperatorInvalidOperands(err));
+
                 Type::new_with_unknown()
             }
         }
@@ -1679,11 +1811,14 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             let operator_kind = operators[index - 1]
                 .is_binary_operator()
                 .expect("operator token is always valid");
+
             debug_assert!(
                 operator_kind.is_comparison(),
                 "all the operators in `ComparisonNode` should be comparison operators"
             );
+
             let result = self.is_binary_operation_valid(&l_ty, &r_ty, &operator_kind);
+
             match result {
                 Some(ty) => match ty.core_ty() {
                     CoreType::Atomic(atomic) => debug_assert!(atomic.is_bool()),
@@ -1699,8 +1834,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                         operator.range(),
                         self.err_logging_context(),
                     );
+
                     self.errors
                         .log_error(Diagnostics::BinaryOperatorInvalidOperands(err));
+
                     return Type::new_with_unknown();
                 }
             }
@@ -1727,6 +1864,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 let core_ok_assignment = ok_assignment.core_ref();
                 let l_expr = &core_ok_assignment.l_atom;
                 let (l_ty, interior_atom_ty) = self.check_atom(l_expr);
+
                 if let CoreAtomNode::IndexAccess(l_index_expr) = l_expr.core_ref() {
                     if let Some(interior_atom_ty) = interior_atom_ty {
                         if interior_atom_ty.is_immutable() {
@@ -1734,12 +1872,15 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                 interior_atom_ty.to_string(self.err_logging_context()),
                                 l_index_expr.core_ref().atom.range(),
                             );
+
                             self.errors
                                 .log_error(Diagnostics::ImmutableTypeNotAssignable(err));
                         }
                     }
                 }
+
                 let r_assign = &core_ok_assignment.r_assign;
+
                 (l_ty, r_assign, l_expr.range())
             }
             CoreAssignmentNode::InvalidLValue(invalid_l_value) => {
@@ -1747,16 +1888,21 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 let expr = &core_invalid_l_value.l_expr;
                 let r_assign = &core_invalid_l_value.r_assign;
                 let l_ty = self.check_expr(expr);
+
                 (l_ty, r_assign, expr.range())
             }
         };
+
         let r_ty = self.check_r_assign(r_assign);
+
         if r_ty.is_void() {
             let err = RightSideWithVoidTypeNotAllowedError::new(r_assign.range());
+
             self.errors
                 .log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
             return;
         }
+
         if !l_ty.is_eq(&r_ty, self.semantic_db.namespace_ref()) {
             let err = MismatchedTypesOnLeftRightError::new(
                 &l_ty,
@@ -1765,6 +1911,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 r_assign.range(),
                 self.err_logging_context(),
             );
+
             self.errors
                 .log_error(Diagnostics::MismatchedTypesOnLeftRight(err));
         }
@@ -1782,14 +1929,18 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 // type for `lambda` is already checked and set to the variable during name-resolution
                 let body = lambda.core_ref().body.core_ref();
                 self.check_callable_body(&body.prototype, &body.block);
+
                 return;
             }
         };
+
         if r_ty.is_void() {
             let err = RightSideWithVoidTypeNotAllowedError::new(r_variable_decl.range());
+
             self.errors
                 .log_error(Diagnostics::RightSideWithVoidTypeNotAllowed(err));
         }
+
         let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() else {
             return;
         };
@@ -1800,7 +1951,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             return;
         };
         let variable_ty = self.semantic_db.variable_symbol_ref(symbol_index).ty();
-        //.clone();
+
         if variable_ty.is_unset() {
             // TODO - check if the `r_type` is ambigious type
             // enforce availablity of type annotation here!
@@ -1815,6 +1966,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 r_variable_decl.range(),
                 self.err_logging_context(),
             );
+
             self.errors.log_error(
                 Diagnostics::RightSideExpressionTypeMismatchedWithTypeFromAnnotation(err),
             )
@@ -1824,6 +1976,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
     fn check_callable_prototype(&self, callable_prototype: &CallablePrototypeNode) -> Type {
         let core_callable_prototype = callable_prototype.0.as_ref();
         let return_ty_node = &core_callable_prototype.return_ty;
+
         match return_ty_node {
             Some((_, return_ty_expr)) => self.ty_from_expr(return_ty_expr),
             None => Type::new_with_void(),
@@ -1844,7 +1997,9 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 }
                 _ => continue,
             };
+
             self.walk_stmt(stmt);
+
             if let CoreStatementNode::Return(return_stmt) = stmt.core_ref() {
                 has_return_stmt = Some(return_stmt.range());
             }
@@ -1856,6 +2011,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             self.errors
                 .log_error(Diagnostics::NoReturnStatementInFunction(err));
         }
+
         self.context.func_stack.pop();
     }
 
@@ -1866,23 +2022,28 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             .core_ref()
             .body
             .core_ref();
+
         self.check_callable_body(&body.prototype, &body.block);
     }
 
     fn check_return_stmt(&self, return_stmt: &ReturnStatementNode) {
         let core_return_stmt = return_stmt.core_ref();
         let func_stack_len = self.context.func_stack.len();
+
         if func_stack_len == 0 {
             let err = InvalidReturnStatementError::new(return_stmt.range());
+
             self.errors
                 .log_error(Diagnostics::InvalidReturnStatement(err));
         }
+
         let expr = &core_return_stmt.expr;
         let expr_ty = match expr {
             Some(expr) => self.check_expr(expr),
             _ => Type::new_with_void(),
         };
         let expected_ty = &self.context.func_stack[func_stack_len - 1];
+
         if !expr_ty.is_eq(expected_ty, self.semantic_db.namespace_ref()) {
             let err = MismatchedReturnTypeError::new(
                 &expected_ty,
@@ -1890,6 +2051,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 core_return_stmt.return_keyword.range(),
                 self.err_logging_context(),
             );
+
             self.errors
                 .log_error(Diagnostics::MismatchedReturnType(err));
         }
@@ -1897,7 +2059,9 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_struct_decl(&mut self, struct_decl: &StructDeclarationNode) {
         let core_struct_decl = struct_decl.core_ref();
+
         self.walk_block(&core_struct_decl.block);
+
         let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() else {
             return;
         };
@@ -1907,7 +2071,6 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         else {
             return;
         };
-
         let ty_data = self.semantic_db.ty_symbol_ref(symbol_index);
         let struct_data = ty_data.struct_data_ref();
         let implementing_interfaces = struct_data.implementing_interfaces();
@@ -1926,6 +2089,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             let context = TypeGenericsInstantiationContext::new(concrete_types);
             let partial_concrete_interface_bounded_objs =
                 interface_data.partially_concrete_interface_bounded_objects(context);
+
             if let Err(errors) = partial_concrete_interface_bounded_objs
                 .is_struct_implements_interface_specs(
                     struct_fields,
@@ -1939,6 +2103,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     *range,
                     self.err_logging_context(),
                 );
+
                 self.errors
                     .log_error(Diagnostics::InterfaceMethodsInStructCheck(err));
             }
@@ -1949,24 +2114,29 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let core_conditional_block = conditional_block.core_ref();
         let condition_expr = &core_conditional_block.condition_expr;
         let ty = self.check_expr(condition_expr);
+
         if !ty.is_bool() {
             let err = IncorrectExpressionTypeError::new(
                 "bool".to_string(),
                 ty.to_string(self.err_logging_context()),
                 condition_expr.range(),
             );
+
             self.errors
                 .log_error(Diagnostics::IncorrectExpressionType(err));
         }
+
         self.walk_block(&core_conditional_block.block);
     }
 
     fn check_conditional_stmt(&mut self, conditional_stmt: &ConditionalStatementNode) {
         let core_conditional_stmt = conditional_stmt.core_ref();
         self.check_conditional_block(&core_conditional_stmt.if_block);
+
         for elif in &core_conditional_stmt.elifs {
             self.check_conditional_block(elif);
         }
+
         if let Some((_, _, else_block)) = &core_conditional_stmt.else_block {
             self.walk_block(else_block);
         }
@@ -1984,12 +2154,14 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 expr_ty.to_string(self.err_logging_context()),
                 expr.range(),
             );
+
             self.errors
                 .log_error(Diagnostics::IncorrectExpressionType(err));
+
             return;
         };
 
-        let mut checked_variants: FxHashSet<StrId> = FxHashSet::default();
+        let mut checked_variants: FxHashSet<IdentName> = FxHashSet::default();
         let expr_enum_name = enum_ty.name();
         let concrete_types = enum_ty.concrete_types();
         let context = TypeGenericsInstantiationContext::new(concrete_types);
@@ -2013,22 +2185,27 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             };
             let core_case_branch = case_branch.core_ref();
             let enum_name = &core_case_branch.enum_name;
+
             if let CoreIdentifierInDeclNode::Ok(enum_name) = enum_name.core_ref() {
                 let enum_name_str =
                     enum_name.token_value(&self.code_handler, self.semantic_db.interner());
+
                 if expr_enum_name != enum_name_str {
                     let err = IncorrectEnumNameError::new(
                         self.semantic_db.interner().lookup(expr_enum_name),
                         self.semantic_db.interner().lookup(enum_name_str),
                         enum_name.range(),
                     );
+
                     self.errors.log_error(Diagnostics::IncorrectEnumName(err));
                 } else {
                     enum_name_decls.push(enum_name.clone());
                     let variant_name = &core_case_branch.variant_name;
+
                     if let CoreIdentifierInDeclNode::Ok(variant_name) = variant_name.core_ref() {
                         let variant_name_str = variant_name
                             .token_value(&self.code_handler, self.semantic_db.interner());
+
                         match enum_data.try_ty_for_variant(
                             variant_name_str,
                             self.semantic_db.namespace_ref(),
@@ -2037,6 +2214,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             Some(expected_ty) => {
                                 checked_variants.insert(variant_name_str);
                                 let variable_name = &core_case_branch.variable_name;
+
                                 match variable_name {
                                     Some((_, variable_name, _)) => {
                                         match expected_ty {
@@ -2050,7 +2228,6 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                                             variable_name,
                                                         )
                                                     {
-                                                        // self.semantic_state_db.namespace.variables.get_symbol_data_mut_ref(symbol_data).data.set_data_type(&expected_ty);
                                                         symbol_index_ty_vec
                                                             .push((symbol_index, expected_ty));
                                                     }
@@ -2065,6 +2242,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                                             .to_string(),
                                                         variable_name.range(),
                                                     );
+
                                                 self.errors.log_error(Diagnostics::UnexpectedValueProvidedToEnumVariant(err));
                                             }
                                         }
@@ -2075,6 +2253,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                                 expected_ty.to_string(self.err_logging_context()),
                                                 variant_name.range(),
                                             );
+
                                             self.errors.log_error(
                                                 Diagnostics::ExpectedValueForEnumVariant(err),
                                             );
@@ -2090,6 +2269,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                         .to_string(),
                                     variant_name.range(),
                                 );
+
                                 self.errors
                                     .log_error(Diagnostics::EnumVariantDoesNotExist(err));
                             }
@@ -2097,17 +2277,20 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     }
                 }
             }
+
             let case_block = &core_case_branch.block;
             case_blocks.push(case_block.clone());
         }
 
         // report any missing enum variant case
-        let mut missing_variants: Vec<StrId> = vec![];
+        let mut missing_variants: Vec<IdentName> = vec![];
+
         for (variant, _, _) in enum_data.variants() {
             if !checked_variants.contains(variant) {
                 missing_variants.push(*variant);
             }
         }
+
         if !missing_variants.is_empty() {
             let err = EnumVariantsMissingFromMatchCaseStatementError::new(
                 self.semantic_db
@@ -2118,6 +2301,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 expr.range(),
                 self.semantic_db.interner(),
             );
+
             self.errors
                 .log_error(Diagnostics::EnumVariantsMissingFromMatchCaseStatement(err));
         }
@@ -2146,15 +2330,18 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let core_while_loop = while_loop_stmt.core_ref();
         let condition_expr = &core_while_loop.condition_expr;
         let ty = self.check_expr(condition_expr);
+
         if !ty.is_bool() {
             let err = IncorrectExpressionTypeError::new(
                 "bool".to_string(),
                 ty.to_string(self.err_logging_context()),
                 condition_expr.range(),
             );
+
             self.errors
                 .log_error(Diagnostics::IncorrectExpressionType(err));
         }
+
         self.walk_block(&core_while_loop.block);
     }
 
@@ -2162,6 +2349,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let core_for_loop = for_loop_stmt.core_ref();
         let iterable_expr = &core_for_loop.iterable_expr;
         let iterable_expr_ty = self.check_expr(iterable_expr);
+
         let element_ty: Option<RefOrOwned<Type>> = match iterable_expr_ty.core_ty() {
             CoreType::Array(array_data) => Some(RefOrOwned::Ref(array_data.element_ty())),
             CoreType::HashMap(hashmap_data) => Some(RefOrOwned::Ref(hashmap_data.key_ty())),
@@ -2184,7 +2372,9 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             | CoreType::Unset
             | CoreType::Void => None,
         };
+
         let loop_variable = &core_for_loop.loop_variable;
+
         if let Some(element_ty) = element_ty {
             if let CoreIdentifierInDeclNode::Ok(ok_loop_variable) = loop_variable.core_ref() {
                 if let Some(symbol_index) = self
@@ -2201,9 +2391,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 iterable_expr_ty.to_string(self.err_logging_context()),
                 iterable_expr.range(),
             );
+
             self.errors
                 .log_error(Diagnostics::NonIterableExpression(err));
         }
+
         self.walk_block(&core_for_loop.block);
     }
 
@@ -2274,24 +2466,29 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             )) => {
                 let err =
                     LessParamsCountError::new(expected_params_count, received_params_count, range);
+
                 self.errors.log_error(Diagnostics::LessParamsCount(err));
             }
             PrototypeEquivalenceCheckError::MoreParams(expected_params_count) => {
                 let err = MoreParamsCountError::new(expected_params_count, range);
+
                 self.errors.log_error(Diagnostics::MoreParamsCount(err));
             }
             PrototypeEquivalenceCheckError::MismatchedType(params_vec) => {
                 let err = MismatchedParamTypeError::new(params_vec);
+
                 self.errors.log_error(Diagnostics::MismatchedParamType(err));
             }
             PrototypeEquivalenceCheckError::NotAllConcreteTypesInferred => {
                 let err = NotAllConcreteTypesInferredError::new(range);
+
                 self.errors
                     .log_error(Diagnostics::NotAllConcreteTypesInferred(err))
             }
             PrototypeEquivalenceCheckError::TypeInferenceFailed
             | PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred => {
                 let err = TypeInferenceFailedError::new(range);
+
                 self.errors.log_error(Diagnostics::TypeInferenceFailed(err));
             }
             PrototypeEquivalenceCheckError::InferredTypesNotBoundedByInterfaces(
@@ -2304,6 +2501,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     concrete_types,
                     self.err_logging_context(),
                 );
+
                 self.errors
                     .log_error(Diagnostics::InferredTypesNotBoundedByInterfaces(err));
             }

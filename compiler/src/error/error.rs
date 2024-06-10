@@ -30,9 +30,11 @@ impl JarvilProgramAnalysisErrors {
     pub fn first_error_report(&self) -> Option<Report> {
         unsafe {
             let errors_ref = &*self.core.get();
+
             if errors_ref.len() > 0 {
                 return Some(errors_ref[0].report());
             }
+
             None
         }
     }

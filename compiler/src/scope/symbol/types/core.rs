@@ -130,10 +130,7 @@ pub struct UserDefinedTypeSymbolData(pub SymbolIndex<UserDefinedTypeData>);
 impl AbstractSymbol for UserDefinedTypeSymbolData {
     type SymbolTy = UserDefinedTypeData;
 
-    fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy>
-    where
-        <Self as AbstractSymbol>::SymbolTy: IsInitialized,
-    {
+    fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy> {
         self.0
     }
 
@@ -156,6 +153,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
         {
             UserDefinedTypeData::Struct(struct_data) => {
                 let generic_ty_decls = struct_data.generics();
+
                 check_concrete_types_bounded_by_interfaces(
                     generic_ty_decls,
                     concrete_types,
@@ -166,6 +164,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
             }
             UserDefinedTypeData::Lambda(lambda_data) => {
                 let generic_ty_decls = lambda_data.generics();
+
                 check_concrete_types_bounded_by_interfaces(
                     generic_ty_decls,
                     concrete_types,
@@ -176,6 +175,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
             }
             UserDefinedTypeData::Enum(enum_data) => {
                 let generic_ty_decls = enum_data.generics();
+
                 check_concrete_types_bounded_by_interfaces(
                     generic_ty_decls,
                     concrete_types,
@@ -188,6 +188,7 @@ impl AbstractSymbol for UserDefinedTypeSymbolData {
                 if concrete_types.is_some() {
                     return Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected);
                 }
+
                 Ok(())
             }
         }

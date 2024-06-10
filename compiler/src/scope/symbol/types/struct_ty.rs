@@ -1,4 +1,4 @@
-use crate::core::string_interner::StrId;
+use crate::core::string_interner::IdentName;
 use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::common::{FieldsMap, MethodsMap};
@@ -24,14 +24,15 @@ pub struct StructTypeData {
 impl StructTypeData {
     pub fn set_meta_data(
         &mut self,
-        fields: FxHashMap<StrId, (Type, TextRange)>,
+        fields: FxHashMap<IdentName, (Type, TextRange)>,
         constructor: Option<(CallableData, TextRange)>,
-        methods: FxHashMap<StrId, (CallableData, TextRange)>,
-        class_methods: FxHashMap<StrId, (CallableData, TextRange)>,
+        methods: FxHashMap<IdentName, (CallableData, TextRange)>,
+        class_methods: FxHashMap<IdentName, (CallableData, TextRange)>,
     ) {
         self.fields = FieldsMap::new(fields);
         self.methods = MethodsMap::new(methods);
         self.class_methods = MethodsMap::new(class_methods);
+
         if let Some((constructor_meta_data, _)) = constructor {
             self.constructor = constructor_meta_data;
         }
@@ -65,7 +66,7 @@ impl StructTypeData {
 
     pub fn try_field<'a>(
         &'a self,
-        field_name: &StrId,
+        field_name: &IdentName,
         namespace: &Namespace,
         context: TypeGenericsInstantiationContext,
     ) -> Option<(Type, TextRange)> {
@@ -74,7 +75,7 @@ impl StructTypeData {
 
     pub fn try_method<'a>(
         &'a self,
-        method_name: &StrId,
+        method_name: &IdentName,
         context: TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.methods.try_method(method_name, context)
@@ -82,7 +83,7 @@ impl StructTypeData {
 
     pub fn try_class_method<'a>(
         &'a self,
-        class_method_name: &StrId,
+        class_method_name: &IdentName,
         context: TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
         self.class_methods.try_method(class_method_name, context)

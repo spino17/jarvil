@@ -3,18 +3,18 @@ use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::generic_ty::GenericTypeParams;
 use crate::scope::traits::IsInitialized;
 use crate::types::core::Type;
-use crate::{core::string_interner::StrId, types::traits::TypeLike};
+use crate::{core::string_interner::IdentName, types::traits::TypeLike};
 use text_size::TextRange;
 
 #[derive(Debug, Default)]
 pub struct EnumTypeData {
-    variants: Vec<(StrId, Option<Type>, TextRange)>,
+    variants: Vec<(IdentName, Option<Type>, TextRange)>,
     generics: Option<GenericTypeParams>,
     is_init: bool,
 }
 
 impl EnumTypeData {
-    pub fn set_meta_data(&mut self, variants: Vec<(StrId, Option<Type>, TextRange)>) {
+    pub fn set_meta_data(&mut self, variants: Vec<(IdentName, Option<Type>, TextRange)>) {
         self.variants = variants;
     }
 
@@ -23,7 +23,7 @@ impl EnumTypeData {
         self.is_init = true;
     }
 
-    pub fn variants(&self) -> &Vec<(StrId, Option<Type>, TextRange)> {
+    pub fn variants(&self) -> &Vec<(IdentName, Option<Type>, TextRange)> {
         &self.variants
     }
 
@@ -37,7 +37,7 @@ impl EnumTypeData {
 
     pub fn try_ty_for_variant<'a>(
         &'a self,
-        variant_name: StrId,
+        variant_name: IdentName,
         namespace: &Namespace,
         context: TypeGenericsInstantiationContext,
     ) -> Option<Option<Type>> {
@@ -47,15 +47,17 @@ impl EnumTypeData {
                 return Some(Some(ty.concretize(context, namespace)));
             }
         }
+
         None
     }
 
-    pub fn try_index_for_variant(&self, variant_name: StrId) -> Option<usize> {
+    pub fn try_index_for_variant(&self, variant_name: IdentName) -> Option<usize> {
         for (index, (curr_variant_name, _, _)) in self.variants.iter().enumerate() {
             if *curr_variant_name == variant_name {
                 return Some(index);
             }
         }
+
         None
     }
 }

@@ -192,6 +192,7 @@ impl Type {
                         return false;
                     }
                 }
+
                 true
             }
             _ => false,
@@ -307,6 +308,7 @@ impl TypeLike for Type {
         if context.is_empty() {
             return self.clone();
         }
+
         match self.0.as_ref() {
             CoreType::Struct(struct_ty) => struct_ty.concretize(context, namespace),
             CoreType::Enum(enum_ty) => enum_ty.concretize(context, namespace),
@@ -329,6 +331,7 @@ impl TypeLike for Type {
         if interface_bounds.len() == 0 {
             return true;
         }
+
         match self.0.as_ref() {
             CoreType::Struct(struct_ty) => {
                 struct_ty.is_ty_bounded_by_interfaces(interface_bounds, namespace)

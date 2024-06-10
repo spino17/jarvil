@@ -43,6 +43,7 @@ impl SemanticStateDatabase {
 
         // fill the built-in functions inside the global namespace
         let builtin_funcs = builtin_funcs(&interner);
+
         for (name, callable_data) in builtin_funcs {
             namespace.funcs_mut_ref().force_insert(
                 ScopeIndex::global(), // index of global namespace

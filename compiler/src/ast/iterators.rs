@@ -19,10 +19,12 @@ impl<'a, T: Node + Serialize + Clone> Iterator for SymbolSeparatedSequenceIterat
             Some(node) => node,
             None => return None,
         };
+
         self.node = match &ok_entity.core_ref().remaining_entities {
             Some((_, remaining_params)) => Some(remaining_params),
             None => None,
         };
+
         Some(&ok_entity.core_ref().entity)
     }
 }

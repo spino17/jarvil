@@ -23,6 +23,7 @@ pub fn conditional_block(
         &STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS,
         BlockKind::Conditional,
     );
+
     ConditionalBlockNode::new(
         conditional_keyword_node,
         conditional_expr_node,
@@ -35,10 +36,12 @@ pub fn conditional(parser: &mut JarvilParser) -> ConditionalStatementNode {
     let if_block_node = parser.conditional_block("if");
     let mut elifs: Vec<ConditionalBlockNode> = vec![];
     let mut else_block_node: Option<(TokenNode, TokenNode, BlockNode)> = None;
+
     while parser.check_curr_token("elif") {
         let elif_block_node = parser.conditional_block("elif");
         elifs.push(elif_block_node);
     }
+
     if parser.check_curr_token("else") {
         let else_keyword_node = parser.expect("else");
         let colon_node = parser.expect(":");
@@ -48,7 +51,9 @@ pub fn conditional(parser: &mut JarvilParser) -> ConditionalStatementNode {
             &STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS,
             BlockKind::Conditional,
         );
+
         else_block_node = Some((else_keyword_node, colon_node, block_node));
     }
+
     ConditionalStatementNode::new(if_block_node, elifs, else_block_node)
 }

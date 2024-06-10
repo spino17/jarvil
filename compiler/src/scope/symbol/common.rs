@@ -6,67 +6,69 @@ use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::core::UserDefinedTypeData;
 use crate::types::core::Type;
-use crate::{core::string_interner::StrId, types::traits::TypeLike};
+use crate::{core::string_interner::IdentName, types::traits::TypeLike};
 use rustc_hash::FxHashMap;
 use std::marker::PhantomData;
 use text_size::TextRange;
 
 #[derive(Debug, Default)]
 pub struct FieldsMap {
-    fields: FxHashMap<StrId, (Type, TextRange)>,
+    fields: FxHashMap<IdentName, (Type, TextRange)>,
 }
 
 impl FieldsMap {
-    pub fn new(fields: FxHashMap<StrId, (Type, TextRange)>) -> Self {
+    pub fn new(fields: FxHashMap<IdentName, (Type, TextRange)>) -> Self {
         FieldsMap { fields }
     }
 
-    pub fn core_ref(&self) -> &FxHashMap<StrId, (Type, TextRange)> {
+    pub fn core_ref(&self) -> &FxHashMap<IdentName, (Type, TextRange)> {
         &self.fields
     }
 
     pub fn try_field<'a>(
         &'a self,
-        field_name: &StrId,
+        field_name: &IdentName,
         namespace: &Namespace,
         context: TypeGenericsInstantiationContext,
     ) -> Option<(Type, TextRange)> {
         let Some((ty, range)) = self.fields.get(field_name) else {
             return None;
         };
+
         Some((ty.concretize(context, namespace), *range))
     }
 }
 
 #[derive(Debug, Default)]
 pub struct MethodsMap {
-    methods: FxHashMap<StrId, (CallableData, TextRange)>,
+    methods: FxHashMap<IdentName, (CallableData, TextRange)>,
 }
 
 impl MethodsMap {
-    pub fn new(methods: FxHashMap<StrId, (CallableData, TextRange)>) -> Self {
+    pub fn new(methods: FxHashMap<IdentName, (CallableData, TextRange)>) -> Self {
         MethodsMap { methods }
     }
 
-    pub fn core_ref(&self) -> &FxHashMap<StrId, (CallableData, TextRange)> {
+    pub fn core_ref(&self) -> &FxHashMap<IdentName, (CallableData, TextRange)> {
         &self.methods
     }
 
     pub fn try_method<'a>(
         &'a self,
-        method_name: &StrId,
+        method_name: &IdentName,
         context: TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
         let Some((callable_data, range)) = self.methods.get(method_name) else {
             return None;
         };
+
         Some((
             PartialConcreteCallableDataRef::new(callable_data, context),
             *range,
         ))
     }
 
-    pub fn has_method(&self, method_name: &StrId) -> bool {
+    pub fn has_method(&self, method_name: &IdentName) -> bool {
         self.methods.get(method_name).is_some()
     }
 }

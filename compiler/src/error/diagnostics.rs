@@ -2,7 +2,7 @@ use super::helper::{range_to_span, IdentifierKind, PropertyKind};
 use crate::types::core::TypeStringifyContext;
 use crate::types::traits::TypeLike;
 use crate::{
-    core::string_interner::{Interner, StrId},
+    core::string_interner::{IdentName, Interner},
     lexer::token::Token,
     parser::helper::format_symbol,
     scope::symbol::interfaces::PartialConcreteInterfaceSpecsCheckError,
@@ -284,6 +284,7 @@ impl MissingTokenError {
         } else {
             received_token.len()
         };
+
         MissingTokenError {
             expected_symbols: expected_symbols.to_vec(),
             received_token: received_token.name(),
@@ -309,28 +310,35 @@ impl Diagnostic for MissingTokenError {
             let mut err_str = "expected ".to_string();
             let mut flag = false;
             let symbols_len = self.expected_symbols.len();
+
             for index in 0..symbols_len - 1 {
                 if flag {
                     err_str.push_str(", ");
                 }
+
                 err_str.push_str(&format!(
                     "`{}`",
                     format_symbol(self.expected_symbols[index])
                 ));
+
                 flag = true;
             }
+
             err_str.push_str(&format!(
                 " or `{}`, got `{}`",
                 format_symbol(self.expected_symbols[symbols_len - 1]),
                 self.received_token
             ));
+
             err_str
         };
+
         let span_vec = vec![LabeledSpan::new(
             Some(err_message),
             self.start_index,
             self.len,
         )];
+
         Some(Box::new(span_vec.into_iter()))
     }
 }
@@ -538,6 +546,7 @@ impl IdentifierAlreadyDeclaredError {
                 "constructor is not allowed to be redeclared".to_string()
             }
         };
+
         IdentifierAlreadyDeclaredError {
             identifier_kind,
             name,
@@ -610,18 +619,21 @@ pub struct FieldsNotInitializedInConstructorError {
 }
 
 impl FieldsNotInitializedInConstructorError {
-    pub fn new(missing_fields_vec: Vec<&StrId>, range: TextRange, interner: &Interner) -> Self {
+    pub fn new(missing_fields_vec: Vec<&IdentName>, range: TextRange, interner: &Interner) -> Self {
         let len = missing_fields_vec.len();
         let mut message = format!("`{}`", interner.lookup(*missing_fields_vec[0]));
+
         if len > 1 {
             for i in 1..(len - 1) {
                 message.push_str(&format!(", `{}`", interner.lookup(*missing_fields_vec[i])));
             }
+
             message.push_str(&format!(
                 " and `{}`",
                 interner.lookup(*missing_fields_vec[len - 1])
             ));
         }
+
         FieldsNotInitializedInConstructorError {
             err_msg: message,
             span: range_to_span(range).into(),
@@ -654,21 +666,24 @@ pub struct EnumVariantsMissingFromMatchCaseStatementError {
 impl EnumVariantsMissingFromMatchCaseStatementError {
     pub fn new(
         enum_name: String,
-        missing_variants: Vec<StrId>,
+        missing_variants: Vec<IdentName>,
         range: TextRange,
         interner: &Interner,
     ) -> Self {
         let len = missing_variants.len();
         let mut message = format!("`{}`", interner.lookup(missing_variants[0]));
+
         if len > 1 {
             for i in 1..(len - 1) {
                 message.push_str(&format!(", `{}`", interner.lookup(missing_variants[i])));
             }
+
             message.push_str(&format!(
                 " and `{}`",
                 interner.lookup(missing_variants[len - 1])
             ));
         }
+
         EnumVariantsMissingFromMatchCaseStatementError {
             enum_name,
             err_msg: message,
@@ -781,6 +796,7 @@ impl IdentifierUsedBeforeInitializedError {
             IdentifierKind::Interface => "interfaces are not allowed to be referenced inside their own generic types declaration",
             _ => unreachable!()
         };
+
         IdentifierUsedBeforeInitializedError {
             identifier_name,
             identifier_kind,
@@ -1060,6 +1076,7 @@ impl GenericTypeArgsIncorrectlyBoundedError {
 impl Diagnostic for GenericTypeArgsIncorrectlyBoundedError {
     fn labels(&self) -> Option<Box<dyn Iterator<Item = miette::LabeledSpan> + '_>> {
         let mut span_vec: Vec<LabeledSpan> = vec![];
+
         for factor in &self.incorrectly_bounded_types {
             let err_message = format!("type is not bounded by interfaces `{}`", factor.1);
             let start_index: usize = factor.0.start().into();
@@ -1070,6 +1087,7 @@ impl Diagnostic for GenericTypeArgsIncorrectlyBoundedError {
                 len,
             ));
         }
+
         Some(Box::new(span_vec.into_iter()))
     }
 
@@ -1134,16 +1152,19 @@ impl MismatchedParamTypeError {
 impl Diagnostic for MismatchedParamTypeError {
     fn labels(&self) -> Option<Box<dyn Iterator<Item = miette::LabeledSpan> + '_>> {
         let mut span_vec: Vec<LabeledSpan> = vec![];
+
         for factor in &self.params_vec {
             let err_message = format!("expected type `{}`, got `{}`", factor.0, factor.1);
             let start_index: usize = factor.3.start().into();
             let len: usize = (factor.3.end() - factor.3.start()).into();
+
             span_vec.push(miette::LabeledSpan::new(
                 Some(err_message),
                 start_index,
                 len,
             ));
         }
+
         Some(Box::new(span_vec.into_iter()))
     }
 
@@ -1162,7 +1183,7 @@ pub struct InterfaceObjsInStructCheckError {
 
 impl InterfaceObjsInStructCheckError {
     pub fn new(
-        errors: Vec<(&StrId, PartialConcreteInterfaceSpecsCheckError)>,
+        errors: Vec<(&IdentName, PartialConcreteInterfaceSpecsCheckError)>,
         interface_name: String,
         interface_range: TextRange,
         context: TypeStringifyContext,
@@ -1193,6 +1214,7 @@ impl InterfaceObjsInStructCheckError {
                 }
             };
         }
+
         InterfaceObjsInStructCheckError {
             missing_interface_objs_msg: if init_len != missing_interface_objs_msg.len() {
                 Some(missing_interface_objs_msg)
@@ -1214,11 +1236,13 @@ impl Diagnostic for InterfaceObjsInStructCheckError {
         };
         let start_index: usize = self.interface_range.start().into();
         let len: usize = (self.interface_range.end() - self.interface_range.start()).into();
+
         span_vec.push(miette::LabeledSpan::new(
             Some(s.to_string()),
             start_index,
             len,
         ));
+
         if !self.struct_obj_level_errors.is_empty() {
             for (err_message, method_range) in &self.struct_obj_level_errors {
                 let start_index: usize = method_range.start().into();
@@ -1230,6 +1254,7 @@ impl Diagnostic for InterfaceObjsInStructCheckError {
                 ));
             }
         }
+
         Some(Box::new(span_vec.into_iter()))
     }
 
@@ -1307,20 +1332,25 @@ impl InferredTypesNotBoundedByInterfacesError {
         let mut concrete_types_str = "<".to_string();
         let concrete_types_len = concrete_types.len();
         concrete_types_str.push_str(&concrete_types[0].to_string(context));
+
         for i in 1..concrete_types_len {
             concrete_types_str.push_str(&format!(", {}", concrete_types[i].to_string(context)));
         }
+
         concrete_types_str.push('>');
+
         let mut err_msg = format!(
             "type `{}` is not bounded by interfaces `{}`",
             err_strs[0].0, err_strs[0].1
         );
+
         for (ty_str, interface_bounds_str) in &err_strs[1..] {
             err_msg.push_str(&format!(
                 "\ntype `{}` is not bounded by interfaces `{}`",
                 ty_str, interface_bounds_str
             ));
         }
+
         InferredTypesNotBoundedByInterfacesError {
             span: range_to_span(range).into(),
             msg: format!(
@@ -1352,9 +1382,11 @@ pub struct PropertyResolvedToMultipleInterfaceObjectsError {
 impl PropertyResolvedToMultipleInterfaceObjectsError {
     pub fn new(range: TextRange, interface_objs: Vec<String>, property_kind: PropertyKind) -> Self {
         let mut err_msg = interface_objs[0].to_string();
+
         for i in 1..interface_objs.len() {
             err_msg.push_str(&format!(", {}", interface_objs[i]));
         }
+
         PropertyResolvedToMultipleInterfaceObjectsError {
             property_kind,
             span: range_to_span(range).into(),

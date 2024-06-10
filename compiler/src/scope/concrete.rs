@@ -1,6 +1,5 @@
 use super::symbol::core::SymbolIndex;
 use super::traits::InstantiationContext;
-use crate::scope::traits::IsInitialized;
 use crate::types::core::{Type, TypeStringifyContext};
 use crate::types::traits::TypeLike;
 use std::ops::Index;
@@ -30,10 +29,13 @@ impl TurbofishTypes {
         let mut s = "".to_string();
         let concrete_types = &self.0;
         let len = concrete_types.len();
+
         s.push_str(&concrete_types[0].to_string(context));
+
         for i in 1..len {
             s.push_str(&format!(", {}", concrete_types[i].to_string(context)));
         }
+
         s
     }
 }
@@ -46,12 +48,12 @@ impl Index<usize> for TurbofishTypes {
 }
 
 #[derive(Debug)]
-pub struct ConcreteSymbolIndex<T: IsInitialized> {
+pub struct ConcreteSymbolIndex<T> {
     index: SymbolIndex<T>,
     concrete_types: Option<TurbofishTypes>, // This will be `None` for symbol data which does not have any generic type params
 }
 
-impl<T: IsInitialized> Clone for ConcreteSymbolIndex<T> {
+impl<T> Clone for ConcreteSymbolIndex<T> {
     fn clone(&self) -> Self {
         ConcreteSymbolIndex {
             index: self.index,
@@ -60,7 +62,7 @@ impl<T: IsInitialized> Clone for ConcreteSymbolIndex<T> {
     }
 }
 
-impl<T: IsInitialized> ConcreteSymbolIndex<T> {
+impl<T> ConcreteSymbolIndex<T> {
     pub fn new(symbol_index: SymbolIndex<T>, concrete_types: Option<TurbofishTypes>) -> Self {
         ConcreteSymbolIndex {
             index: symbol_index,

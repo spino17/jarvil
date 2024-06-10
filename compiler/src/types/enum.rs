@@ -4,7 +4,7 @@ use super::{
     traits::{OperatorCompatiblity, TypeLike, UserDefinedType},
 };
 use crate::{
-    core::string_interner::StrId,
+    core::string_interner::IdentName,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::{TurbofishTypes, TypeGenericsInstantiationContext},
@@ -45,7 +45,7 @@ impl UserDefinedType for Enum {
         self.concrete_types.as_ref()
     }
 
-    fn name(&self) -> StrId {
+    fn name(&self) -> IdentName {
         self.symbol_index.identifier_name()
     }
 }
@@ -60,6 +60,7 @@ impl TypeLike for Enum {
              ty2: &Type,
              _context: TypeGenericsInstantiationContext,
              namespace: &Namespace| { ty1.is_eq(ty2, namespace) };
+
         user_defined_ty_compare_fn(
             self,
             enum_data,
@@ -83,6 +84,7 @@ impl TypeLike for Enum {
              ty2: &Type,
              context: TypeGenericsInstantiationContext,
              namespace: &Namespace| { ty1.is_structurally_eq(ty2, context, namespace) };
+
         user_defined_ty_compare_fn(self, enum_data, ty_cmp_func, context, namespace)
     }
 
@@ -95,9 +97,11 @@ impl TypeLike for Enum {
             return Type::new_with_enum(self.symbol_index, None);
         };
         let mut concretized_concrete_types = vec![];
+
         for ty in concrete_types.iter() {
             concretized_concrete_types.push(ty.concretize(context, namespace));
         }
+
         Type::new_with_enum(
             self.symbol_index,
             Some(TurbofishTypes::new(concretized_concrete_types)),
@@ -124,15 +128,18 @@ impl TypeLike for Enum {
         let CoreType::Enum(enum_ty) = received_ty.core_ty() else {
             return Err(());
         };
+
         if self.name() != enum_ty.name() {
             return Err(());
         }
+
         let Some(generics_containing_types_tuple) = &self.concrete_types else {
             return Ok(());
         };
         let Some(base_types_tuple) = &enum_ty.concrete_types else {
             unreachable!()
         };
+
         try_infer_types_from_tuple(
             base_types_tuple.core_ref(),
             generics_containing_types_tuple.core_ref(),
@@ -149,6 +156,7 @@ impl TypeLike for Enum {
         let Some(concrete_types) = &self.concrete_types else {
             return s;
         };
+
         s.push('<');
         s.push_str(&concrete_types.to_string(context));
         s.push('>');

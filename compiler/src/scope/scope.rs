@@ -3,7 +3,7 @@ use super::{
     symbol::core::{IdentDeclId, Symbol, SymbolIndex},
     traits::IsInitialized,
 };
-use crate::{core::string_interner::StrId, parser::resolver::BlockKind};
+use crate::{core::string_interner::IdentName, parser::resolver::BlockKind};
 use rustc_hash::FxHashMap;
 use std::ops::Index;
 use std::ops::IndexMut;
@@ -11,7 +11,7 @@ use text_size::TextRange;
 
 #[derive(Debug)]
 pub struct Scope<T> {
-    table: FxHashMap<StrId, Symbol<T>>,
+    table: FxHashMap<IdentName, Symbol<T>>,
     parent_scope: Option<ScopeIndex>,
     scope_kind: BlockKind,
 }
@@ -19,7 +19,7 @@ pub struct Scope<T> {
 impl<T> Scope<T> {
     pub fn set(
         &mut self,
-        ident_name: StrId,
+        ident_name: IdentName,
         data: T,
         decl_line_number: TextRange,
         unique_id: Option<IdentDeclId<T>>,
@@ -28,11 +28,11 @@ impl<T> Scope<T> {
             .insert(ident_name, Symbol::new(data, decl_line_number, unique_id));
     }
 
-    fn get(&self, name: &StrId) -> Option<&Symbol<T>> {
+    fn get(&self, name: &IdentName) -> Option<&Symbol<T>> {
         self.table.get(name)
     }
 
-    fn get_mut(&mut self, name: &StrId) -> Option<&mut Symbol<T>> {
+    fn get_mut(&mut self, name: &IdentName) -> Option<&mut Symbol<T>> {
         self.table.get_mut(name)
     }
 }
@@ -51,24 +51,24 @@ impl ScopeIndex {
 }
 
 #[derive(Debug)]
-pub struct ScopeArena<T: IsInitialized> {
+pub struct ScopeArena<T> {
     arena: Vec<Box<Scope<T>>>,
 }
 
-impl<T: IsInitialized> Index<ScopeIndex> for ScopeArena<T> {
+impl<T> Index<ScopeIndex> for ScopeArena<T> {
     type Output = Scope<T>;
     fn index(&self, scope_index: ScopeIndex) -> &Self::Output {
         &self.arena[scope_index.0]
     }
 }
 
-impl<T: IsInitialized> IndexMut<ScopeIndex> for ScopeArena<T> {
+impl<T> IndexMut<ScopeIndex> for ScopeArena<T> {
     fn index_mut(&mut self, scope_index: ScopeIndex) -> &mut Self::Output {
         &mut self.arena[scope_index.0]
     }
 }
 
-impl<T: IsInitialized> ScopeArena<T> {
+impl<T> ScopeArena<T> {
     pub fn new() -> Self {
         ScopeArena {
             arena: vec![
@@ -91,19 +91,21 @@ impl<T: IsInitialized> ScopeArena<T> {
     fn set(
         &mut self,
         scope_index: ScopeIndex,
-        ident_name: StrId,
+        ident_name: IdentName,
         data: T,
         decl_line_number: TextRange,
         unique_id: Option<IdentDeclId<T>>,
     ) -> SymbolIndex<T> {
         self[scope_index].set(ident_name, data, decl_line_number, unique_id);
+
         SymbolIndex::new(scope_index, ident_name)
     }
 
-    pub fn get(&self, scope_index: ScopeIndex, key: StrId) -> Option<SymbolIndex<T>> {
+    pub fn get(&self, scope_index: ScopeIndex, key: IdentName) -> Option<SymbolIndex<T>> {
         if self[scope_index].get(&key).is_none() {
             return None;
         }
+
         Some(SymbolIndex::new(scope_index, key))
     }
 
@@ -112,6 +114,7 @@ impl<T: IsInitialized> ScopeArena<T> {
         let Some(symbol_ref) = scope.get(&index.ident_name()) else {
             unreachable!()
         };
+
         symbol_ref
     }
 
@@ -120,6 +123,7 @@ impl<T: IsInitialized> ScopeArena<T> {
         let Some(symbol_ref) = scope.get_mut(&index.ident_name()) else {
             unreachable!()
         };
+
         symbol_ref
     }
 
@@ -129,18 +133,20 @@ impl<T: IsInitialized> ScopeArena<T> {
         scope_kind: BlockKind,
     ) -> ScopeIndex {
         let new_scope_index = self.arena.len();
+
         self.arena.push(Box::new(Scope {
             table: FxHashMap::default(),
             parent_scope: Some(parent_scope_index),
             scope_kind,
         }));
+
         ScopeIndex(new_scope_index)
     }
 
     pub fn force_insert(
         &mut self,
         scope_index: ScopeIndex,
-        key: StrId,
+        key: IdentName,
         meta_data: T,
         decl_range: TextRange,
     ) {
@@ -148,39 +154,45 @@ impl<T: IsInitialized> ScopeArena<T> {
         self.set(scope_index, key, meta_data, decl_range, None);
     }
 
-    pub fn insert<U: Fn(&ScopeArena<T>, ScopeIndex, StrId) -> Option<TextRange>>(
+    pub fn insert<U: Fn(&ScopeArena<T>, ScopeIndex, IdentName) -> Option<TextRange>>(
         &mut self,
         scope_index: ScopeIndex,
-        key: StrId,
+        key: IdentName,
         meta_data: T,
         decl_range: TextRange,
         lookup_fn: U,
         unique_id: IdentDeclId<T>,
-    ) -> Result<SymbolIndex<T>, (StrId, TextRange)> {
+    ) -> Result<SymbolIndex<T>, (IdentName, TextRange)> {
         if let Some(previous_decl_range) = lookup_fn(self, scope_index, key) {
             return Err((key, previous_decl_range));
         }
+
         Ok(self.set(scope_index, key, meta_data, decl_range, Some(unique_id)))
     }
 
     pub fn lookup(
         &self,
         scope_index: ScopeIndex,
-        key: StrId,
+        key: IdentName,
     ) -> Option<(SymbolIndex<T>, usize, Option<usize>)> {
         let mut enclosing_func_scope_depth: Option<usize> = None;
         let scope = &self[scope_index];
         let mut previous_scope_kind = scope.scope_kind;
+
         if scope.get(&key).is_some() {
             return Some((SymbolIndex::new(scope_index, key), 0, None));
         }
+
         let mut parent_scope_index = scope.parent_scope;
         let mut depth = 1;
+
         while let Some(scope_index) = parent_scope_index {
             if enclosing_func_scope_depth.is_none() && previous_scope_kind.has_callable_body() {
                 enclosing_func_scope_depth = Some(depth);
             }
+
             let scope = &self[scope_index];
+
             if scope.get(&key).is_some() {
                 return Some((
                     SymbolIndex::new(scope_index, key),
@@ -188,29 +200,35 @@ impl<T: IsInitialized> ScopeArena<T> {
                     enclosing_func_scope_depth,
                 ));
             }
+
             parent_scope_index = scope.parent_scope;
             depth += 1;
             previous_scope_kind = scope.scope_kind;
         }
+
         None
     }
 
+    pub fn parent_scope(&self, scope_index: ScopeIndex) -> Option<ScopeIndex> {
+        self[scope_index].parent_scope
+    }
+}
+
+impl<T: IsInitialized> ScopeArena<T> {
     pub fn lookup_with_is_init(
         &self,
         scope_index: ScopeIndex,
-        key: StrId,
+        key: IdentName,
     ) -> IntermediateLookupResult<T> {
         let Some((symbol_index, depth, enclosing_func_scope_depth)) = self.lookup(scope_index, key)
         else {
             return IntermediateLookupResult::Unresolved;
         };
+
         if !self.symbol_ref(symbol_index).data_ref().is_initialized() {
             return IntermediateLookupResult::NotInitialized(symbol_index.decl_line_number(self));
         }
-        IntermediateLookupResult::Ok((symbol_index, depth, enclosing_func_scope_depth))
-    }
 
-    pub fn parent_scope(&self, scope_index: ScopeIndex) -> Option<ScopeIndex> {
-        self[scope_index].parent_scope
+        IntermediateLookupResult::Ok((symbol_index, depth, enclosing_func_scope_depth))
     }
 }

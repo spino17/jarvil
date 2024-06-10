@@ -10,7 +10,7 @@ use crate::ast::ast::{
 };
 use crate::ast::iterators::SymbolSeparatedSequenceIterator;
 use crate::code::JarvilCodeHandler;
-use crate::core::string_interner::{Interner, StrId};
+use crate::core::string_interner::{IdentName, Interner};
 use crate::error::diagnostics::{
     ConstructorNotFoundInsideStructDeclarationError, FieldsNotInitializedInConstructorError,
     GenericTypeResolvedToOutsideScopeError, GenericTypesDeclarationInsideConstructorFoundError,
@@ -41,7 +41,7 @@ use crate::scope::symbol::types::core::{UserDefineTypeKind, UserDefinedTypeData}
 use crate::scope::symbol::types::generic_ty::GenericTypeDeclarationPlaceCategory;
 use crate::scope::symbol::types::generic_ty::GenericTypeParams;
 use crate::scope::symbol::variables::VariableSymbolData;
-use crate::scope::traits::{AbstractSymbol, IsInitialized};
+use crate::scope::traits::AbstractSymbol;
 use crate::types::traits::TypeLike;
 use crate::{
     ast::{
@@ -66,7 +66,7 @@ use text_size::TextRange;
 pub enum ResolveResult<T: AbstractSymbol> {
     Ok(LookupData<T>, Option<TurbofishTypes>),
     InvalidGenericTypeArgsProvided(GenericTypeArgsCheckError),
-    NotInitialized(TextRange, StrId),
+    NotInitialized(TextRange, IdentName),
     Unresolved,
 }
 
@@ -183,9 +183,11 @@ impl<'ctx> JarvilResolver<'ctx> {
 
     pub fn resolve_ast(mut self, ast: &BlockNode) -> SemanticStateDatabase {
         let code_block = ast.0.as_ref();
+
         for stmt in &code_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
+
         match self
             .semantic_db
             .namespace_ref()
@@ -200,10 +202,12 @@ impl<'ctx> JarvilResolver<'ctx> {
                 );
                 let params = prototype.params();
                 let return_ty = prototype.return_ty();
+
                 if !params.is_empty() || !return_ty.is_void() {
                     let span =
                         symbol_index.decl_line_number(self.semantic_db.namespace_ref().funcs_ref());
                     let err = MainFunctionWrongTypeError::new(span);
+
                     self.errors
                         .log_error(Diagnostics::MainFunctionWrongType(err));
                 }
@@ -214,6 +218,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     .log_error(Diagnostics::MainFunctionNotFound(err));
             }
         }
+
         self.semantic_db
     }
 
@@ -222,6 +227,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             .semantic_db
             .namespace_mut_ref()
             .open_scope(self.scope_index, block_kind);
+
         self.scope_index = new_scope_index;
         self.indent_level += 1;
         self.context.block_context_stack.push(BlockContext {
@@ -240,12 +246,15 @@ impl<'ctx> JarvilResolver<'ctx> {
             Some(parent_scope_index) => parent_scope_index,
             None => unreachable!(),
         };
+
         self.scope_index = parent_scope_index;
         self.indent_level -= 1;
+
         let non_locals = match self.context.block_context_stack.pop() {
             Some(block_context) => block_context,
             None => unreachable!(),
         };
+
         if let Some(block) = block {
             self.semantic_db
                 .set_non_locals(block, non_locals.inner_non_locals);
@@ -268,6 +277,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         enclosing_func_scope_depth: Option<usize>,
     ) {
         let len = self.context.block_context_stack.len();
+
         if let Some(enclosing_func_scope_depth) = enclosing_func_scope_depth {
             self.context.block_context_stack[len - 1 - (enclosing_func_scope_depth - 1)]
                 .inner_non_locals
@@ -277,6 +287,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
     fn check_enclosing_loop_scope(&self) -> bool {
         let mut index = self.context.block_context_stack.len() - 1;
+
         loop {
             let block_kind = self.context.block_context_stack[index].block_kind;
             match block_kind {
@@ -295,8 +306,10 @@ impl<'ctx> JarvilResolver<'ctx> {
 
     fn enclosing_generics_declarative_scope_index(&self) -> (ScopeIndex, Option<ScopeIndex>) {
         let mut index = self.context.block_context_stack.len() - 1;
+
         loop {
             let block_context = &self.context.block_context_stack[index];
+
             if block_context.block_kind.is_generics_shielding_block() {
                 if block_context.block_kind.is_method() {
                     return (
@@ -307,6 +320,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     return (block_context.scope_index, None);
                 }
             }
+
             index -= 1;
         }
     }
@@ -329,17 +343,21 @@ impl<'ctx> JarvilResolver<'ctx> {
     ) -> Result<Option<TurbofishTypes>, GenericTypeArgsCheckError> {
         let (concrete_types, ty_ranges) =
             self.extract_angle_bracket_content_from_identifier_in_use(node);
+
         symbol_obj.check_generic_ty_args(
             concrete_types.as_ref(),
             ty_ranges.as_ref(),
             is_concrete_types_none_allowed,
             self.semantic_db.err_logging_context(),
         )?;
+
         let concrete_symbol_entry =
             ConcreteSymbolDataEntry::new(symbol_obj.entry(), concrete_types.clone());
+
         self.semantic_db
             .identifier_in_use_binding_table_mut_ref()
             .insert(node.clone(), concrete_symbol_entry);
+
         Ok(concrete_types)
     }
 
@@ -353,7 +371,10 @@ impl<'ctx> JarvilResolver<'ctx> {
             .insert(node.clone(), symbol_index);
     }
 
-    fn try_resolving<T: AbstractSymbol, U: Fn(&Namespace, ScopeIndex, StrId) -> LookupResult<T>>(
+    fn try_resolving<
+        T: AbstractSymbol,
+        U: Fn(&Namespace, ScopeIndex, IdentName) -> LookupResult<T>,
+    >(
         &mut self,
         identifier: &OkIdentifierInUseNode,
         lookup_fn: U,
@@ -362,6 +383,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         is_concrete_types_none_allowed: bool,
     ) -> ResolveResult<T> {
         let name = identifier.token_value(&self.code_handler, self.semantic_db.interner());
+
         match lookup_fn(self.semantic_db.namespace_ref(), self.scope_index, name) {
             LookupResult::Ok(lookup_data) => {
                 match self.bind_decl_to_identifier_in_use(
@@ -377,8 +399,10 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 identifier.core_ref().name.range(),
                                 ident_kind,
                             );
+
                             self.errors.log_error(err);
                         }
+
                         ResolveResult::InvalidGenericTypeArgsProvided(err)
                     }
                 }
@@ -391,6 +415,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         decl_range,
                         identifier.range(),
                     );
+
                     self.errors
                         .log_error(Diagnostics::IdentifierUsedBeforeInitialized(err));
                 }
@@ -399,6 +424,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             LookupResult::Unresolved => {
                 if log_error {
                     let err = IdentifierNotDeclaredError::new(ident_kind, identifier.range());
+
                     self.errors
                         .log_error(Diagnostics::IdentifierNotDeclared(err));
                 }
@@ -412,9 +438,10 @@ impl<'ctx> JarvilResolver<'ctx> {
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
     ) -> ResolveResult<VariableSymbolData> {
-        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: StrId| {
+        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: IdentName| {
             namespace.lookup_in_variables_namespace(scope_index, key)
         };
+
         self.try_resolving(
             identifier,
             lookup_fn,
@@ -429,9 +456,10 @@ impl<'ctx> JarvilResolver<'ctx> {
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
     ) -> ResolveResult<FunctionSymbolData> {
-        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: StrId| {
+        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: IdentName| {
             namespace.lookup_in_funcs_namespace(scope_index, key)
         };
+
         self.try_resolving(
             identifier,
             lookup_fn,
@@ -447,9 +475,10 @@ impl<'ctx> JarvilResolver<'ctx> {
         log_error: bool,
         is_concrete_types_none_allowed: bool,
     ) -> ResolveResult<UserDefinedTypeSymbolData> {
-        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: StrId| {
+        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: IdentName| {
             namespace.lookup_in_types_namespace(scope_index, key)
         };
+
         self.try_resolving(
             identifier,
             lookup_fn,
@@ -464,9 +493,10 @@ impl<'ctx> JarvilResolver<'ctx> {
         identifier: &OkIdentifierInUseNode,
         log_error: bool,
     ) -> ResolveResult<InterfaceSymbolData> {
-        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: StrId| {
+        let lookup_fn = |namespace: &Namespace, scope_index: ScopeIndex, key: IdentName| {
             namespace.lookup_in_interfaces_namespace(scope_index, key)
         };
+
         self.try_resolving(
             identifier,
             lookup_fn,
@@ -482,6 +512,7 @@ impl<'ctx> JarvilResolver<'ctx> {
     ) -> Option<(SymbolIndex<VariableData>, usize)> {
         let name = self_keyword.token_value(&self.code_handler, self.semantic_db.interner());
         debug_assert!(self.semantic_db.interner().lookup(name) == "self");
+
         match self
             .semantic_db
             .namespace_ref()
@@ -490,7 +521,9 @@ impl<'ctx> JarvilResolver<'ctx> {
             LookupResult::Ok(lookup_data) => {
                 let symbol_obj = lookup_data.symbol_obj;
                 let depth = lookup_data.depth;
+
                 self.bind_decl_to_self_keyword(self_keyword, symbol_obj.symbol_index());
+
                 Some((symbol_obj.symbol_index(), depth))
             }
             LookupResult::NotInitialized(_) => unreachable!(),
@@ -498,22 +531,22 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    fn try_declare_and_bind<
-        V: IsInitialized,
-        T: AbstractSymbol,
-        U: Fn(
-            &mut Namespace,
-            ScopeIndex,
-            StrId,
-            TextRange,
-            IdentDeclId<V>,
-        ) -> Result<T, (StrId, TextRange)>,
-    >(
+    fn try_declare_and_bind<V, T, U>(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
         declare_fn: U,
         unique_id: IdentDeclId<V>,
-    ) -> Result<T, (StrId, TextRange)> {
+    ) -> Result<T, (IdentName, TextRange)>
+    where
+        T: AbstractSymbol,
+        U: Fn(
+            &mut Namespace,
+            ScopeIndex,
+            IdentName,
+            TextRange,
+            IdentDeclId<V>,
+        ) -> Result<T, (IdentName, TextRange)>,
+    {
         let name = identifier.token_value(&self.code_handler, self.semantic_db.interner());
         let result = declare_fn(
             self.semantic_db.namespace_mut_ref(),
@@ -522,9 +555,11 @@ impl<'ctx> JarvilResolver<'ctx> {
             identifier.core_ref().name.range(),
             unique_id,
         );
+
         match result {
             Ok(symbol_obj) => {
                 self.bind_decl_to_identifier_in_decl(identifier, symbol_obj.entry());
+
                 Ok(symbol_obj)
             }
             Err(err) => Err(err),
@@ -534,10 +569,10 @@ impl<'ctx> JarvilResolver<'ctx> {
     fn try_declare_and_bind_variable(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
-    ) -> Result<VariableSymbolData, (StrId, TextRange)> {
+    ) -> Result<VariableSymbolData, (IdentName, TextRange)> {
         let declare_fn = |namespace: &mut Namespace,
                           scope_index: ScopeIndex,
-                          name: StrId,
+                          name: IdentName,
                           decl_range: TextRange,
                           unique_id: IdentDeclId<VariableData>| {
             namespace.declare_variable(scope_index, name, decl_range, unique_id)
@@ -546,16 +581,17 @@ impl<'ctx> JarvilResolver<'ctx> {
             .semantic_db
             .unique_key_generator_mut_ref()
             .generate_unique_id_for_variable();
+
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
     fn try_declare_and_bind_func(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
-    ) -> Result<FunctionSymbolData, (StrId, TextRange)> {
+    ) -> Result<FunctionSymbolData, (IdentName, TextRange)> {
         let declare_fn = |namespace: &mut Namespace,
                           scope_index: ScopeIndex,
-                          name: StrId,
+                          name: IdentName,
                           decl_range: TextRange,
                           unique_id: IdentDeclId<CallableData>| {
             namespace.declare_func(scope_index, name, decl_range, unique_id)
@@ -564,16 +600,17 @@ impl<'ctx> JarvilResolver<'ctx> {
             .semantic_db
             .unique_key_generator_mut_ref()
             .generate_unique_id_for_func();
+
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
     fn try_declare_and_bind_struct_ty(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
-    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (IdentName, TextRange)> {
         let declare_fn = |namespace: &mut Namespace,
                           scope_index: ScopeIndex,
-                          name: StrId,
+                          name: IdentName,
                           decl_range: TextRange,
                           unique_id: IdentDeclId<UserDefinedTypeData>| {
             namespace.declare_struct_ty(scope_index, name, decl_range, unique_id)
@@ -582,16 +619,17 @@ impl<'ctx> JarvilResolver<'ctx> {
             .semantic_db
             .unique_key_generator_mut_ref()
             .generate_unique_id_for_ty();
+
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
     fn try_declare_and_bind_enum_ty(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
-    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (IdentName, TextRange)> {
         let declare_fn = |namespace: &mut Namespace,
                           scope_index: ScopeIndex,
-                          name: StrId,
+                          name: IdentName,
                           decl_range: TextRange,
                           unique_id: IdentDeclId<UserDefinedTypeData>| {
             namespace.declare_enum_ty(scope_index, name, decl_range, unique_id)
@@ -600,16 +638,17 @@ impl<'ctx> JarvilResolver<'ctx> {
             .semantic_db
             .unique_key_generator_mut_ref()
             .generate_unique_id_for_ty();
+
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
     fn try_declare_and_bind_interface(
         &mut self,
         identifier: &OkIdentifierInDeclNode,
-    ) -> Result<InterfaceSymbolData, (StrId, TextRange)> {
+    ) -> Result<InterfaceSymbolData, (IdentName, TextRange)> {
         let declare_fn = |namespace: &mut Namespace,
                           scope_index: ScopeIndex,
-                          name: StrId,
+                          name: IdentName,
                           decl_range: TextRange,
                           unique_id: IdentDeclId<InterfaceData>| {
             namespace.declare_interface(scope_index, name, decl_range, unique_id)
@@ -618,6 +657,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             .semantic_db
             .unique_key_generator_mut_ref()
             .generate_unique_id_for_interface();
+
         self.try_declare_and_bind(identifier, declare_fn, unique_id)
     }
 
@@ -631,6 +671,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         else {
             return TypeResolveKind::Invalid;
         };
+
         let name = ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
         match self
             .semantic_db
@@ -641,6 +682,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 let symbol_obj = lookup_data.symbol_obj;
                 let resolved_scope_index = symbol_obj.0.scope_index();
                 let ty_kind = self.semantic_db.ty_symbol_ref(symbol_obj.0).kind();
+
                 let result = match ty_kind {
                     UserDefineTypeKind::Struct => {
                         match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
@@ -705,6 +747,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         } else {
                             Ok(())
                         };
+
                         match result {
                             Ok(_) => {
                                 match self.bind_decl_to_identifier_in_use(
@@ -737,6 +780,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         }
                     }
                 };
+
                 result
             }
             LookupResult::NotInitialized(decl_range) => {
@@ -765,6 +809,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 IdentifierKind::UserDefinedType,
                                 identifier.range(),
                             );
+
                             self.errors
                                 .log_error(Diagnostics::IdentifierNotDeclared(err));
                         }
@@ -776,6 +821,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 identifier.range(),
                                 decl_range,
                             );
+
                             self.errors
                                 .log_error(Diagnostics::GenericTypeResolvedToOutsideScope(err));
                         }
@@ -788,6 +834,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 decl_range,
                                 identifier.range(),
                             );
+
                             self.errors
                                 .log_error(Diagnostics::IdentifierUsedBeforeInitialized(err));
                         }
@@ -797,14 +844,18 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 identifier.core_ref().name.range(),
                                 IdentifierKind::UserDefinedType,
                             );
+
                             self.errors.log_error(err);
                         }
                     }
                 }
+
                 Type::new_with_unknown()
             }
         };
+
         self.semantic_db.set_ty_expr_obj_mapping(ty_expr, &ty);
+
         ty
     }
 
@@ -826,6 +877,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         iter: SymbolSeparatedSequenceIterator<IdentifierInUseNode>,
     ) -> InterfaceBounds {
         let mut interface_bounds = InterfaceBounds::default();
+
         for interface_expr in iter {
             if let CoreIdentifierInUseNode::Ok(interface_expr) = interface_expr.core_ref() {
                 if let Some(interface_obj) = self.interface_obj_from_expr(interface_expr) {
@@ -841,12 +893,14 @@ impl<'ctx> JarvilResolver<'ctx> {
                             previous_decl_range,
                             interface_expr.range(),
                         );
+
                         self.errors
                             .log_error(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
                     }
                 }
             }
         }
+
         interface_bounds
     }
 
@@ -859,11 +913,13 @@ impl<'ctx> JarvilResolver<'ctx> {
         };
         let mut concrete_types: Vec<Type> = vec![];
         let mut ty_ranges: Vec<TextRange> = vec![];
+
         for generic_ty_expr in generic_ty_args.iter() {
             let ty = self.ty_from_expr(generic_ty_expr);
             concrete_types.push(ty);
             ty_ranges.push(generic_ty_expr.range())
         }
+
         (Some(TurbofishTypes::new(concrete_types)), Some(ty_ranges))
     }
 
@@ -876,8 +932,9 @@ impl<'ctx> JarvilResolver<'ctx> {
         else {
             return (None, None);
         };
-        let mut generic_ty_params_vec: Vec<(StrId, InterfaceBounds, TextRange)> = vec![];
+        let mut generic_ty_params_vec: Vec<(IdentName, InterfaceBounds, TextRange)> = vec![];
         let mut concrete_types: Vec<Type> = vec![];
+
         for (index, generic_ty_decl) in generic_ty_decls.iter().enumerate() {
             let core_generic_ty_decl = generic_ty_decl.core_ref();
             let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) =
@@ -885,17 +942,22 @@ impl<'ctx> JarvilResolver<'ctx> {
             else {
                 continue;
             };
+
             debug_assert!(ok_identifier_in_decl.core_ref().generic_ty_decls.is_none());
+
             let generic_ty_name =
                 ok_identifier_in_decl.token_value(&self.code_handler, self.semantic_db.interner());
             let mut interface_bounds = InterfaceBounds::default();
+
             if let Some((_, interface_bounds_node)) = &core_generic_ty_decl.interface_bounds {
                 interface_bounds = self.interface_bounds_from_iter(interface_bounds_node.iter())
             }
+
             let unique_id = self
                 .semantic_db
                 .unique_key_generator_mut_ref()
                 .generate_unique_id_for_ty();
+
             match self
                 .semantic_db
                 .namespace_mut_ref()
@@ -929,6 +991,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
             }
         }
+
         (
             Some(GenericTypeParams::new(generic_ty_params_vec)),
             Some(TurbofishTypes::new(concrete_types)),
@@ -936,9 +999,9 @@ impl<'ctx> JarvilResolver<'ctx> {
     }
 
     fn is_already_a_method(
-        methods: &FxHashMap<StrId, (CallableData, TextRange)>,
-        class_methods: &FxHashMap<StrId, (CallableData, TextRange)>,
-        name: &StrId,
+        methods: &FxHashMap<IdentName, (CallableData, TextRange)>,
+        class_methods: &FxHashMap<IdentName, (CallableData, TextRange)>,
+        name: &IdentName,
     ) -> Option<TextRange> {
         match methods.get(name) {
             Some((_, previous_decl_range)) => Some(*previous_decl_range),
@@ -985,6 +1048,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         if let Some(params) = params {
             let params_iter = params.iter();
+
             for param in params_iter {
                 let core_param = param.core_ref();
                 let param_name = &core_param.name;
@@ -1009,6 +1073,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         true,
                         unique_id,
                     );
+
                 match result {
                     Ok(symbol_obj) => {
                         self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_obj.entry());
@@ -1027,6 +1092,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
             }
         }
+
         (
             param_types_vec,
             return_ty,
@@ -1064,6 +1130,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
 
         self.close_block(callable_body);
+
         (param_types_vec, return_ty, return_ty_range)
     }
 
@@ -1090,6 +1157,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
 
         self.close_block(Some(callable_body));
+
         (
             param_types_vec,
             return_ty,
@@ -1101,9 +1169,9 @@ impl<'ctx> JarvilResolver<'ctx> {
     fn resolve_constructor_body(
         &mut self,
         callable_body: &CallableBodyNode,
-    ) -> (Vec<Type>, Type, Option<TextRange>, FxHashSet<StrId>) {
+    ) -> (Vec<Type>, Type, Option<TextRange>, FxHashSet<IdentName>) {
         let core_callable_body = callable_body.core_ref();
-        let mut initialized_fields: FxHashSet<StrId> = FxHashSet::default();
+        let mut initialized_fields: FxHashSet<IdentName> = FxHashSet::default();
         let callable_body = &core_callable_body.block;
 
         self.open_block(callable_body.core_ref().kind);
@@ -1150,6 +1218,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
 
         self.close_block(Some(callable_body));
+
         (
             param_types_vec,
             return_ty,
@@ -1200,14 +1269,11 @@ impl<'ctx> JarvilResolver<'ctx> {
                 let core_lambda_r_assign = lambda_r_assign.core_ref();
                 let body = &core_lambda_r_assign.body.core_ref().block;
                 let prototype = &core_lambda_r_assign.body.core_ref().prototype;
-
                 let (params_vec, return_ty, _) =
                     self.resolve_callable_body(None, None, Some(body), prototype);
-
                 let lambda_ty = Type::new_with_lambda_unnamed(CallablePrototypeData::new(
                     params_vec, return_ty,
                 ));
-
                 let final_variable_ty = match ty_from_optional_annotation {
                     Some((ty_from_optional_annotation, range)) => {
                         if !ty_from_optional_annotation
@@ -1218,8 +1284,10 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 lambda_ty.to_string(self.semantic_db.err_logging_context()),
                                 range
                             );
+
                             self.errors.log_error(Diagnostics::InferredLambdaVariableTypeMismatchedWithTypeFromAnnotation(err));
                         }
+
                         ty_from_optional_annotation
                     }
                     None => lambda_ty,
@@ -1261,6 +1329,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = func_name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
+
             match self.try_declare_and_bind_func(ok_identifier) {
                 Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
@@ -1270,6 +1339,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         previous_decl_range,
                         ok_identifier.range(),
                     );
+
                     self.errors
                         .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
@@ -1303,6 +1373,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             optional_ok_identifier_node = Some(ok_identifier);
+
             match self.try_declare_and_bind_struct_ty(ok_identifier) {
                 Ok(local_symbol_obj) => {
                     symbol_obj = Some(local_symbol_obj);
@@ -1314,6 +1385,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         previous_decl_range,
                         ok_identifier.range(),
                     );
+
                     self.errors
                         .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
@@ -1333,6 +1405,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     Some(symbol_obj) => Type::new_with_struct(symbol_obj.0, concrete_types),
                     None => Type::new_with_unknown(),
                 };
+
                 (struct_generic_ty_decls, struct_ty)
             }
             None => (None, Type::new_with_unknown()),
@@ -1354,11 +1427,14 @@ impl<'ctx> JarvilResolver<'ctx> {
                 true,
                 unique_id,
             );
+
         debug_assert!(result.is_ok());
 
         let mut implementing_interfaces: Option<InterfaceBounds> = None;
+
         if let Some((_, interfaces_node)) = implementing_interfaces_node {
             let interface_bounds = self.interface_bounds_from_iter(interfaces_node.iter());
+
             if interface_bounds.len() > 0 {
                 implementing_interfaces = Some(interface_bounds);
             }
@@ -1371,11 +1447,12 @@ impl<'ctx> JarvilResolver<'ctx> {
                 .set_generics_and_interfaces(struct_generic_ty_decls, implementing_interfaces);
         }
 
-        let mut fields_map: FxHashMap<StrId, (Type, TextRange)> = FxHashMap::default();
+        let mut fields_map: FxHashMap<IdentName, (Type, TextRange)> = FxHashMap::default();
         let mut constructor: Option<(CallableData, TextRange)> = None;
-        let mut methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
-        let mut class_methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
-        let mut initialized_fields: FxHashSet<StrId> = FxHashSet::default();
+        let mut methods: FxHashMap<IdentName, (CallableData, TextRange)> = FxHashMap::default();
+        let mut class_methods: FxHashMap<IdentName, (CallableData, TextRange)> =
+            FxHashMap::default();
+        let mut initialized_fields: FxHashSet<IdentName> = FxHashSet::default();
 
         for stmt in &struct_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
@@ -1393,6 +1470,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         let field_name = ok_identifier
                             .token_value(&self.code_handler, self.semantic_db.interner());
                         let ty = self.ty_from_expr(&name_ty_spec.data_ty);
+
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
@@ -1401,6 +1479,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                     *previous_decl_range,
                                     ok_identifier.range(),
                                 );
+
                                 self.errors
                                     .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                             }
@@ -1422,16 +1501,19 @@ impl<'ctx> JarvilResolver<'ctx> {
                         optional_ok_identifier_node = Some(ok_bounded_method_name);
                         let method_name_str = ok_bounded_method_name
                             .token_value(&self.code_handler, self.semantic_db.interner());
+
                         if method_name_str == self.semantic_db.interner().intern("__init__")
                             && constructor.is_none()
                         {
                             is_constructor = true;
+
                             if let Some((_, generic_ty_decls, _)) =
                                 &ok_bounded_method_name.core_ref().generic_ty_decls
                             {
                                 let err = GenericTypesDeclarationInsideConstructorFoundError::new(
                                     generic_ty_decls.range(),
                                 );
+
                                 self.errors.log_error(
                                     Diagnostics::GenericTypesDeclarationInsideConstructorFound(err),
                                 );
@@ -1447,7 +1529,9 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 return_ty_range,
                                 temp_initialized_fields,
                             ) = self.resolve_constructor_body(&core_func_decl.body);
+
                             initialized_fields = temp_initialized_fields;
+
                             (param_types_vec, return_ty, return_ty_range, None)
                         } else {
                             self.resolve_method_body(
@@ -1467,6 +1551,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         );
                         let method_name_str = ok_bounded_method_name
                             .token_value(&self.code_handler, self.semantic_db.interner());
+
                         if method_name_str == self.semantic_db.interner().intern("__init__") {
                             match constructor {
                                 Some((_, previous_decl_range)) => {
@@ -1476,6 +1561,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                         previous_decl_range,
                                         ok_bounded_method_name.range(),
                                     );
+
                                     self.errors
                                         .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                                 }
@@ -1483,12 +1569,15 @@ impl<'ctx> JarvilResolver<'ctx> {
                                     if let Some(return_ty_range) = return_ty_range {
                                         let err =
                                             NonVoidConstructorReturnTypeError::new(return_ty_range);
+
                                         self.errors.log_error(
                                             Diagnostics::NonVoidConstructorReturnType(err),
                                         );
                                     }
+
                                     constructor =
                                         Some((method_meta_data, ok_bounded_method_name.range()));
+
                                     self.semantic_db.set_bounded_kind(
                                         bounded_method_wrapper,
                                         BoundedMethodKind::Constructor,
@@ -1508,17 +1597,20 @@ impl<'ctx> JarvilResolver<'ctx> {
                                         previous_decl_range,
                                         ok_bounded_method_name.range(),
                                     );
+
                                     self.errors
                                         .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                                 }
                                 None => {
                                     let is_containing_self =
                                         self.curr_class_context_is_containing_self();
+
                                     if is_containing_self {
                                         methods.insert(
                                             method_name_str,
                                             (method_meta_data, ok_bounded_method_name.range()),
                                         );
+
                                         self.semantic_db.set_bounded_kind(
                                             bounded_method_wrapper,
                                             BoundedMethodKind::Method,
@@ -1528,6 +1620,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                             method_name_str,
                                             (method_meta_data, ok_bounded_method_name.range()),
                                         );
+
                                         self.semantic_db.set_bounded_kind(
                                             bounded_method_wrapper,
                                             BoundedMethodKind::ClassMethod,
@@ -1547,18 +1640,21 @@ impl<'ctx> JarvilResolver<'ctx> {
         if let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() {
             match constructor {
                 Some((_, construct_span)) => {
-                    let mut missing_fields_from_constructor: Vec<&StrId> = vec![];
+                    let mut missing_fields_from_constructor: Vec<&IdentName> = vec![];
+
                     for (field_name, _) in fields_map.iter() {
                         if initialized_fields.get(field_name).is_none() {
                             missing_fields_from_constructor.push(field_name);
                         }
                     }
+
                     if !missing_fields_from_constructor.is_empty() {
                         let err = FieldsNotInitializedInConstructorError::new(
                             missing_fields_from_constructor,
                             construct_span,
                             self.semantic_db.interner(),
                         );
+
                         self.errors
                             .log_error(Diagnostics::FieldsNotInitializedInConstructor(err));
                     }
@@ -1566,10 +1662,12 @@ impl<'ctx> JarvilResolver<'ctx> {
                 None => {
                     let err =
                         ConstructorNotFoundInsideStructDeclarationError::new(ok_identifier.range());
+
                     self.errors
                         .log_error(Diagnostics::ConstructorNotFoundInsideStructDeclaration(err));
                 }
             }
+
             if let Some(symbol_obj) = &symbol_obj {
                 self.semantic_db
                     .ty_symbol_mut_ref(symbol_obj.0)
@@ -1590,6 +1688,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
             optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
+
             match self.try_declare_and_bind_enum_ty(ok_identifier_in_decl) {
                 Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
@@ -1599,6 +1698,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         previous_decl_range,
                         ok_identifier_in_decl.range(),
                     );
+
                     self.errors
                         .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
@@ -1625,8 +1725,8 @@ impl<'ctx> JarvilResolver<'ctx> {
                 .set_generics(generic_ty_decls);
         }
 
-        let mut variants: Vec<(StrId, Option<Type>, TextRange)> = vec![];
-        let mut variants_map: FxHashMap<StrId, TextRange> = FxHashMap::default();
+        let mut variants: Vec<(IdentName, Option<Type>, TextRange)> = vec![];
+        let mut variants_map: FxHashMap<IdentName, TextRange> = FxHashMap::default();
 
         for stmt in &enum_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
@@ -1647,9 +1747,11 @@ impl<'ctx> JarvilResolver<'ctx> {
             };
             let variant_name =
                 ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+
             if let Some((_, ty_expr, _)) = ty {
                 variant_ty = Some(self.ty_from_expr(ty_expr));
             }
+
             match variants_map.get(&variant_name) {
                 Some(previous_decl_range) => {
                     let err = IdentifierAlreadyDeclaredError::new(
@@ -1658,6 +1760,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         *previous_decl_range,
                         ok_identifier.range(),
                     );
+
                     self.errors
                         .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
@@ -1705,6 +1808,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         if let Some(ty_tuple) = ty_tuple {
             let ty_tuple_iter = ty_tuple.iter();
+
             for data_ty in ty_tuple_iter {
                 let ty = self.ty_from_expr(data_ty);
                 types_vec.push(ty);
@@ -1733,6 +1837,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 ok_identifier.core_ref().name.range(),
                 unique_id,
             );
+
         match result {
             Ok(symbol_obj) => {
                 self.bind_decl_to_identifier_in_decl(ok_identifier, symbol_obj.entry());
@@ -1744,6 +1849,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     previous_decl_range,
                     ok_identifier.range(),
                 );
+
                 self.errors
                     .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
             }
@@ -1759,6 +1865,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         if let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) = name.core_ref() {
             optional_ok_identifier_in_decl = Some(ok_identifier_in_decl);
+
             match self.try_declare_and_bind_interface(ok_identifier_in_decl) {
                 Ok(local_symbol_obj) => symbol_obj = Some(local_symbol_obj),
                 Err((name, previous_decl_range)) => {
@@ -1768,6 +1875,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         previous_decl_range,
                         ok_identifier_in_decl.range(),
                     );
+
                     self.errors
                         .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                 }
@@ -1793,8 +1901,8 @@ impl<'ctx> JarvilResolver<'ctx> {
                 .set_generics(generic_ty_decls);
         }
 
-        let mut fields_map: FxHashMap<StrId, (Type, TextRange)> = FxHashMap::default();
-        let mut methods: FxHashMap<StrId, (CallableData, TextRange)> = FxHashMap::default();
+        let mut fields_map: FxHashMap<IdentName, (Type, TextRange)> = FxHashMap::default();
+        let mut methods: FxHashMap<IdentName, (CallableData, TextRange)> = FxHashMap::default();
 
         for stmt in &interface_body.0.as_ref().stmts {
             let stmt = match stmt.core_ref() {
@@ -1802,6 +1910,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 CoreStatementIndentWrapperNode::IncorrectlyIndented(stmt) => &stmt.core_ref().stmt,
                 _ => continue,
             };
+
             match stmt.core_ref() {
                 CoreStatementNode::StructPropertyDeclaration(interface_property_decl) => {
                     let core_interface_property_decl = interface_property_decl.core_ref();
@@ -1812,6 +1921,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         let field_name = ok_identifier
                             .token_value(&self.code_handler, self.semantic_db.interner());
                         let ty = self.ty_from_expr(&name_ty_spec.data_ty);
+
                         match fields_map.get(&field_name) {
                             Some((_, previous_decl_range)) => {
                                 let err = IdentifierAlreadyDeclaredError::new(
@@ -1820,6 +1930,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                     *previous_decl_range,
                                     ok_identifier.range(),
                                 );
+
                                 self.errors
                                     .log_error(Diagnostics::IdentifierAlreadyDeclared(err));
                             }
@@ -1837,24 +1948,30 @@ impl<'ctx> JarvilResolver<'ctx> {
                     {
                         let method_name = ok_identifier
                             .token_value(&self.code_handler, self.semantic_db.interner());
+
                         if method_name == self.semantic_db.interner().intern("__init__") {
                             let err = InitMethodNotAllowedInsideConstructorError::new(
                                 ok_identifier.core_ref().name.range(),
                             );
+
                             self.errors
                                 .log_error(Diagnostics::InitMethodNotAllowedInsideConstructor(err));
                         } else {
-                            let prototype = &core_interface_method_wrapper.prototype;
                             self.open_block(BlockKind::Method);
+
+                            let prototype = &core_interface_method_wrapper.prototype;
                             let (param_types_vec, return_ty, _, method_generic_ty_decls) =
                                 self.declare_callable_prototype(prototype, Some(ok_identifier));
+
                             self.close_block(None);
+
                             let method_meta_data = CallableData::new(
                                 param_types_vec,
                                 return_ty,
                                 CallableKind::Method,
                                 method_generic_ty_decls,
                             );
+
                             methods.insert(method_name, (method_meta_data, ok_identifier.range()));
                         }
                     }
@@ -1877,7 +1994,6 @@ impl<'ctx> JarvilResolver<'ctx> {
         let block = &core_match_case.block;
 
         self.walk_expr(&core_match_case.expr);
-
         self.open_block(block.core_ref().kind);
 
         for stmt in &block.core_ref().stmts {
@@ -1924,7 +2040,6 @@ impl<'ctx> JarvilResolver<'ctx> {
         let block = &core_for_loop.block;
 
         self.walk_expr(&core_for_loop.iterable_expr);
-
         self.open_block(block.core_ref().kind);
 
         if let CoreIdentifierInDeclNode::Ok(ok_loop_variable) = loop_variable.core_ref() {
@@ -1974,6 +2089,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             }
             None => {
                 let err = SelfNotFoundError::new(ok_self_keyword.range());
+
                 self.errors.log_error(Diagnostics::SelfNotFound(err));
             }
         }
@@ -1993,6 +2109,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         ok_identifier.core_ref().name.range(),
                         IdentifierKind::Function,
                     );
+
                     self.errors.log_error(err);
                 }
                 ResolveResult::Unresolved => {
@@ -2005,6 +2122,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 decl_range,
                                 ok_identifier.range(),
                             );
+
                             self.errors
                                 .log_error(Diagnostics::IdentifierUsedBeforeInitialized(err));
                         }
@@ -2014,12 +2132,14 @@ impl<'ctx> JarvilResolver<'ctx> {
                                 ok_identifier.core_ref().name.range(),
                                 IdentifierKind::UserDefinedType,
                             );
+
                             self.errors.log_error(err);
                         }
                         ResolveResult::Unresolved => {
                             match self.try_resolving_variable(ok_identifier, false) {
                                 ResolveResult::Ok(lookup_data, _) => {
                                     let depth = lookup_data.depth;
+
                                     if depth > 0 {
                                         self.set_to_variable_non_locals(
                                             lookup_data
@@ -2036,6 +2156,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                         decl_range,
                                         ok_identifier.range(),
                                     );
+
                                     self.errors.log_error(
                                         Diagnostics::IdentifierUsedBeforeInitialized(err),
                                     );
@@ -2044,6 +2165,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                     let err = IdentifierNotFoundInAnyNamespaceError::new(
                                         ok_identifier.range(),
                                     );
+
                                     self.errors.log_error(
                                         Diagnostics::IdentifierNotFoundInAnyNamespace(err),
                                     );
@@ -2054,6 +2176,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                                         ok_identifier.core_ref().name.range(),
                                         IdentifierKind::Variable,
                                     );
+
                                     self.errors.log_error(err);
                                 }
                             }
@@ -2117,11 +2240,15 @@ impl<'ctx> Visitor for JarvilResolver<'ctx> {
         match node {
             ASTNode::Block(block) => {
                 let core_block = block.0.as_ref();
+
                 self.open_block(core_block.kind);
+
                 for stmt in &core_block.stmts {
                     self.walk_stmt_indent_wrapper(stmt);
                 }
+
                 self.close_block(Some(block));
+
                 None
             }
             ASTNode::VariableDeclaration(variable_decl) => {
@@ -2179,6 +2306,7 @@ impl<'ctx> Visitor for JarvilResolver<'ctx> {
                         continue_stmt.range(),
                         "continue",
                     );
+
                     self.errors
                         .log_error(Diagnostics::InvalidLoopControlFlowStatementFound(err));
                 }
