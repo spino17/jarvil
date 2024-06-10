@@ -36,6 +36,12 @@ pub struct SemanticStateDatabase {
     bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
 }
 
+impl Default for SemanticStateDatabase {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SemanticStateDatabase {
     pub fn new() -> Self {
         let interner = Interner::default();

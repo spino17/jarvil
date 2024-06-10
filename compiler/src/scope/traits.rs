@@ -26,12 +26,12 @@ pub trait AbstractSymbol {
 
 pub trait InstantiationContext<'a> {
     fn is_empty(&self) -> bool {
-        return true;
+        true
     }
     fn ty_generics_instantiation_args(&self) -> Option<&'a TurbofishTypes> {
-        return None;
+        None
     }
     fn callable_generics_instantiation_args(&self) -> Option<&'a TurbofishTypes> {
-        return None;
+        None
     }
 }

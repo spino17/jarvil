@@ -122,14 +122,14 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                     .to_string(TY_SUFFIX, self.semantic_db.interner()),
                 SymbolDataEntry::Interface(_) => unreachable!(),
             },
-            None => identifier.token_value_str(&self.code_handler),
+            None => identifier.token_value_str(self.code_handler),
         }
     }
 
     pub fn mangled_identifier_name_in_use(&self, identifier: &OkIdentifierInUseNode) -> String {
         let Some(concrete_symbol_entry) = self.semantic_db.symbol_for_identifier_in_use(identifier)
         else {
-            return identifier.token_value_str(&self.code_handler);
+            return identifier.token_value_str(self.code_handler);
         };
         match concrete_symbol_entry {
             ConcreteSymbolDataEntry::Variable(concrete_symbol_index) => concrete_symbol_index
@@ -149,12 +149,9 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
     }
 
     pub fn print_token(&mut self, token: &Token) {
-        let trivia = match token.trivia() {
-            Some(trivia) => Some(trivia),
-            None => None,
-        };
+        let trivia = token.trivia();
         self.print_trivia(trivia);
-        let token_value = token.token_value_str(&self.code_handler);
+        let token_value = token.token_value_str(self.code_handler);
         match token.core_token() {
             CoreToken::SINGLE_LINE_COMMENT => {
                 self.add_str_to_python_code("\n");
@@ -199,7 +196,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
     pub fn print_token_node_without_trivia(&mut self, token: &TokenNode) {
         match token.core_ref() {
             CoreTokenNode::Ok(ok_token_node) => {
-                self.add_str_to_python_code(&ok_token_node.token_value_str(&self.code_handler));
+                self.add_str_to_python_code(&ok_token_node.token_value_str(self.code_handler));
             }
             CoreTokenNode::MissingTokens(_) => unreachable!(),
         }
@@ -213,10 +210,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
         let token_value = self.mangled_identifier_name_in_decl(identifier);
         if is_trivia {
             let token = &identifier.0.as_ref().name.core_ref().token;
-            let trivia = match token.trivia() {
-                Some(trivia) => Some(trivia),
-                None => None,
-            };
+            let trivia = token.trivia();
             self.print_trivia(trivia);
         }
         self.add_str_to_python_code(&token_value);
@@ -230,10 +224,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
         let token_value = self.mangled_identifier_name_in_use(identifier);
         if is_trivia {
             let token = &identifier.0.as_ref().name.core_ref().token;
-            let trivia = match token.trivia() {
-                Some(trivia) => Some(trivia),
-                None => None,
-            };
+            let trivia = token.trivia();
             self.print_trivia(trivia);
         }
         self.add_str_to_python_code(&token_value);
@@ -343,7 +334,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
             UserDefinedTypeData::Enum(enum_data) => {
                 if let CoreIdentifierInUseNode::Ok(ok_variant_name) = property_name.core_ref() {
                     let variant_name_str = ok_variant_name
-                        .token_value(&self.code_handler, self.semantic_db.interner());
+                        .token_value(self.code_handler, self.semantic_db.interner());
                     if let Some(index) = enum_data.try_index_for_variant(variant_name_str) {
                         self.print_identifier_in_use(ty_name, is_trivia);
                         self.add_str_to_python_code(&format!("(index={}", index));
@@ -402,7 +393,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
             let variant_name = &core_case_branch.variant_name;
             if let CoreIdentifierInDeclNode::Ok(ok_variant_name) = variant_name.core_ref() {
                 let variant_name_str =
-                    ok_variant_name.token_value(&self.code_handler, self.semantic_db.interner());
+                    ok_variant_name.token_value(self.code_handler, self.semantic_db.interner());
                 let index = match symbol_index {
                     Some(symbol_index) => self
                         .semantic_db

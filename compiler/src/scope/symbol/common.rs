@@ -25,8 +25,8 @@ impl FieldsMap {
         &self.fields
     }
 
-    pub fn try_field<'a>(
-        &'a self,
+    pub fn try_field(
+        &self,
         field_name: &IdentName,
         namespace: &Namespace,
         context: TypeGenericsInstantiationContext,

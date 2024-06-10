@@ -46,8 +46,8 @@ impl<'ctx> JarvilParser<'ctx> {
     }
 
     pub fn parse(mut self, token_vec: Vec<Token>) -> BlockNode {
-        let code_node = self.code(token_vec);
-        code_node
+        
+        self.code(token_vec)
     }
 
     pub fn ignore_all_errors(&self) -> bool {

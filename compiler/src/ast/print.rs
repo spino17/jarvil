@@ -29,7 +29,7 @@ fn process_value(val: &mut Value, code: &JarvilCodeHandler, interner: &Interner)
                 process_value(value, code, interner);
             }
         }
-        _ => return,
+        _ => (),
     }
 }
 

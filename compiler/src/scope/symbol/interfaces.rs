@@ -346,7 +346,7 @@ impl<'a> PartialConcreteInterfaceBoundedObjects<'a> {
                         if !interface_method_callable_data
                             .structural_prototype()
                             .is_structurally_eq(
-                                &struct_method_callable_data.structural_prototype(),
+                                struct_method_callable_data.structural_prototype(),
                                 self.context,
                                 namespace,
                             )
@@ -373,7 +373,7 @@ impl<'a> PartialConcreteInterfaceBoundedObjects<'a> {
                     if !interface_method_callable_data
                         .structural_prototype()
                         .is_structurally_eq(
-                            &struct_method_callable_data.structural_prototype(),
+                            struct_method_callable_data.structural_prototype(),
                             self.context,
                             namespace,
                         )
@@ -428,8 +428,8 @@ impl<'a> PartialConcreteInterfaceBoundedObjects<'a> {
         struct_methods: &MethodsMap,
         namespace: &Namespace,
     ) -> Result<(), Vec<(&IdentName, PartialConcreteInterfaceSpecsCheckError)>> {
-        let _ = self.is_struct_implements_interface_fields(struct_fields, namespace)?;
-        let _ = self.is_struct_implements_interface_methods(struct_methods, namespace)?;
+        self.is_struct_implements_interface_fields(struct_fields, namespace)?;
+        self.is_struct_implements_interface_methods(struct_methods, namespace)?;
 
         Ok(())
     }

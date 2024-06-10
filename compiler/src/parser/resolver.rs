@@ -71,7 +71,9 @@ pub enum ResolveResult<T: AbstractSymbol> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[derive(Default)]
 pub enum BlockKind {
+    #[default]
     Function,
     Lambda,
     LambdaType,
@@ -85,11 +87,6 @@ pub enum BlockKind {
     Case,
 }
 
-impl Default for BlockKind {
-    fn default() -> Self {
-        BlockKind::Function
-    }
-}
 
 impl BlockKind {
     fn is_generics_shielding_block(&self) -> bool {
@@ -174,7 +171,7 @@ impl<'ctx> JarvilResolver<'ctx> {
     }
 
     pub fn code_handler(&self) -> &JarvilCodeHandler {
-        &self.code_handler
+        self.code_handler
     }
 
     pub fn interner(&self) -> &Interner {
@@ -382,7 +379,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         log_error: bool,
         is_concrete_types_none_allowed: bool,
     ) -> ResolveResult<T> {
-        let name = identifier.token_value(&self.code_handler, self.semantic_db.interner());
+        let name = identifier.token_value(self.code_handler, self.semantic_db.interner());
 
         match lookup_fn(self.semantic_db.namespace_ref(), self.scope_index, name) {
             LookupResult::Ok(lookup_data) => {
@@ -510,7 +507,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         &mut self,
         self_keyword: &OkSelfKeywordNode,
     ) -> Option<(SymbolIndex<VariableData>, usize)> {
-        let name = self_keyword.token_value(&self.code_handler, self.semantic_db.interner());
+        let name = self_keyword.token_value(self.code_handler, self.semantic_db.interner());
         debug_assert!(self.semantic_db.interner().lookup(name) == "self");
 
         match self
@@ -547,7 +544,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             IdentDeclId<V>,
         ) -> Result<T, (IdentName, TextRange)>,
     {
-        let name = identifier.token_value(&self.code_handler, self.semantic_db.interner());
+        let name = identifier.token_value(self.code_handler, self.semantic_db.interner());
         let result = declare_fn(
             self.semantic_db.namespace_mut_ref(),
             self.scope_index,
@@ -672,7 +669,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             return TypeResolveKind::Invalid;
         };
 
-        let name = ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+        let name = ok_identifier.token_value(self.code_handler, self.semantic_db.interner());
         match self
             .semantic_db
             .namespace_ref()
@@ -827,7 +824,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         }
                         UnresolvedIdentifier::NotInitialized(identifier, decl_range) => {
                             let name = identifier
-                                .token_value(&self.code_handler, self.semantic_db.interner());
+                                .token_value(self.code_handler, self.semantic_db.interner());
                             let err = IdentifierUsedBeforeInitializedError::new(
                                 self.semantic_db.interner().lookup(name),
                                 IdentifierKind::UserDefinedType,
@@ -887,7 +884,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         self.semantic_db.namespace_ref(),
                     ) {
                         let name = interface_expr
-                            .token_value(&self.code_handler, self.semantic_db.interner());
+                            .token_value(self.code_handler, self.semantic_db.interner());
                         let err = InterfaceAlreadyExistInBoundsDeclarationError::new(
                             self.semantic_db.interner().lookup(name),
                             previous_decl_range,
@@ -946,7 +943,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             debug_assert!(ok_identifier_in_decl.core_ref().generic_ty_decls.is_none());
 
             let generic_ty_name =
-                ok_identifier_in_decl.token_value(&self.code_handler, self.semantic_db.interner());
+                ok_identifier_in_decl.token_value(self.code_handler, self.semantic_db.interner());
             let mut interface_bounds = InterfaceBounds::default();
 
             if let Some((_, interface_bounds_node)) = &core_generic_ty_decl.interface_bounds {
@@ -1056,7 +1053,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     continue;
                 };
                 let param_name =
-                    ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+                    ok_identifier.token_value(self.code_handler, self.semantic_db.interner());
                 let param_ty = self.ty_from_expr(&core_param.data_ty);
                 let unique_id = self
                     .semantic_db
@@ -1205,7 +1202,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                             {
                                 if let CoreAtomStartNode::SelfKeyword(_) = atom_start.core_ref() {
                                     let property_name_str = property_name.token_value(
-                                        &self.code_handler,
+                                        self.code_handler,
                                         self.semantic_db.interner(),
                                     );
                                     initialized_fields.insert(property_name_str);
@@ -1468,7 +1465,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier
-                            .token_value(&self.code_handler, self.semantic_db.interner());
+                            .token_value(self.code_handler, self.semantic_db.interner());
                         let ty = self.ty_from_expr(&name_ty_spec.data_ty);
 
                         match fields_map.get(&field_name) {
@@ -1500,7 +1497,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     {
                         optional_ok_identifier_node = Some(ok_bounded_method_name);
                         let method_name_str = ok_bounded_method_name
-                            .token_value(&self.code_handler, self.semantic_db.interner());
+                            .token_value(self.code_handler, self.semantic_db.interner());
 
                         if method_name_str == self.semantic_db.interner().intern("__init__")
                             && constructor.is_none()
@@ -1550,7 +1547,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                             method_generic_ty_decls,
                         );
                         let method_name_str = ok_bounded_method_name
-                            .token_value(&self.code_handler, self.semantic_db.interner());
+                            .token_value(self.code_handler, self.semantic_db.interner());
 
                         if method_name_str == self.semantic_db.interner().intern("__init__") {
                             match constructor {
@@ -1746,7 +1743,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 continue;
             };
             let variant_name =
-                ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+                ok_identifier.token_value(self.code_handler, self.semantic_db.interner());
 
             if let Some((_, ty_expr, _)) = ty {
                 variant_ty = Some(self.ty_from_expr(ty_expr));
@@ -1820,7 +1817,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         let Some(ok_identifier) = optional_ok_identifier_node else {
             return;
         };
-        let name = ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+        let name = ok_identifier.token_value(self.code_handler, self.semantic_db.interner());
         let unique_id = self
             .semantic_db
             .unique_key_generator_mut_ref()
@@ -1919,7 +1916,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
                     if let CoreIdentifierInDeclNode::Ok(ok_identifier) = name.core_ref() {
                         let field_name = ok_identifier
-                            .token_value(&self.code_handler, self.semantic_db.interner());
+                            .token_value(self.code_handler, self.semantic_db.interner());
                         let ty = self.ty_from_expr(&name_ty_spec.data_ty);
 
                         match fields_map.get(&field_name) {
@@ -1947,7 +1944,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         core_interface_method_wrapper.name.core_ref()
                     {
                         let method_name = ok_identifier
-                            .token_value(&self.code_handler, self.semantic_db.interner());
+                            .token_value(self.code_handler, self.semantic_db.interner());
 
                         if method_name == self.semantic_db.interner().intern("__init__") {
                             let err = InitMethodNotAllowedInsideConstructorError::new(

@@ -68,6 +68,12 @@ impl<T> IndexMut<ScopeIndex> for ScopeArena<T> {
     }
 }
 
+impl<T> Default for ScopeArena<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> ScopeArena<T> {
     pub fn new() -> Self {
         ScopeArena {
@@ -102,9 +108,7 @@ impl<T> ScopeArena<T> {
     }
 
     pub fn get(&self, scope_index: ScopeIndex, key: IdentName) -> Option<SymbolIndex<T>> {
-        if self[scope_index].get(&key).is_none() {
-            return None;
-        }
+        self[scope_index].get(&key)?;
 
         Some(SymbolIndex::new(scope_index, key))
     }

@@ -35,8 +35,8 @@ impl EnumTypeData {
         self.generics.as_ref()
     }
 
-    pub fn try_ty_for_variant<'a>(
-        &'a self,
+    pub fn try_ty_for_variant(
+        &self,
         variant_name: IdentName,
         namespace: &Namespace,
         context: TypeGenericsInstantiationContext,

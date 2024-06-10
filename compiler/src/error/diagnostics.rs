@@ -2063,6 +2063,12 @@ pub struct MainFunctionNotFoundError {
     help: Option<String>,
 }
 
+impl Default for MainFunctionNotFoundError {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MainFunctionNotFoundError {
     pub fn new() -> Self {
         MainFunctionNotFoundError {

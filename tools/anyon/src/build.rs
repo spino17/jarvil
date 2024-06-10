@@ -25,7 +25,7 @@ pub fn execute_build_or_run(mode: BuildMode) -> Result<(), AnyonError> {
     let code = JarvilCode::new(&code_str);
     let (build_result, ast_str) = build_code(code);
 
-    fs::write(&ast_file_path, ast_str)?;
+    fs::write(ast_file_path, ast_str)?;
 
     let py_code = match build_result {
         Ok(py_code) => py_code,

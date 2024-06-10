@@ -31,7 +31,7 @@ impl JarvilProgramAnalysisErrors {
         unsafe {
             let errors_ref = &*self.core.get();
 
-            if errors_ref.len() > 0 {
+            if !errors_ref.is_empty() {
                 return Some(errors_ref[0].report());
             }
 

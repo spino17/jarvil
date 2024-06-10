@@ -266,7 +266,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 CoreAtomicExpressionNode::Integer(integer_valued_token) => {
                     match integer_valued_token.core_ref() {
                         CoreTokenNode::Ok(ok_token) => {
-                            let value = ok_token.token_value_str(&self.code_handler);
+                            let value = ok_token.token_value_str(self.code_handler);
 
                             match value.parse::<i32>() {
                                 Ok(value) => Some(value),
@@ -661,7 +661,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             }
             ConcreteSymbolDataEntry::Type(concrete_symbol_index) => {
                 let name =
-                    ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+                    ok_identifier.token_value(self.code_handler, self.semantic_db.interner());
 
                 self.check_user_defined_ty_call_expr(name, &concrete_symbol_index, params)
             }
@@ -733,7 +733,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         };
 
         let class_method_name =
-            property_name.token_value(&self.code_handler, self.semantic_db.interner());
+            property_name.token_value(self.code_handler, self.semantic_db.interner());
         let context = TypeGenericsInstantiationContext::new(concrete_types);
 
         match struct_data.try_class_method(&class_method_name, context) {
@@ -806,7 +806,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             return Type::new_with_unknown();
         };
         let variant_name =
-            property_name.token_value(&self.code_handler, self.semantic_db.interner());
+            property_name.token_value(self.code_handler, self.semantic_db.interner());
 
         if property_name.core_ref().generic_ty_args.is_some() {
             let err = GenericTypeArgsNotExpectedError::new(
@@ -936,7 +936,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let CoreIdentifierInUseNode::Ok(ok_identifier) = ty.core_ref() else {
             return Type::new_with_unknown();
         };
-        let ty_name = ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+        let ty_name = ok_identifier.token_value(self.code_handler, self.semantic_db.interner());
 
         match self
             .semantic_db
@@ -1073,7 +1073,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
 
         let property_name_str =
-            ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+            ok_identifier.token_value(self.code_handler, self.semantic_db.interner());
 
         let result = match atom_ty.core_ty() {
             CoreType::Struct(struct_ty) => {
@@ -1154,7 +1154,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         // This is in sync with what Python does.
 
         let method_name =
-            method_name_ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+            method_name_ok_identifier.token_value(self.code_handler, self.semantic_db.interner());
         let concrete_types = struct_ty.concrete_types();
         let ty_data = self.semantic_db.ty_symbol_ref(struct_ty.symbol_index());
         let struct_data = ty_data.struct_data_ref();
@@ -1214,7 +1214,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
         let method_name =
-            method_name_ok_identifier.token_value(&self.code_handler, self.semantic_db.interner());
+            method_name_ok_identifier.token_value(self.code_handler, self.semantic_db.interner());
         let ty_data = self.semantic_db.ty_symbol_ref(generic_ty.symbol_index());
         let generic_data = ty_data.generic_data_ref();
         let interface_bounds = generic_data.interface_bounds();
@@ -1298,7 +1298,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
-        let method_name = method_name_ok_identifier.token_value_str(&self.code_handler);
+        let method_name = method_name_ok_identifier.token_value_str(self.code_handler);
         let Some(prototype) = self.non_struct_methods_handler.try_method_for_array(
             array_ty,
             &method_name,
@@ -1329,7 +1329,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         method_name_ok_identifier: &OkIdentifierInUseNode,
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
-        let method_name = method_name_ok_identifier.token_value_str(&self.code_handler);
+        let method_name = method_name_ok_identifier.token_value_str(self.code_handler);
         let Some(prototype) = self.non_struct_methods_handler.try_method_for_hashmap(
             hashmap_ty,
             &method_name,
@@ -1960,7 +1960,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 .set_data_ty(&r_ty);
         } else if !variable_ty.is_eq(&r_ty, self.semantic_db.namespace_ref()) {
             let err = RightSideExpressionTypeMismatchedWithTypeFromAnnotationError::new(
-                &variable_ty,
+                variable_ty,
                 &r_ty,
                 core_variable_decl.name.range(),
                 r_variable_decl.range(),
@@ -2046,7 +2046,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
         if !expr_ty.is_eq(expected_ty, self.semantic_db.namespace_ref()) {
             let err = MismatchedReturnTypeError::new(
-                &expected_ty,
+                expected_ty,
                 &expr_ty,
                 core_return_stmt.return_keyword.range(),
                 self.err_logging_context(),
@@ -2188,7 +2188,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
             if let CoreIdentifierInDeclNode::Ok(enum_name) = enum_name.core_ref() {
                 let enum_name_str =
-                    enum_name.token_value(&self.code_handler, self.semantic_db.interner());
+                    enum_name.token_value(self.code_handler, self.semantic_db.interner());
 
                 if expr_enum_name != enum_name_str {
                     let err = IncorrectEnumNameError::new(
@@ -2204,7 +2204,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
                     if let CoreIdentifierInDeclNode::Ok(variant_name) = variant_name.core_ref() {
                         let variant_name_str = variant_name
-                            .token_value(&self.code_handler, self.semantic_db.interner());
+                            .token_value(self.code_handler, self.semantic_db.interner());
 
                         match enum_data.try_ty_for_variant(
                             variant_name_str,
