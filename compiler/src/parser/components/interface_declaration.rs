@@ -19,5 +19,6 @@ pub fn interface_decl(parser: &mut JarvilParser) -> InterfaceDeclarationNode {
         &[IDENTIFIER, DEF],
         BlockKind::Interface,
     );
+
     InterfaceDeclarationNode::new(interface_keyword_node, name_node, colon_node, block_node)
 }

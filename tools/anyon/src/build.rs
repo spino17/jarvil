@@ -21,22 +21,26 @@ pub fn execute_build_or_run(mode: BuildMode) -> Result<(), AnyonError> {
         curr_dir_path, code_file_name
     );
     let ast_file_path = format!("{}/__ast_{}.json", curr_dir_path, code_file_name);
-
     let code_str = fs::read_to_string(jarvil_code_file_path)?;
     let code = JarvilCode::new(&code_str);
     let (build_result, ast_str) = build_code(code);
-    fs::write(&ast_file_path, ast_str)?;
+
+    fs::write(ast_file_path, ast_str)?;
+
     let py_code = match build_result {
         Ok(py_code) => py_code,
         Err(err) => return Err(err.into()),
     };
+
     fs::write(&transpiled_py_code_file_path, py_code)?;
+
     // format the Python code using `black` if available
     let _ = Command::new("python3")
         .arg("-m")
         .arg("black")
         .arg(&transpiled_py_code_file_path)
         .output()?;
+
     if matches!(mode, BuildMode::Build) {
         return Ok(());
     }
@@ -56,6 +60,8 @@ pub fn execute_build_or_run(mode: BuildMode) -> Result<(), AnyonError> {
     } else {
         "".to_string()
     };
+
     println!("{}", output_str);
+
     Ok(())
 }

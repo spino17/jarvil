@@ -32,6 +32,7 @@ impl Array {
         let CoreType::Array(other_array) = other.core_ty() else {
             return None;
         };
+
         if self
             .element_ty
             .check_operator(&other_array.element_ty, operator_kind, namespace)
@@ -39,6 +40,7 @@ impl Array {
         {
             return Some(Type::new_with_atomic(BOOL));
         }
+
         None
     }
 }
@@ -48,6 +50,7 @@ impl TypeLike for Array {
         let CoreType::Array(array_data) = other_ty.core_ty() else {
             return false;
         };
+
         self.element_ty.is_eq(&array_data.element_ty, namespace)
     }
 
@@ -60,6 +63,7 @@ impl TypeLike for Array {
         let CoreType::Array(array_data) = other_ty.core_ty() else {
             return false;
         };
+
         self.element_ty
             .is_structurally_eq(&array_data.element_ty, context, namespace)
     }
@@ -93,6 +97,7 @@ impl TypeLike for Array {
         let CoreType::Array(array_ty) = received_ty.core_ty() else {
             return Err(());
         };
+
         self.element_ty.try_infer_ty_or_check_equivalence(
             &array_ty.element_ty,
             inferred_concrete_types,
@@ -114,6 +119,7 @@ impl OperatorCompatiblity for Array {
             return None;
         };
         let sub_ty = &array.element_ty;
+
         if self.element_ty.is_eq(sub_ty, namespace) {
             Some(Type::new_with_array(sub_ty.clone()))
         } else {

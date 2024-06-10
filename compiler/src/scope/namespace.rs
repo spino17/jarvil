@@ -13,11 +13,11 @@ use super::{
         variables::{VariableData, VariableSymbolData},
     },
 };
+use crate::{core::string_interner::IdentName, parser::resolver::BlockKind};
 use crate::{
     core::string_interner::Interner,
     scope::symbol::types::generic_ty::GenericTypeDeclarationPlaceCategory,
 };
-use crate::{core::string_interner::StrId, parser::resolver::BlockKind};
 use crate::{scope::lookup::LookupResult, types::core::Type};
 use text_size::TextRange;
 
@@ -37,7 +37,9 @@ impl Namespace {
             funcs: ScopeArena::new(),
             interfaces: ScopeArena::new(),
         };
+
         fill_side_scope_with_generic_types(&mut namespace, interner);
+
         namespace
     }
 
@@ -91,7 +93,7 @@ impl Namespace {
     pub fn from_variables_namespace(
         &self,
         scope_index: ScopeIndex,
-        key: StrId,
+        key: IdentName,
     ) -> Option<SymbolIndex<VariableData>> {
         self.variables.get(scope_index, key)
     }
@@ -99,7 +101,7 @@ impl Namespace {
     pub fn from_funcs_namespace(
         &self,
         scope_index: ScopeIndex,
-        key: StrId,
+        key: IdentName,
     ) -> Option<SymbolIndex<CallableData>> {
         self.funcs.get(scope_index, key)
     }
@@ -107,7 +109,7 @@ impl Namespace {
     pub fn from_types_namespace(
         &self,
         scope_index: ScopeIndex,
-        key: StrId,
+        key: IdentName,
     ) -> Option<SymbolIndex<UserDefinedTypeData>> {
         self.types.get(scope_index, key)
     }
@@ -115,7 +117,7 @@ impl Namespace {
     pub fn from_interfaces_namespace(
         &self,
         scope_index: ScopeIndex,
-        key: StrId,
+        key: IdentName,
     ) -> Option<SymbolIndex<InterfaceData>> {
         self.interfaces.get(scope_index, key)
     }
@@ -123,7 +125,7 @@ impl Namespace {
     pub fn lookup_in_variables_namespace(
         &self,
         scope_index: ScopeIndex,
-        key: StrId,
+        key: IdentName,
     ) -> LookupResult<VariableSymbolData> {
         self.variables.lookup_with_is_init(scope_index, key).into()
     }
@@ -131,7 +133,7 @@ impl Namespace {
     pub fn lookup_in_funcs_namespace(
         &self,
         scope_index: ScopeIndex,
-        key: StrId,
+        key: IdentName,
     ) -> LookupResult<FunctionSymbolData> {
         self.funcs.lookup_with_is_init(scope_index, key).into()
     }
@@ -139,7 +141,7 @@ impl Namespace {
     pub fn lookup_in_types_namespace(
         &self,
         scope_index: ScopeIndex,
-        key: StrId,
+        key: IdentName,
     ) -> LookupResult<UserDefinedTypeSymbolData> {
         self.types.lookup_with_is_init(scope_index, key).into()
     }
@@ -147,7 +149,7 @@ impl Namespace {
     pub fn lookup_in_interfaces_namespace(
         &self,
         scope_index: ScopeIndex,
-        key: StrId,
+        key: IdentName,
     ) -> LookupResult<InterfaceSymbolData> {
         self.interfaces.lookup_with_is_init(scope_index, key).into()
     }
@@ -155,16 +157,17 @@ impl Namespace {
     pub fn declare_variable(
         &mut self,
         scope_index: ScopeIndex,
-        name: StrId,
+        name: IdentName,
         decl_range: TextRange,
         unique_id: IdentDeclId<VariableData>,
-    ) -> Result<VariableSymbolData, (StrId, TextRange)> {
+    ) -> Result<VariableSymbolData, (IdentName, TextRange)> {
         let lookup_func =
-            |scope: &ScopeArena<VariableData>, scope_index: ScopeIndex, key: StrId| {
+            |scope: &ScopeArena<VariableData>, scope_index: ScopeIndex, key: IdentName| {
                 scope
                     .get(scope_index, key)
                     .map(|symbol_index| symbol_index.decl_line_number(scope))
             };
+
         Ok(self
             .variables
             .insert(
@@ -181,18 +184,19 @@ impl Namespace {
     pub fn declare_variable_with_ty(
         &mut self,
         scope_index: ScopeIndex,
-        name: StrId,
+        name: IdentName,
         variable_ty: &Type,
         decl_range: TextRange,
         is_init: bool,
         unique_id: IdentDeclId<VariableData>,
-    ) -> Result<VariableSymbolData, (StrId, TextRange)> {
+    ) -> Result<VariableSymbolData, (IdentName, TextRange)> {
         let lookup_func =
-            |scope: &ScopeArena<VariableData>, scope_index: ScopeIndex, key: StrId| {
+            |scope: &ScopeArena<VariableData>, scope_index: ScopeIndex, key: IdentName| {
                 scope
                     .get(scope_index, key)
                     .map(|symbol_index| symbol_index.decl_line_number(scope))
             };
+
         Ok(self
             .variables
             .insert(
@@ -209,16 +213,17 @@ impl Namespace {
     pub fn declare_func(
         &mut self,
         scope_index: ScopeIndex,
-        name: StrId,
+        name: IdentName,
         decl_range: TextRange,
         unique_id: IdentDeclId<CallableData>,
-    ) -> Result<FunctionSymbolData, (StrId, TextRange)> {
+    ) -> Result<FunctionSymbolData, (IdentName, TextRange)> {
         let lookup_func =
-            |scope: &ScopeArena<CallableData>, scope_index: ScopeIndex, key: StrId| {
+            |scope: &ScopeArena<CallableData>, scope_index: ScopeIndex, key: IdentName| {
                 scope
                     .get(scope_index, key)
                     .map(|symbol_index| symbol_index.decl_line_number(scope))
             };
+
         Ok(self
             .funcs
             .insert(
@@ -235,17 +240,18 @@ impl Namespace {
     pub fn declare_user_defined_ty(
         &mut self,
         scope_index: ScopeIndex,
-        name: StrId,
+        name: IdentName,
         meta_data: UserDefinedTypeData,
         decl_range: TextRange,
         unique_id: IdentDeclId<UserDefinedTypeData>,
-    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (IdentName, TextRange)> {
         let lookup_func =
-            |scope: &ScopeArena<UserDefinedTypeData>, scope_index: ScopeIndex, key: StrId| {
+            |scope: &ScopeArena<UserDefinedTypeData>, scope_index: ScopeIndex, key: IdentName| {
                 scope
                     .lookup(scope_index, key)
                     .map(|(symbol_index, _, _)| symbol_index.decl_line_number(scope))
             };
+
         Ok(self
             .types
             .insert(
@@ -262,71 +268,76 @@ impl Namespace {
     pub fn declare_struct_ty(
         &mut self,
         scope_index: ScopeIndex,
-        name: StrId,
+        name: IdentName,
         decl_range: TextRange,
         unique_id: IdentDeclId<UserDefinedTypeData>,
-    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (IdentName, TextRange)> {
         let meta_data = UserDefinedTypeData::default_with_struct();
+
         self.declare_user_defined_ty(scope_index, name, meta_data, decl_range, unique_id)
     }
 
     pub fn declare_enum_ty(
         &mut self,
         scope_index: ScopeIndex,
-        name: StrId,
+        name: IdentName,
         decl_range: TextRange,
         unique_id: IdentDeclId<UserDefinedTypeData>,
-    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (IdentName, TextRange)> {
         let meta_data = UserDefinedTypeData::default_with_enum();
+
         self.declare_user_defined_ty(scope_index, name, meta_data, decl_range, unique_id)
     }
 
     pub fn declare_lambda_ty_with_meta_data(
         &mut self,
         scope_index: ScopeIndex,
-        name: StrId,
+        name: IdentName,
         param_types: Vec<Type>,
         return_ty: Type,
         generics_spec: Option<GenericTypeParams>,
         decl_range: TextRange,
         unique_id: IdentDeclId<UserDefinedTypeData>,
-    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (IdentName, TextRange)> {
         let meta_data =
             UserDefinedTypeData::Lambda(LambdaTypeData::new(param_types, return_ty, generics_spec));
+
         self.declare_user_defined_ty(scope_index, name, meta_data, decl_range, unique_id)
     }
 
     pub fn declare_generic_ty_with_meta_data(
         &mut self,
         scope_index: ScopeIndex,
-        name: StrId,
+        name: IdentName,
         index: usize,
         category: GenericTypeDeclarationPlaceCategory,
         interface_bounds: &InterfaceBounds,
         decl_range: TextRange,
         unique_id: IdentDeclId<UserDefinedTypeData>,
-    ) -> Result<UserDefinedTypeSymbolData, (StrId, TextRange)> {
+    ) -> Result<UserDefinedTypeSymbolData, (IdentName, TextRange)> {
         let meta_data = UserDefinedTypeData::Generic(GenericTypeData::new(
             index,
             category,
             interface_bounds.clone(),
         ));
+
         self.declare_user_defined_ty(scope_index, name, meta_data, decl_range, unique_id)
     }
 
     pub fn declare_interface(
         &mut self,
         scope_index: ScopeIndex,
-        name: StrId,
+        name: IdentName,
         decl_range: TextRange,
         unique_id: IdentDeclId<InterfaceData>,
-    ) -> Result<InterfaceSymbolData, (StrId, TextRange)> {
+    ) -> Result<InterfaceSymbolData, (IdentName, TextRange)> {
         let lookup_func =
-            |scope: &ScopeArena<InterfaceData>, scope_index: ScopeIndex, key: StrId| {
+            |scope: &ScopeArena<InterfaceData>, scope_index: ScopeIndex, key: IdentName| {
                 scope
                     .lookup(scope_index, key)
                     .map(|(symbol_index, _, _)| symbol_index.decl_line_number(scope))
             };
+
         Ok(self
             .interfaces
             .insert(

@@ -4,7 +4,7 @@ use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::traits::InstantiationContext;
 use crate::types::traits::UserDefinedType;
 use crate::{
-    core::string_interner::StrId,
+    core::string_interner::IdentName,
     parser::type_checker::InferredConcreteTypesEntry,
     scope::{
         concrete::TurbofishTypes,
@@ -27,7 +27,7 @@ impl Generic {
         Generic { symbol_index }
     }
 
-    pub fn name(&self) -> StrId {
+    pub fn name(&self) -> IdentName {
         self.symbol_index.identifier_name()
     }
 }
@@ -41,7 +41,7 @@ impl UserDefinedType for Generic {
         None
     }
 
-    fn name(&self) -> StrId {
+    fn name(&self) -> IdentName {
         self.symbol_index.identifier_name()
     }
 }
@@ -51,6 +51,7 @@ impl TypeLike for Generic {
         let CoreType::Generic(generic_data) = other_ty.core_ty() else {
             return false;
         };
+
         self.name() == generic_data.name()
     }
 
@@ -71,6 +72,7 @@ impl TypeLike for Generic {
         let self_generic_data = self_ty_data.generic_data_ref();
         let self_index = self_generic_data.index();
         let self_category = self_generic_data.category();
+
         match self_category {
             GenericTypeDeclarationPlaceCategory::InCallable => match is_other_ty_generic {
                 Some(generic_data) => {
@@ -81,6 +83,7 @@ impl TypeLike for Generic {
                     let other_generic_data = other_data.generic_data_ref();
                     let other_index = other_generic_data.index();
                     let other_category = other_generic_data.category();
+
                     match other_category {
                         GenericTypeDeclarationPlaceCategory::InCallable => {
                             self_index == other_index
@@ -98,6 +101,7 @@ impl TypeLike for Generic {
                         None => unreachable!(),
                     };
                     let concrete_self_ty = &concrete_types[self_index];
+
                     concrete_self_ty.is_eq(other_ty, namespace)
                 }
             },
@@ -116,6 +120,7 @@ impl TypeLike for Generic {
         let generic_data = ty_data.generic_data_ref();
         let index = generic_data.index();
         let category = generic_data.category();
+
         match category {
             GenericTypeDeclarationPlaceCategory::InType => {
                 match context.ty_generics_instantiation_args() {
@@ -142,6 +147,7 @@ impl TypeLike for Generic {
             .symbol_ref(self.symbol_index)
             .data_ref();
         let ty_interface_bounds = ty_data.generic_data_ref().interface_bounds();
+
         interface_bounds.is_subset(ty_interface_bounds, namespace)
     }
 
@@ -161,18 +167,22 @@ impl TypeLike for Generic {
         let generic_data_ref = ty_data.generic_data_ref();
         let index = generic_data_ref.index();
         let decl_place = generic_data_ref.category();
+
         if inference_category == decl_place {
             let entry_ty = &mut inferred_concrete_types[index];
+
             match entry_ty {
                 InferredConcreteTypesEntry::Uninferred => {
                     *entry_ty = InferredConcreteTypesEntry::Inferred(received_ty.clone());
                     *num_inferred_types += 1;
+
                     Ok(())
                 }
                 InferredConcreteTypesEntry::Inferred(present_ty) => {
                     if !present_ty.is_eq(received_ty, namespace) {
                         return Err(());
                     }
+
                     Ok(())
                 }
             }
@@ -183,9 +193,11 @@ impl TypeLike for Generic {
                 None => unreachable!(),
             };
             let expected_ty = &global_concrete_types[index];
+
             if !expected_ty.is_eq(received_ty, namespace) {
                 return Err(());
             }
+
             Ok(())
         }
     }
@@ -198,6 +210,7 @@ impl TypeLike for Generic {
             .data_ref();
         let generic_data = ty_data.generic_data_ref();
         let interface_bounds = generic_data.interface_bounds();
+
         format!(
             "{}{}",
             context.interner().lookup(self.name()),

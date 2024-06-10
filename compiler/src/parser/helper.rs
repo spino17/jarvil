@@ -24,6 +24,7 @@ pub fn format_symbol(symbol: &str) -> &str {
     if symbol == "\n" {
         return NEWLINE;
     }
+
     symbol
 }
 

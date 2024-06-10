@@ -122,14 +122,14 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                     .to_string(TY_SUFFIX, self.semantic_db.interner()),
                 SymbolDataEntry::Interface(_) => unreachable!(),
             },
-            None => identifier.token_value_str(&self.code_handler),
+            None => identifier.token_value_str(self.code_handler),
         }
     }
 
     pub fn mangled_identifier_name_in_use(&self, identifier: &OkIdentifierInUseNode) -> String {
         let Some(concrete_symbol_entry) = self.semantic_db.symbol_for_identifier_in_use(identifier)
         else {
-            return identifier.token_value_str(&self.code_handler);
+            return identifier.token_value_str(self.code_handler);
         };
         match concrete_symbol_entry {
             ConcreteSymbolDataEntry::Variable(concrete_symbol_index) => concrete_symbol_index
@@ -149,12 +149,9 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
     }
 
     pub fn print_token(&mut self, token: &Token) {
-        let trivia = match token.trivia() {
-            Some(trivia) => Some(trivia),
-            None => None,
-        };
+        let trivia = token.trivia();
         self.print_trivia(trivia);
-        let token_value = token.token_value_str(&self.code_handler);
+        let token_value = token.token_value_str(self.code_handler);
         match token.core_token() {
             CoreToken::SINGLE_LINE_COMMENT => {
                 self.add_str_to_python_code("\n");
@@ -199,7 +196,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
     pub fn print_token_node_without_trivia(&mut self, token: &TokenNode) {
         match token.core_ref() {
             CoreTokenNode::Ok(ok_token_node) => {
-                self.add_str_to_python_code(&ok_token_node.token_value_str(&self.code_handler));
+                self.add_str_to_python_code(&ok_token_node.token_value_str(self.code_handler));
             }
             CoreTokenNode::MissingTokens(_) => unreachable!(),
         }
@@ -213,10 +210,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
         let token_value = self.mangled_identifier_name_in_decl(identifier);
         if is_trivia {
             let token = &identifier.0.as_ref().name.core_ref().token;
-            let trivia = match token.trivia() {
-                Some(trivia) => Some(trivia),
-                None => None,
-            };
+            let trivia = token.trivia();
             self.print_trivia(trivia);
         }
         self.add_str_to_python_code(&token_value);
@@ -230,10 +224,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
         let token_value = self.mangled_identifier_name_in_use(identifier);
         if is_trivia {
             let token = &identifier.0.as_ref().name.core_ref().token;
-            let trivia = match token.trivia() {
-                Some(trivia) => Some(trivia),
-                None => None,
-            };
+            let trivia = token.trivia();
             self.print_trivia(trivia);
         }
         self.add_str_to_python_code(&token_value);
@@ -335,7 +326,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 if let Some((lparen, params, rparen)) = params {
                     self.print_token_node(lparen);
                     if let Some(params) = params {
-                        self.walk_comma_separated_expressions(params);
+                        self.walk_comma_separated_expr(params);
                     }
                     self.print_token_node(rparen);
                 }
@@ -343,7 +334,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
             UserDefinedTypeData::Enum(enum_data) => {
                 if let CoreIdentifierInUseNode::Ok(ok_variant_name) = property_name.core_ref() {
                     let variant_name_str = ok_variant_name
-                        .token_value(&self.code_handler, self.semantic_db.interner());
+                        .token_value(self.code_handler, self.semantic_db.interner());
                     if let Some(index) = enum_data.try_index_for_variant(variant_name_str) {
                         self.print_identifier_in_use(ty_name, is_trivia);
                         self.add_str_to_python_code(&format!("(index={}", index));
@@ -351,7 +342,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                             if let Some(params) = params {
                                 self.add_str_to_python_code(", data=");
                                 let expr = &params.core_ref().entity;
-                                self.walk_expression(expr);
+                                self.walk_expr(expr);
                             }
                         }
                         self.add_str_to_python_code(")");
@@ -370,6 +361,13 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
         let match_block = &core_match_case.block;
         let mut symbol_index: Option<SymbolIndex<UserDefinedTypeData>> = None;
         let mut conditional_keyword_str: &'static str = "if";
+
+        // this is added so that expr is evaluated only once in the generated python code
+        self.add_indention_to_python_code();
+        self.add_str_to_python_code("__tmp_enum_expr = ");
+        self.walk_expr(expr);
+        self.add_str_to_python_code("\n");
+
         for stmt in &match_block.core_ref().stmts {
             let stmt = match stmt.core_ref() {
                 CoreStatementIndentWrapperNode::CorrectlyIndented(stmt) => stmt,
@@ -395,7 +393,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
             let variant_name = &core_case_branch.variant_name;
             if let CoreIdentifierInDeclNode::Ok(ok_variant_name) = variant_name.core_ref() {
                 let variant_name_str =
-                    ok_variant_name.token_value(&self.code_handler, self.semantic_db.interner());
+                    ok_variant_name.token_value(self.code_handler, self.semantic_db.interner());
                 let index = match symbol_index {
                     Some(symbol_index) => self
                         .semantic_db
@@ -408,16 +406,16 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 let case_block = &core_case_branch.block;
                 self.add_indention_to_python_code();
                 self.add_str_to_python_code(conditional_keyword_str);
-                self.walk_expression(expr);
-                self.add_str_to_python_code(&format!(".index == {}:", index));
+                // self.walk_expr(expr);
+                self.add_str_to_python_code(&format!(" __tmp_enum_expr.index == {}:", index));
                 self.open_block();
                 self.print_token_node(&case_block.core_ref().newline);
                 if let Some((_, variable_name, _)) = &core_case_branch.variable_name {
                     self.add_indention_to_python_code();
                     self.print_identifier_in_decl(variable_name, true);
                     self.add_str_to_python_code(" = ");
-                    self.walk_expression(expr);
-                    self.add_str_to_python_code(".data\n")
+                    // self.walk_expr(expr);
+                    self.add_str_to_python_code("__tmp_enum_expr.data\n")
                 }
                 for stmt in &case_block.core_ref().stmts {
                     self.walk_stmt_indent_wrapper(stmt);
@@ -474,7 +472,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
         self.add_indention_to_python_code();
         let core_conditional_block = conditional_block.core_ref();
         self.print_token_node_without_trivia(&core_conditional_block.condition_keyword);
-        self.walk_expression(&core_conditional_block.condition_expr);
+        self.walk_expr(&core_conditional_block.condition_expr);
         self.walk_token(&core_conditional_block.colon);
         self.walk_block(&core_conditional_block.block);
     }
@@ -484,7 +482,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
             CoreStatementNode::Expression(expr_stmt) => {
                 self.add_indention_to_python_code();
                 let core_expr_stmt = expr_stmt.core_ref();
-                self.print_expression_without_trivia(&core_expr_stmt.expr);
+                self.print_expr_without_trivia(&core_expr_stmt.expr);
                 self.walk_token(&core_expr_stmt.newline);
             }
             CoreStatementNode::Assignment(assignment) => {
@@ -508,7 +506,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 let core_return_stmt = return_stmt.core_ref();
                 self.print_token_node_without_trivia(&core_return_stmt.return_keyword);
                 if let Some(expr) = &core_return_stmt.expr {
-                    self.walk_expression(expr);
+                    self.walk_expr(expr);
                 }
                 self.print_token_node(&core_return_stmt.newline);
             }
@@ -529,7 +527,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 self.add_indention_to_python_code();
                 let core_while_loop = while_loop_stmt.core_ref();
                 self.print_token_node_without_trivia(&core_while_loop.while_keyword);
-                self.walk_expression(&core_while_loop.condition_expr);
+                self.walk_expr(&core_while_loop.condition_expr);
                 self.walk_token(&core_while_loop.colon);
                 self.walk_block(&core_while_loop.block);
             }
@@ -539,7 +537,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                 self.print_token_node_without_trivia(&core_for_loop.for_keyword);
                 self.walk_identifier_in_decl(&core_for_loop.loop_variable);
                 self.walk_token(&core_for_loop.in_keyword);
-                self.walk_expression(&core_for_loop.iterable_expr);
+                self.walk_expr(&core_for_loop.iterable_expr);
                 self.walk_token(&core_for_loop.colon);
                 self.walk_block(&core_for_loop.block);
             }

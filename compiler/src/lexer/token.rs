@@ -13,7 +13,7 @@ use crate::constants::common::{
     TYPE_KEYWORD, UNCLOSED_BLOCK_COMMENT, UNCLOSED_STRING_LITERAL_DOUBLE_QUOTE,
     UNCLOSED_STRING_LITERAL_SINGLE_QUOTE, WHILE, WITH_KEYWORD, YIELD_KEYWORD,
 };
-use crate::core::string_interner::{Interner, StrId};
+use crate::core::string_interner::{IdentName, Interner};
 use jarvil_macros::Tokenify;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
@@ -86,7 +86,7 @@ impl Token {
         self.core_token.to_string().to_string()
     }
 
-    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> IdentName {
         interner.intern(&code.code.token_from_range(self.range))
     }
 
@@ -251,6 +251,7 @@ fn check_keyword(
     token_type: CoreToken,
 ) -> CoreToken {
     let value: String = value.collect();
+
     if value.len() == remaining_str.len() && value.eq(remaining_str) {
         token_type
     } else {
@@ -266,6 +267,7 @@ impl CoreToken {
                 match c {
                     'f' => {
                         let next_c = value_iter.next();
+
                         match next_c {
                             Some(next_c) => match next_c {
                                 'o' => check_keyword("r", value_iter, CoreToken::FOR),
@@ -281,6 +283,7 @@ impl CoreToken {
                     } // for, float, finally, from
                     'w' => {
                         let next_c = value_iter.next();
+
                         match next_c {
                             Some(next_c) => match next_c {
                                 'h' => check_keyword("ile", value_iter, CoreToken::WHILE),
@@ -292,6 +295,7 @@ impl CoreToken {
                     } // with, while
                     'c' => {
                         let next_c = value_iter.next();
+
                         match next_c {
                             Some(next_c) => match next_c {
                                 'o' => check_keyword("ntinue", value_iter, CoreToken::CONTINUE),
@@ -304,6 +308,7 @@ impl CoreToken {
                     } // continue, class, case
                     'b' => {
                         let next_c = value_iter.next();
+
                         match next_c {
                             Some(next_c) => match next_c {
                                 'r' => check_keyword("eak", value_iter, CoreToken::BREAK),
@@ -315,16 +320,19 @@ impl CoreToken {
                     } // break, bool
                     'i' => {
                         let next_c = value_iter.next();
+
                         match next_c {
                             Some(next_c) => match next_c {
                                 's' => check_keyword("", value_iter, CoreToken::IS),
                                 'f' => check_keyword("", value_iter, CoreToken::IF),
                                 'n' => {
                                     let next_next_c = value_iter.next();
+
                                     match next_next_c {
                                         Some(next_next_c) => match next_next_c {
                                             't' => {
                                                 let next_next_next_c = value_iter.next();
+
                                                 match next_next_next_c {
                                                     Some(next_next_next_c) => {
                                                         match next_next_next_c {
@@ -346,10 +354,12 @@ impl CoreToken {
                                 }
                                 'm' => {
                                     let next_next_c = value_iter.next();
+
                                     match next_next_c {
                                         Some(next_next_c) => match next_next_c {
                                             'p' => {
                                                 let next_next_next_c = value_iter.next();
+
                                                 match next_next_next_c {
                                                     Some(next_next_next_c) => {
                                                         match next_next_next_c {
@@ -381,10 +391,12 @@ impl CoreToken {
                     } // if, interface, in, impl, int, import, is
                     'e' => {
                         let next_c = value_iter.next();
+
                         match next_c {
                             Some(next_c) => match next_c {
                                 'l' => {
                                     let next_next_c = value_iter.next();
+
                                     match next_next_c {
                                         Some(next_next_c) => match next_next_c {
                                             's' => check_keyword("e", value_iter, CoreToken::ELSE),
@@ -403,6 +415,7 @@ impl CoreToken {
                     } // else, elif, except, enum
                     't' => {
                         let next_c = value_iter.next();
+
                         match next_c {
                             Some(next_c) => match next_c {
                                 'y' => check_keyword("pe", value_iter, CoreToken::TYPE_KEYWORD),
@@ -414,10 +427,12 @@ impl CoreToken {
                     } // type, try
                     'd' => {
                         let next_c = value_iter.next();
+
                         match next_c {
                             Some(next_c) => match next_c {
                                 'e' => {
                                     let next_next_c = value_iter.next();
+
                                     match next_next_c {
                                         Some(next_next_c) => match next_next_c {
                                             'f' => check_keyword("", value_iter, CoreToken::DEF),
@@ -443,6 +458,7 @@ impl CoreToken {
                     } // del, def
                     'l' => {
                         let next_c = value_iter.next();
+
                         match next_c {
                             Some(next_c) => match next_c {
                                 'e' => check_keyword("t", value_iter, CoreToken::LET),
@@ -454,15 +470,18 @@ impl CoreToken {
                     } // let, lambda
                     's' => {
                         let next_c = value_iter.next();
+
                         match next_c {
                             Some(next_c) => match next_c {
                                 'e' => check_keyword("lf", value_iter, CoreToken::SELF),
                                 't' => {
                                     let next_next_c = value_iter.next();
+
                                     match next_next_c {
                                         Some(next_next_c) => match next_next_c {
                                             'r' => {
                                                 let next_next_next_c = value_iter.next();
+
                                                 match next_next_next_c {
                                                     Some(next_next_next_c) => {
                                                         match next_next_next_c {
@@ -489,11 +508,13 @@ impl CoreToken {
                     } // self, str, struct
                     'a' => {
                         let next_c = value_iter.next();
+
                         match next_c {
                             Some(next_c) => match next_c {
                                 'n' => check_keyword("d", value_iter, CoreToken::AND),
                                 's' => {
                                     let next_next_c = value_iter.next();
+
                                     match next_next_c {
                                         Some(next_next_c) => match next_next_c {
                                             's' => check_keyword(
@@ -519,10 +540,12 @@ impl CoreToken {
                     } // and, as, assert, async, await
                     'n' => {
                         let next_c = value_iter.next();
+
                         match next_c {
                             Some(next_c) => match next_c {
                                 'o' => {
                                     let next_next_c = value_iter.next();
+
                                     match next_next_c {
                                         Some(next_next_c) => match next_next_c {
                                             't' => check_keyword("", value_iter, CoreToken::NOT),

@@ -29,7 +29,7 @@ fn process_value(val: &mut Value, code: &JarvilCodeHandler, interner: &Interner)
                 process_value(value, code, interner);
             }
         }
-        _ => return,
+        _ => (),
     }
 }
 
@@ -40,6 +40,8 @@ pub fn serialize_ast(
 ) -> Result<String> {
     let serialized_ast = serde_json::to_string(ast)?;
     let mut deserialized: Value = serde_json::from_str(&serialized_ast)?;
+
     process_value(&mut deserialized, code, interner);
+
     serde_json::to_string(&deserialized)
 }

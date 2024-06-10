@@ -4,7 +4,7 @@ use super::{
     symbol::interfaces::{InterfaceData, InterfaceSymbolData},
     symbol::types::core::{UserDefinedTypeData, UserDefinedTypeSymbolData},
     symbol::variables::{VariableData, VariableSymbolData},
-    traits::{AbstractSymbol, IsInitialized},
+    traits::AbstractSymbol,
 };
 use text_size::TextRange;
 
@@ -32,7 +32,7 @@ pub enum LookupResult<T: AbstractSymbol> {
 }
 
 #[derive(Debug)]
-pub enum IntermediateLookupResult<T: IsInitialized> {
+pub enum IntermediateLookupResult<T> {
     Ok((SymbolIndex<T>, usize, Option<usize>)),
     NotInitialized(TextRange),
     Unresolved,

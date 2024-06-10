@@ -38,8 +38,10 @@ pub fn try_infer_types_from_tuple(
     if base_types_tuple.len() != generics_containing_types_tuple.len() {
         return Err(());
     }
+
     for (index, generics_containing_ty) in generics_containing_types_tuple.iter().enumerate() {
         let base_ty = &base_types_tuple[index];
+
         generics_containing_ty.try_infer_ty_or_check_equivalence(
             base_ty,
             inferred_concrete_types,
@@ -49,6 +51,7 @@ pub fn try_infer_types_from_tuple(
             namespace,
         )?;
     }
+
     Ok(())
 }
 
@@ -65,6 +68,7 @@ pub fn user_defined_ty_compare_fn<
     if base.name() != other.name() {
         return false;
     }
+
     let Some(self_concrete_types) = base.concrete_types() else {
         return true;
     };
@@ -73,7 +77,9 @@ pub fn user_defined_ty_compare_fn<
     };
     let self_len = self_concrete_types.len();
     let other_len = other_concrete_types.len();
+
     debug_assert!(self_len == other_len);
+
     for i in 0..self_len {
         if !ty_cmp_func(
             &self_concrete_types[i],
@@ -84,5 +90,6 @@ pub fn user_defined_ty_compare_fn<
             return false;
         }
     }
+
     true
 }

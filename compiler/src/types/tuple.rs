@@ -45,6 +45,7 @@ impl Tuple {
         let other_len = other_tuple.sub_types.len();
         let self_len = self.sub_types.len();
         let min_len = cmp::min(self_len, other_len);
+
         for i in 0..min_len {
             self.sub_types[i].check_operator(
                 &other_tuple.sub_types[i],
@@ -52,6 +53,7 @@ impl Tuple {
                 namespace,
             )?;
         }
+
         Some(Type::new_with_atomic(BOOL))
     }
 }
@@ -61,15 +63,19 @@ impl TypeLike for Tuple {
         let CoreType::Tuple(tuple_data) = other_ty.core_ty() else {
             return false;
         };
+
         if tuple_data.sub_types.len() != self.sub_types.len() {
             return false;
         }
+
         let len = self.sub_types.len();
+
         for i in 0..len {
             if !self.sub_types[i].is_eq(&tuple_data.sub_types[i], namespace) {
                 return false;
             }
         }
+
         true
     }
 
@@ -82,15 +88,19 @@ impl TypeLike for Tuple {
         let CoreType::Tuple(tuple_data) = other_ty.core_ty() else {
             return false;
         };
+
         if tuple_data.sub_types.len() != self.sub_types.len() {
             return false;
         }
+
         let len = self.sub_types.len();
+
         for i in 0..len {
             if !self.sub_types[i].is_structurally_eq(&tuple_data.sub_types[i], context, namespace) {
                 return false;
             }
         }
+
         true
     }
 
@@ -100,9 +110,11 @@ impl TypeLike for Tuple {
         namespace: &Namespace,
     ) -> Type {
         let mut concrete_types = vec![];
+
         for ty in &self.sub_types {
             concrete_types.push(ty.concretize(context, namespace));
         }
+
         Type::new_with_tuple(concrete_types)
     }
 
@@ -129,6 +141,7 @@ impl TypeLike for Tuple {
         };
         let generics_containing_types_tuple = &self.sub_types;
         let base_types_tuple = &tuple_ty.sub_types;
+
         try_infer_types_from_tuple(
             base_types_tuple,
             generics_containing_types_tuple,
@@ -142,9 +155,11 @@ impl TypeLike for Tuple {
 
     fn to_string(&self, context: TypeStringifyContext) -> String {
         let mut str = self.sub_types[0].to_string(context);
+
         for i in 1..self.sub_types.len() {
             str.push_str(&format!(", {}", self.sub_types[i].to_string(context)));
         }
+
         format!("({})", str)
     }
 }
@@ -157,12 +172,15 @@ impl OperatorCompatiblity for Tuple {
         let self_sub_types = &self.sub_types;
         let other_sub_types = &other_tuple.sub_types;
         let mut combined_sub_types: Vec<Type> = vec![];
+
         for ty in self_sub_types {
             combined_sub_types.push(ty.clone());
         }
+
         for ty in other_sub_types {
             combined_sub_types.push(ty.clone())
         }
+
         Some(Type::new_with_tuple(combined_sub_types))
     }
 

@@ -4,11 +4,10 @@ use super::{
 };
 use crate::scope::mangled::MangledIdentifierName;
 use crate::{
-    core::string_interner::StrId,
+    core::string_interner::IdentName,
     scope::{
         concrete::{ConcreteSymbolIndex, TurbofishTypes},
         scope::{ScopeArena, ScopeIndex},
-        traits::IsInitialized,
     },
 };
 use std::hash::{Hash, Hasher};
@@ -86,14 +85,14 @@ impl<T> IdentDeclId<T> {
 }
 
 #[derive(Debug)]
-pub struct SymbolIndex<T: IsInitialized> {
+pub struct SymbolIndex<T> {
     scope_index: ScopeIndex,
-    ident_name: StrId,
+    ident_name: IdentName,
     phanton: PhantomData<T>,
 }
 
-impl<T: IsInitialized> SymbolIndex<T> {
-    pub fn new(scope_index: ScopeIndex, ident_name: StrId) -> Self {
+impl<T> SymbolIndex<T> {
+    pub fn new(scope_index: ScopeIndex, ident_name: IdentName) -> Self {
         SymbolIndex {
             scope_index,
             ident_name,
@@ -105,21 +104,21 @@ impl<T: IsInitialized> SymbolIndex<T> {
         self.scope_index
     }
 
-    pub fn ident_name(&self) -> StrId {
+    pub fn ident_name(&self) -> IdentName {
         self.ident_name
     }
 }
 
-impl<T: IsInitialized> Copy for SymbolIndex<T> {}
+impl<T> Copy for SymbolIndex<T> {}
 
-impl<T: IsInitialized> Clone for SymbolIndex<T> {
+impl<T> Clone for SymbolIndex<T> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<T: IsInitialized> SymbolIndex<T> {
-    pub fn identifier_name(&self) -> StrId {
+impl<T> SymbolIndex<T> {
+    pub fn identifier_name(&self) -> IdentName {
         self.ident_name
     }
 

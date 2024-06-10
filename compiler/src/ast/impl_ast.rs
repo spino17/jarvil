@@ -47,7 +47,7 @@ use crate::ast::ast::SkippedTokensNode;
 use crate::ast::traits::ErrornousNode;
 use crate::ast::traits::Node;
 use crate::code::JarvilCodeHandler;
-use crate::core::string_interner::{Interner, StrId};
+use crate::core::string_interner::{IdentName, Interner};
 use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
 use crate::parser::resolver::{BlockKind, JarvilResolver};
 use crate::scope::scope::ScopeIndex;
@@ -79,29 +79,32 @@ impl Node for BlockNode {
     fn range(&self) -> TextRange {
         let core_block = self.0.as_ref();
         let stmts_len = core_block.stmts.len();
-        if stmts_len > 0 {
-            let mut index = stmts_len - 1;
-            let mut is_empty = false;
-            loop {
-                match core_block.stmts[index].core_ref() {
-                    CoreStatementIndentWrapperNode::ExtraNewlines(_) => {}
-                    _ => break,
-                }
-                if index == 0 {
-                    is_empty = true;
+
+        if stmts_len == 0 {
+            return impl_range!(self.0.as_ref().newline, self.0.as_ref().newline);
+        }
+
+        let mut index = stmts_len - 1;
+        let mut is_empty = true;
+
+        while index >= 0 {
+            match core_block.stmts[index].core_ref() {
+                CoreStatementIndentWrapperNode::ExtraNewlines(_) => {}
+                _ => {
+                    is_empty = false;
                     break;
                 }
-                index -= 1;
             }
-            if is_empty {
-                impl_range!(self.0.as_ref().newline, self.0.as_ref().newline)
-            } else {
-                impl_range!(self.0.as_ref().newline, self.0.as_ref().stmts[index])
-            }
-        } else {
+            index -= 1;
+        }
+
+        if is_empty {
             impl_range!(self.0.as_ref().newline, self.0.as_ref().newline)
+        } else {
+            impl_range!(self.0.as_ref().newline, self.0.as_ref().stmts[index])
         }
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().newline.start_line_number()
     }
@@ -190,13 +193,14 @@ impl Node for SkippedTokensNode {
             core_skipped_tokens[core_skipped_tokens.len() - 1]
         )
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().skipped_tokens[0].start_line_number()
     }
 }
 
 impl StatementNode {
-    pub fn new_with_expression(expr: ExpressionNode, newline: TokenNode) -> Self {
+    pub fn new_with_expr(expr: ExpressionNode, newline: TokenNode) -> Self {
         let node = Rc::new(CoreStatementNode::Expression(ExpressionStatementNode::new(
             expr, newline,
         )));
@@ -333,6 +337,7 @@ impl Node for IncorrectlyIndentedStatementNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().stmt, self.0.as_ref().stmt)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().stmt.start_line_number()
     }
@@ -354,6 +359,7 @@ impl Node for BreakStatementNode {
     fn range(&self) -> TextRange {
         self.core_ref().break_keyword.range()
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().break_keyword.start_line_number()
     }
@@ -394,6 +400,7 @@ impl Node for MatchCaseStatementNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().match_keyword, self.core_ref().block)
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().match_keyword.start_line_number()
     }
@@ -428,6 +435,7 @@ impl Node for CaseBranchStatementNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().case_keyword, self.core_ref().block)
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().case_keyword.start_line_number()
     }
@@ -437,6 +445,7 @@ impl Node for ContinueStatementNode {
     fn range(&self) -> TextRange {
         self.core_ref().continue_keyword.range()
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().continue_keyword.start_line_number()
     }
@@ -465,6 +474,7 @@ impl Node for WhileLoopStatementNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().while_keyword, self.core_ref().block)
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().while_keyword.start_line_number()
     }
@@ -497,6 +507,7 @@ impl Node for ForLoopStatementNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().for_keyword, self.core_ref().block)
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().for_keyword.start_line_number()
     }
@@ -515,6 +526,7 @@ impl Node for ExpressionStatementNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().expr, self.0.as_ref().expr)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().expr.start_line_number()
     }
@@ -559,6 +571,7 @@ impl Node for OkAssignmentNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().l_atom, self.0.as_ref().r_assign)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().l_atom.start_line_number()
     }
@@ -581,6 +594,7 @@ impl Node for InvalidLValueNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().l_expr, self.0.as_ref().r_assign)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().l_expr.start_line_number()
     }
@@ -602,6 +616,7 @@ impl Node for StructPropertyDeclarationNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().name_ty_spec, self.0.as_ref().name_ty_spec)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().name_ty_spec.start_line_number()
     }
@@ -631,6 +646,7 @@ impl Node for EnumVariantDeclarationNode {
             None => self.core_ref().variant.range(),
         }
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().variant.start_line_number()
     }
@@ -715,6 +731,7 @@ impl Node for StructDeclarationNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().type_keyword, self.0.as_ref().block)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().type_keyword.start_line_number()
     }
@@ -745,6 +762,7 @@ impl Node for EnumDeclarationNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().type_keyword, self.core_ref().block)
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().type_keyword.start_line_number()
     }
@@ -783,6 +801,7 @@ impl Node for LambdaTypeDeclarationNode {
     fn range(&self) -> TextRange {
         self.0.as_ref().newline.range()
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().type_keyword.start_line_number()
     }
@@ -814,6 +833,7 @@ impl Node for CallablePrototypeNode {
             None => impl_range!(self.0.as_ref().lparen, self.0.as_ref().rparen),
         }
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().lparen.start_line_number()
     }
@@ -836,6 +856,7 @@ impl Node for CallableBodyNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().prototype, self.0.as_ref().block)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().prototype.start_line_number()
     }
@@ -858,6 +879,7 @@ impl Node for FunctionDeclarationNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().def_keyword, self.0.as_ref().body)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().def_keyword.start_line_number()
     }
@@ -876,6 +898,7 @@ impl Node for FunctionWrapperNode {
     fn range(&self) -> TextRange {
         self.0.as_ref().func_decl.range()
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().func_decl.start_line_number()
     }
@@ -894,6 +917,7 @@ impl Node for BoundedMethodWrapperNode {
     fn range(&self) -> TextRange {
         self.0.as_ref().func_decl.range()
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().func_decl.start_line_number()
     }
@@ -930,6 +954,7 @@ impl Node for LambdaDeclarationNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().lambda_keyword, self.0.as_ref().body)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().lambda_keyword.start_line_number()
     }
@@ -960,6 +985,7 @@ impl Node for VariableDeclarationNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().let_keyword, self.0.as_ref().r_node)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().let_keyword.start_line_number()
     }
@@ -988,6 +1014,7 @@ impl Node for InterfaceDeclarationNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().interface_keyword, self.0.as_ref().block)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().interface_keyword.start_line_number()
     }
@@ -1009,6 +1036,7 @@ impl Node for DeclareFunctionPrototypeNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().declare_keyword, self.core_ref().decl)
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().declare_keyword.start_line_number()
     }
@@ -1037,6 +1065,7 @@ impl Node for DeclareCallablePrototypeNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().def_keyword, self.core_ref().newline)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().def_keyword.start_line_number()
     }
@@ -1065,6 +1094,7 @@ impl Node for ConditionalBlockNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().condition_keyword, self.core_ref().block)
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().condition_keyword.start_line_number()
     }
@@ -1103,6 +1133,7 @@ impl Node for ConditionalStatementNode {
             }
         }
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().if_block.start_line_number()
     }
@@ -1129,6 +1160,7 @@ impl Node for ReturnStatementNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().return_keyword, self.core_ref().newline)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().return_keyword.start_line_number()
     }
@@ -1151,6 +1183,7 @@ impl Node for NameTypeSpecNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().name, self.0.as_ref().data_ty)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().name.start_line_number()
     }
@@ -1279,6 +1312,7 @@ impl Node for AtomicTypeNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().kind, self.0.as_ref().kind)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().kind.start_line_number()
     }
@@ -1321,6 +1355,7 @@ impl Node for ArrayTypeNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().lsquare, self.0.as_ref().rsquare)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().lsquare.start_line_number()
     }
@@ -1347,6 +1382,7 @@ impl TupleTypeNode {
     ) -> TypeResolveKind {
         let mut unresolved_identifiers: Vec<UnresolvedIdentifier> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
+
         for ty in self.core_ref().types.iter() {
             match ty.ty_before_resolved(resolver, scope_index) {
                 TypeResolveKind::Resolved(ty) => resolved_types.push(ty),
@@ -1356,6 +1392,7 @@ impl TupleTypeNode {
                 TypeResolveKind::Invalid => resolved_types.push(Type::new_with_unknown()),
             }
         }
+
         if !unresolved_identifiers.is_empty() {
             return TypeResolveKind::Unresolved(unresolved_identifiers);
         } else if !resolved_types.is_empty() {
@@ -1372,6 +1409,7 @@ impl Node for TupleTypeNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().lparen, self.0.as_ref().rparen)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().lparen.start_line_number()
     }
@@ -1463,6 +1501,7 @@ impl Node for HashMapTypeNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().lcurly, self.0.as_ref().rcurly)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().lcurly.start_line_number()
     }
@@ -1489,6 +1528,7 @@ impl Node for UserDefinedTypeNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().name, self.0.as_ref().name)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().name.start_line_number()
     }
@@ -1509,6 +1549,7 @@ impl Node for RAssignmentNode {
     fn range(&self) -> TextRange {
         self.core_ref().expr.range()
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().expr.start_line_number()
     }
@@ -1573,6 +1614,7 @@ impl ExpressionNode {
         let CoreAtomicExpressionNode::Atom(atom_node) = &atomic_expr_node.0.as_ref() else {
             return None;
         };
+
         if atom_node.is_valid_l_value() {
             Some(atom_node.clone())
         } else {
@@ -1676,6 +1718,7 @@ impl Node for ParenthesisedExpressionNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().lparen, self.0.as_ref().rparen)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().lparen.start_line_number()
     }
@@ -1722,6 +1765,7 @@ impl Node for OnlyUnaryExpressionNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().operator, self.0.as_ref().unary_expr)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().operator.start_line_number()
     }
@@ -1750,6 +1794,7 @@ impl Node for BinaryExpressionNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().left_expr, self.0.as_ref().right_expr)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().left_expr.start_line_number()
     }
@@ -1775,6 +1820,7 @@ impl Node for ComparisonNode {
             core_node.operands[core_node.operands.len() - 1]
         )
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().operands[0].start_line_number()
     }
@@ -1819,6 +1865,7 @@ impl<T: Clone + Node + Serialize> Node for SymbolSeparatedSequenceNode<T> {
             None => impl_range!(self.0.as_ref().entity, self.0.as_ref().entity),
         }
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().entity.start_line_number()
     }
@@ -1856,6 +1903,7 @@ impl Node for CallExpressionNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().func_name, self.0.as_ref().rparen)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().func_name.start_line_number()
     }
@@ -1891,6 +1939,7 @@ impl Node for EnumVariantExprOrClassMethodCallNode {
             None => impl_range!(self.core_ref().ty_name, self.core_ref().property_name),
         }
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().ty_name.start_line_number()
     }
@@ -1917,6 +1966,7 @@ impl Node for ArrayExpressionNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().lsquare, self.core_ref().rsquare)
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().lsquare.start_line_number()
     }
@@ -1939,6 +1989,7 @@ impl Node for KeyValuePairNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().key_expr, self.core_ref().value_expr)
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().key_expr.start_line_number()
     }
@@ -1965,6 +2016,7 @@ impl Node for HashMapExpressionNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().lcurly, self.core_ref().rcurly)
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().lcurly.start_line_number()
     }
@@ -1991,6 +2043,7 @@ impl Node for TupleExpressionNode {
     fn range(&self) -> TextRange {
         impl_range!(self.core_ref().lround, self.core_ref().rround)
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().lround.start_line_number()
     }
@@ -2141,6 +2194,7 @@ impl Node for CallNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().atom, self.0.as_ref().rparen)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().atom.start_line_number()
     }
@@ -2163,6 +2217,7 @@ impl Node for PropertyAccessNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().atom, self.0.as_ref().propertry)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().atom.start_line_number()
     }
@@ -2195,6 +2250,7 @@ impl Node for MethodAccessNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().atom, self.0.as_ref().rparen)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().atom.start_line_number()
     }
@@ -2223,6 +2279,7 @@ impl Node for IndexAccessNode {
     fn range(&self) -> TextRange {
         impl_range!(self.0.as_ref().atom, self.0.as_ref().rsquare)
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().atom.start_line_number()
     }
@@ -2244,7 +2301,7 @@ impl OkSelfKeywordNode {
         OkSelfKeywordNode(node)
     }
 
-    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> IdentName {
         self.0.as_ref().token.token_value(code, interner)
     }
 }
@@ -2253,6 +2310,7 @@ impl Node for OkSelfKeywordNode {
     fn range(&self) -> TextRange {
         self.0.as_ref().token.range()
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().token.start_line_number()
     }
@@ -2299,7 +2357,7 @@ impl OkTokenNode {
         self.core_ref().token.try_as_binary_operator()
     }
 
-    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> IdentName {
         self.0.as_ref().token.token_value(code, interner)
     }
 
@@ -2314,6 +2372,7 @@ impl Node for OkTokenNode {
     fn range(&self) -> TextRange {
         self.0.as_ref().token.range()
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().token.line_number()
     }
@@ -2357,6 +2416,7 @@ impl Node for MissingTokenNode {
             received_token.range().start(),
         )
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().received_token.line_number()
     }
@@ -2375,6 +2435,7 @@ impl Node for SkippedTokenNode {
     fn range(&self) -> TextRange {
         self.0.as_ref().skipped_token.range()
     }
+
     fn start_line_number(&self) -> usize {
         self.0.as_ref().skipped_token.line_number()
     }
@@ -2436,7 +2497,7 @@ impl OkIdentifierInUseNode {
         OkIdentifierInUseNode(node)
     }
 
-    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> IdentName {
         self.0.as_ref().name.token_value(code, interner)
     }
 
@@ -2454,6 +2515,7 @@ impl Node for OkIdentifierInUseNode {
             None => self.core_ref().name.range(),
         }
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().name.start_line_number()
     }
@@ -2490,7 +2552,7 @@ impl OkIdentifierInDeclNode {
         OkIdentifierInDeclNode(node)
     }
 
-    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> StrId {
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> IdentName {
         self.0.as_ref().name.token_value(code, interner)
     }
 
@@ -2508,6 +2570,7 @@ impl Node for OkIdentifierInDeclNode {
             None => self.core_ref().name.range(),
         }
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().name.start_line_number()
     }
@@ -2550,6 +2613,7 @@ impl Node for GenericTypeDeclNode {
             None => self.core_ref().generic_ty_name.range(),
         }
     }
+
     fn start_line_number(&self) -> usize {
         self.core_ref().generic_ty_name.start_line_number()
     }

@@ -42,7 +42,7 @@ pub fn build_ast<'ctx>(
     let code_handler = JarvilCodeHandler::new(code, code_lines);
 
     // parsing
-    let parser = JarvilParser::new(&code_handler, &errors);
+    let parser = JarvilParser::new(&code_handler, errors);
     let ast = parser.parse(token_vec);
     (ast, code_handler)
 }

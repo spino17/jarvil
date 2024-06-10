@@ -53,6 +53,7 @@ impl TypeLike for Atomic {
         let CoreType::Atomic(atomic_data) = other_ty.core_ty() else {
             return false;
         };
+
         match atomic_data {
             Atomic::Int => self.is_int(),
             Atomic::Float => self.is_float(),
@@ -70,6 +71,7 @@ impl TypeLike for Atomic {
         let CoreType::Atomic(atomic_data) = other_ty.core_ty() else {
             return false;
         };
+
         match atomic_data {
             Atomic::Int => self.is_int(),
             Atomic::Float => self.is_float(),
@@ -121,6 +123,7 @@ impl OperatorCompatiblity for Atomic {
         let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
+
         match self {
             Atomic::Int => match other_atomic {
                 Atomic::Int => Some(Type::new_with_atomic(INT)),
@@ -144,6 +147,7 @@ impl OperatorCompatiblity for Atomic {
         let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
+
         match self {
             Atomic::Int => match other_atomic {
                 Atomic::Int => Some(Type::new_with_atomic(INT)),
@@ -163,6 +167,7 @@ impl OperatorCompatiblity for Atomic {
         let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
+
         match self {
             Atomic::Int => match other_atomic {
                 Atomic::Int => Some(Type::new_with_atomic(INT)),
@@ -182,6 +187,7 @@ impl OperatorCompatiblity for Atomic {
         let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
+
         match self {
             Atomic::Int => match other_atomic {
                 Atomic::Int => Some(Type::new_with_atomic(FLOAT)),
@@ -201,6 +207,7 @@ impl OperatorCompatiblity for Atomic {
         let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
+
         match self {
             Atomic::Int => match other_atomic {
                 Atomic::Int => Some(Type::new_with_atomic(BOOL)),
@@ -227,6 +234,7 @@ impl OperatorCompatiblity for Atomic {
         let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
+
         match self {
             Atomic::Int => match other_atomic {
                 Atomic::Int => Some(Type::new_with_atomic(BOOL)),
@@ -253,6 +261,7 @@ impl OperatorCompatiblity for Atomic {
         let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
+
         match self {
             Atomic::Int => match other_atomic {
                 Atomic::Int => Some(Type::new_with_atomic(BOOL)),
@@ -279,6 +288,7 @@ impl OperatorCompatiblity for Atomic {
         let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
+
         match self {
             Atomic::Bool => match other_atomic {
                 Atomic::Bool => Some(Type::new_with_atomic(BOOL)),
@@ -292,6 +302,7 @@ impl OperatorCompatiblity for Atomic {
         let CoreType::Atomic(other_atomic) = other.core_ty() else {
             return None;
         };
+
         match self {
             Atomic::Bool => match other_atomic {
                 Atomic::Bool => Some(Type::new_with_atomic(BOOL)),

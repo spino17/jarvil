@@ -33,6 +33,7 @@ impl<'ctx> JarvilLexer<'ctx> {
 
     pub fn tokenize(mut self, code: &'ctx JarvilCode) -> (Vec<Token>, Vec<usize>) {
         let mut token_vec: Vec<Token> = Vec::new();
+
         token_vec.push(Token::new(
             self.line_number,
             CoreToken::NEWLINE,
@@ -42,13 +43,17 @@ impl<'ctx> JarvilLexer<'ctx> {
             ),
             None,
         ));
+
         let mut eof_trivia_vec: Vec<Token> = vec![];
+
         while self.index < code.len() {
             let token = self.extract_lexeme(code);
+
             if token.is_trivia() {
                 let mut trivia_vec = vec![token];
                 let mut is_eof: Option<Token> = None;
                 // spin loop to collect other trivia tokens as well
+
                 while self.index < code.len() {
                     let token = self.extract_lexeme(code);
                     if token.is_trivia() {
@@ -58,6 +63,7 @@ impl<'ctx> JarvilLexer<'ctx> {
                         break;
                     }
                 }
+
                 match is_eof {
                     Some(mut token) => {
                         token.set_trivia(trivia_vec);
@@ -69,7 +75,9 @@ impl<'ctx> JarvilLexer<'ctx> {
                 token_vec.push(token);
             }
         }
+
         self.code_lines.push(self.line_start_index);
+
         let mut token = Token::new(
             self.line_number,
             CoreToken::ENDMARKER,
@@ -86,10 +94,13 @@ impl<'ctx> JarvilLexer<'ctx> {
             ),
             None,
         );
+
         if !eof_trivia_vec.is_empty() {
             token.set_trivia(eof_trivia_vec);
         }
+
         token_vec.push(token);
+
         (token_vec, self.code_lines)
     }
 
@@ -97,6 +108,7 @@ impl<'ctx> JarvilLexer<'ctx> {
         let start_index = self.index;
         let start_line_number = self.line_number;
         let critical_char = code.get_char(self.index);
+
         let core_token = match critical_char {
             '(' => {
                 self.index += 1;
@@ -170,6 +182,7 @@ impl<'ctx> JarvilLexer<'ctx> {
                 token
             }
         };
+
         let end_index = self.index;
         let end_line_number = self.line_number;
         let range = TextRange::new(
@@ -184,6 +197,7 @@ impl<'ctx> JarvilLexer<'ctx> {
                     end_line_number == start_line_number,
                     "invalid char should occur on the same line",
                 );
+
                 self.log_invalid_char_error(range);
             }
             CoreToken::UNCLOSED_BLOCK_COMMENT => self.log_no_closing_symbol_error("*/", range),
@@ -195,6 +209,7 @@ impl<'ctx> JarvilLexer<'ctx> {
             }
             _ => {}
         }
+
         Token::new(start_line_number, core_token, range, None)
     }
 
@@ -202,23 +217,30 @@ impl<'ctx> JarvilLexer<'ctx> {
     // ' ' -> '...'
     pub fn extract_blank_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let mut forward_lexeme = self.index + 1;
+
         while forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             if next_char != ' ' {
                 self.index = forward_lexeme;
                 return CoreToken::BLANK;
             }
+
             forward_lexeme += 1;
         }
+
         self.index = forward_lexeme;
+
         CoreToken::BLANK
     }
 
     // - -> -, ->
     pub fn extract_dash_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let forward_lexeme = self.index + 1;
+
         if forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             match next_char {
                 '>' => {
                     self.index = forward_lexeme + 1;
@@ -238,8 +260,10 @@ impl<'ctx> JarvilLexer<'ctx> {
     // * -> *, **
     pub fn extract_star_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let forward_lexeme = self.index + 1;
+
         if forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             match next_char {
                 '*' => {
                     self.index = forward_lexeme + 1;
@@ -260,8 +284,10 @@ impl<'ctx> JarvilLexer<'ctx> {
     pub fn extract_slash_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let mut forward_lexeme = self.index + 1;
         let mut state: usize = 0;
+
         while forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             match state {
                 0 => match next_char {
                     '/' => {
@@ -306,8 +332,10 @@ impl<'ctx> JarvilLexer<'ctx> {
                     unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
                 }
             }
+
             forward_lexeme += 1;
         }
+
         match state {
             0 => {
                 self.index += 1;
@@ -332,8 +360,10 @@ impl<'ctx> JarvilLexer<'ctx> {
     // # -> #...\n
     pub fn extract_hash_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let mut forward_lexeme = self.index + 1;
+
         while forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             match next_char {
                 '\n' => {
                     self.index = forward_lexeme;
@@ -341,17 +371,22 @@ impl<'ctx> JarvilLexer<'ctx> {
                 }
                 _ => {}
             }
+
             forward_lexeme += 1;
         }
+
         self.index = forward_lexeme;
+
         CoreToken::SINGLE_LINE_COMMENT
     }
 
     // = -> =, ==
     pub fn extract_equal_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let forward_lexeme = self.index + 1;
+
         if forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             match next_char {
                 '=' => {
                     self.index = forward_lexeme + 1;
@@ -371,8 +406,10 @@ impl<'ctx> JarvilLexer<'ctx> {
     // > -> >, >=
     pub fn extract_rbracket_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let forward_lexeme = self.index + 1;
+
         if forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             match next_char {
                 '=' => {
                     self.index = forward_lexeme + 1;
@@ -392,8 +429,10 @@ impl<'ctx> JarvilLexer<'ctx> {
     // < -> <, <=
     pub fn extract_lbracket_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let forward_lexeme = self.index + 1;
+
         if forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             match next_char {
                 '=' => {
                     self.index = forward_lexeme + 1;
@@ -413,8 +452,10 @@ impl<'ctx> JarvilLexer<'ctx> {
     // ! -> !=
     pub fn extract_exclaimation_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let forward_lexeme = self.index + 1;
+
         if forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             match next_char {
                 '=' => {
                     self.index = forward_lexeme + 1;
@@ -434,8 +475,10 @@ impl<'ctx> JarvilLexer<'ctx> {
     // ' -> '...'
     pub fn extract_single_quote_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let mut forward_lexeme = self.index + 1;
+
         while forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             match next_char {
                 '\'' => {
                     self.index = forward_lexeme + 1;
@@ -448,8 +491,10 @@ impl<'ctx> JarvilLexer<'ctx> {
                 }
                 _ => {}
             }
+
             forward_lexeme += 1;
         }
+
         self.index = forward_lexeme;
         CoreToken::UNCLOSED_STRING_LITERAL_SINGLE_QUOTE
     }
@@ -457,8 +502,10 @@ impl<'ctx> JarvilLexer<'ctx> {
     // " -> "..."
     pub fn extract_double_quote_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let mut forward_lexeme = self.index + 1;
+
         while forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             match next_char {
                 '"' => {
                     self.index = forward_lexeme + 1;
@@ -471,8 +518,10 @@ impl<'ctx> JarvilLexer<'ctx> {
                 }
                 _ => {}
             }
+
             forward_lexeme += 1;
         }
+
         self.index = forward_lexeme;
         CoreToken::UNCLOSED_STRING_LITERAL_DOUBLE_QUOTE
     }
@@ -480,19 +529,22 @@ impl<'ctx> JarvilLexer<'ctx> {
     // letter -> letter((letter|digit|_)*) or keyword or type
     pub fn extract_letter_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let mut forward_lexeme = self.index + 1;
+
         while forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
-            if is_letter(&next_char) || next_char.is_ascii_digit() {
-                // do nothing
-            } else {
+
+            if !is_letter(&next_char) && !next_char.is_ascii_digit() {
                 let value_iter = code.token_value_as_iter(self.index, Some(forward_lexeme));
                 self.index = forward_lexeme;
                 return CoreToken::token_for_identifier(value_iter);
             }
+
             forward_lexeme += 1;
         }
+
         let value_iter = code.token_value_as_iter(self.index, Some(forward_lexeme));
         self.index = forward_lexeme;
+
         CoreToken::token_for_identifier(value_iter)
     }
 
@@ -500,15 +552,15 @@ impl<'ctx> JarvilLexer<'ctx> {
     pub fn extract_digit_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let mut forward_lexeme = self.index + 1;
         let mut state: usize = 0;
+
         while forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             match state {
                 0 => {
-                    if next_char.is_ascii_digit() {
-                        // do nothing
-                    } else if next_char == '.' {
+                    if next_char == '.' {
                         state = 1;
-                    } else {
+                    } else if !next_char.is_ascii_digit() {
                         self.index = forward_lexeme;
                         return CoreToken::INTEGER;
                     }
@@ -522,9 +574,7 @@ impl<'ctx> JarvilLexer<'ctx> {
                     }
                 }
                 2 => {
-                    if next_char.is_ascii_digit() {
-                        // do nothing
-                    } else {
+                    if !next_char.is_ascii_digit() {
                         self.index = forward_lexeme;
                         return CoreToken::FLOATING_POINT_NUMBER;
                     }
@@ -533,8 +583,10 @@ impl<'ctx> JarvilLexer<'ctx> {
                     unreachable!("any state other than 0, 1, 2 and 3 is not reachable")
                 }
             }
+
             forward_lexeme += 1;
         }
+
         match state {
             0 => {
                 self.index = forward_lexeme;
@@ -555,8 +607,10 @@ impl<'ctx> JarvilLexer<'ctx> {
     // : -> :, ::
     pub fn extract_colon_prefix_lexeme(&mut self, code: &JarvilCode) -> CoreToken {
         let forward_lexeme = self.index + 1;
+
         if forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
+
             match next_char {
                 ':' => {
                     self.index = forward_lexeme + 1;

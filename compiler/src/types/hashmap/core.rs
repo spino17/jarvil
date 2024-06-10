@@ -41,6 +41,7 @@ impl TypeLike for HashMap {
         let CoreType::HashMap(hashmap_data) = other_ty.core_ty() else {
             return false;
         };
+
         self.key_ty.is_eq(&hashmap_data.key_ty, namespace)
             && self.value_ty.is_eq(&hashmap_data.value_ty, namespace)
     }
@@ -54,6 +55,7 @@ impl TypeLike for HashMap {
         let CoreType::HashMap(hashmap_data) = other_ty.core_ty() else {
             return false;
         };
+
         self.key_ty
             .is_structurally_eq(&hashmap_data.key_ty, context, namespace)
             && self
@@ -68,6 +70,7 @@ impl TypeLike for HashMap {
     ) -> Type {
         let concrete_key_ty = self.key_ty.concretize(context, namespace);
         let concrete_value_ty = self.value_ty.concretize(context, namespace);
+
         Type::new_with_hashmap(concrete_key_ty, concrete_value_ty)
     }
 
@@ -92,6 +95,7 @@ impl TypeLike for HashMap {
         let CoreType::HashMap(hashmap_ty) = received_ty.core_ty() else {
             return Err(());
         };
+
         self.key_ty.try_infer_ty_or_check_equivalence(
             &hashmap_ty.key_ty,
             inferred_concrete_types,
@@ -108,6 +112,7 @@ impl TypeLike for HashMap {
             inference_category,
             namespace,
         )?;
+
         Ok(())
     }
 
@@ -141,6 +146,7 @@ impl OperatorCompatiblity for HashMap {
         let CoreType::HashMap(other_hashmap) = other.core_ty() else {
             return None;
         };
+
         if self
             .key_ty
             .check_operator(

@@ -36,6 +36,12 @@ pub struct SemanticStateDatabase {
     bounded_method_kind: FxHashMap<BoundedMethodWrapperNode, BoundedMethodKind>,
 }
 
+impl Default for SemanticStateDatabase {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SemanticStateDatabase {
     pub fn new() -> Self {
         let interner = Interner::default();
@@ -43,6 +49,7 @@ impl SemanticStateDatabase {
 
         // fill the built-in functions inside the global namespace
         let builtin_funcs = builtin_funcs(&interner);
+
         for (name, callable_data) in builtin_funcs {
             namespace.funcs_mut_ref().force_insert(
                 ScopeIndex::global(), // index of global namespace

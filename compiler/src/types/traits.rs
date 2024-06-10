@@ -1,6 +1,6 @@
 use super::core::{Type, TypeStringifyContext};
 use crate::constants::common::BOOL;
-use crate::core::string_interner::StrId;
+use crate::core::string_interner::IdentName;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
 use crate::scope::namespace::Namespace;
@@ -43,7 +43,7 @@ pub trait TypeLike {
 pub trait UserDefinedType {
     fn symbol_index(&self) -> SymbolIndex<UserDefinedTypeData>;
     fn concrete_types(&self) -> Option<&TurbofishTypes>;
-    fn name(&self) -> StrId;
+    fn name(&self) -> IdentName;
 }
 
 pub trait CollectionType {

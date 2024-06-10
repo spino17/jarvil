@@ -46,8 +46,8 @@ impl<'ctx> JarvilParser<'ctx> {
     }
 
     pub fn parse(mut self, token_vec: Vec<Token>) -> BlockNode {
-        let code_node = self.code(token_vec);
-        code_node
+        
+        self.code(token_vec)
     }
 
     pub fn ignore_all_errors(&self) -> bool {
@@ -110,6 +110,7 @@ impl<'ctx> JarvilParser<'ctx> {
         if self.lookahead == 0 {
             return true;
         }
+
         self.token_vec[self.lookahead - 1].is_eq("\n")
             || self.token_vec[self.lookahead].is_eq("\n")
             || self.token_vec[self.lookahead].is_eq(ENDMARKER)
@@ -117,6 +118,7 @@ impl<'ctx> JarvilParser<'ctx> {
 
     pub fn skip_to_newline(&mut self) -> Vec<SkippedTokenNode> {
         let mut skipped_tokens: Vec<SkippedTokenNode> = vec![];
+
         loop {
             let token = self.curr_token();
             if token.is_eq("\n") {
@@ -138,6 +140,7 @@ impl<'ctx> JarvilParser<'ctx> {
     // ------------------- parsing routines for terminals and block indentation -------------------
     pub fn expect(&mut self, symbol: &'static str) -> TokenNode {
         let token = self.curr_token();
+
         if token.is_eq(symbol) {
             let token_node = TokenNode::new_with_ok(token.clone());
             self.scan_next_token();
@@ -148,26 +151,30 @@ impl<'ctx> JarvilParser<'ctx> {
         }
     }
 
-    pub fn expect_symbol_separated_sequence<
-        T: Node + Serialize + Clone,
-        U: Fn(&mut JarvilParser) -> T,
-    >(
+    pub fn expect_symbol_separated_sequence<T, U>(
         &mut self,
         entity_parsing_fn: U,
         separator: &'static str,
-    ) -> SymbolSeparatedSequenceNode<T> {
+    ) -> SymbolSeparatedSequenceNode<T>
+    where
+        T: Node + Serialize + Clone,
+        U: Fn(&mut JarvilParser) -> T,
+    {
         let first_entity_node = entity_parsing_fn(self);
         let token = self.curr_token();
+
         if token.is_eq(separator) {
             let separator_node = self.expect(separator);
             let remaining_generic_ty_args_node =
                 self.expect_symbol_separated_sequence(entity_parsing_fn, separator);
+
             return SymbolSeparatedSequenceNode::new_with_entities(
                 first_entity_node,
                 remaining_generic_ty_args_node,
                 separator_node,
             );
         }
+
         SymbolSeparatedSequenceNode::new_with_single_entity(first_entity_node)
     }
 
@@ -179,6 +186,7 @@ impl<'ctx> JarvilParser<'ctx> {
         let parsing_fn = |parser: &mut JarvilParser| {
             let identifier_in_decl_node = parser.expect_identifier();
             let token = parser.curr_token();
+
             match token.core_token() {
                 CoreToken::COLON => {
                     let colon_node = parser.expect(":");
@@ -186,6 +194,7 @@ impl<'ctx> JarvilParser<'ctx> {
                         |parser: &mut JarvilParser| parser.expect_identifier_in_use(),
                         "+",
                     );
+
                     GenericTypeDeclNode::new(
                         identifier_in_decl_node,
                         Some((colon_node, interface_bounds_node)),
@@ -194,32 +203,36 @@ impl<'ctx> JarvilParser<'ctx> {
                 _ => GenericTypeDeclNode::new(identifier_in_decl_node, None),
             }
         };
+
         self.expect_symbol_separated_sequence(parsing_fn, ",")
     }
 
-    pub fn expect_identifier_in<
-        T,
-        U: Node + Serialize + Clone,
-        F: Fn(&mut JarvilParser) -> SymbolSeparatedSequenceNode<U>,
-        V: Fn(OkTokenNode, Option<(TokenNode, SymbolSeparatedSequenceNode<U>, TokenNode)>) -> T,
-        W: Fn(Vec<&'static str>, Token) -> T,
-    >(
+    pub fn expect_identifier_in<T, U, F, V, W>(
         &mut self,
         angle_bracketed_content_parsing_fn: F,
         node_creation_method_with_some: V,
         node_creation_method_with_err: W,
-    ) -> T {
+    ) -> T
+    where
+        U: Node + Serialize + Clone,
+        F: Fn(&mut JarvilParser) -> SymbolSeparatedSequenceNode<U>,
+        V: Fn(OkTokenNode, Option<(TokenNode, SymbolSeparatedSequenceNode<U>, TokenNode)>) -> T,
+        W: Fn(Vec<&'static str>, Token) -> T,
+    {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
+
         if token.is_eq(symbol) {
             let ok_token_node = OkTokenNode::new(token.clone());
             self.scan_next_token();
             let next_token = self.curr_token();
+
             match next_token.core_token() {
                 CoreToken::LBRACKET => {
                     let langle_node = self.expect("<");
                     let angle_bracketed_content_node = angle_bracketed_content_parsing_fn(self);
                     let rangle_node = self.expect(">");
+
                     node_creation_method_with_some(
                         ok_token_node,
                         Some((langle_node, angle_bracketed_content_node, rangle_node)),
@@ -236,6 +249,7 @@ impl<'ctx> JarvilParser<'ctx> {
     pub fn expect_identifier(&mut self) -> IdentifierInDeclNode {
         let token = self.curr_token();
         let symbol = IDENTIFIER;
+
         if token.is_eq(symbol) {
             let ok_token_node = OkTokenNode::new(token.clone());
             self.scan_next_token();
@@ -262,6 +276,7 @@ impl<'ctx> JarvilParser<'ctx> {
             |expected_symbols: Vec<&'static str>, received_token: Token| {
                 IdentifierInUseNode::new_with_missing_tokens(expected_symbols, received_token)
             };
+
         self.expect_identifier_in(
             angle_bracketed_content_parsing_fn,
             node_creation_method_with_some,
@@ -285,6 +300,7 @@ impl<'ctx> JarvilParser<'ctx> {
             |expected_symbols: Vec<&'static str>, received_token: Token| {
                 IdentifierInDeclNode::new_with_missing_tokens(expected_symbols, received_token)
             };
+
         self.expect_identifier_in(
             angle_bracketed_content_parsing_fn,
             node_creation_method_with_some,
@@ -295,6 +311,7 @@ impl<'ctx> JarvilParser<'ctx> {
     pub fn expect_self(&mut self) -> SelfKeywordNode {
         let token = self.curr_token();
         let symbol = SELF;
+
         if token.is_eq(symbol) {
             let ok_token_node = OkTokenNode::new(token.clone());
             self.scan_next_token();
@@ -308,6 +325,7 @@ impl<'ctx> JarvilParser<'ctx> {
     pub fn expect_terminators(&mut self) -> TokenNode {
         let symbols = &["\n", ENDMARKER];
         let token = self.curr_token();
+
         if token.is_eq("\n") {
             let token_node = TokenNode::new_with_ok(token.clone());
             self.scan_next_token();
@@ -323,12 +341,16 @@ impl<'ctx> JarvilParser<'ctx> {
     pub fn expect_indent_spaces(&mut self) -> IndentResult {
         let mut skipped_tokens: Vec<SkippedTokenNode> = vec![];
         let mut extra_newlines: Vec<SkippedTokenNode> = vec![];
+
         if !self.is_curr_token_on_newline() {
             skipped_tokens = self.skip_to_newline();
         }
+
         let mut expected_indent_spaces = context::indent_spaces() as i64 * self.indent_level;
+
         loop {
             let token = &self.token_vec[self.lookahead];
+
             match &token.core_token() {
                 CoreToken::NEWLINE => {
                     extra_newlines.push(SkippedTokenNode::new(token.clone()));
@@ -345,15 +367,8 @@ impl<'ctx> JarvilParser<'ctx> {
                     let indent_spaces = (token.start_index()
                         - self.code_handler.line_start_index(token.line_number()))
                         as i64;
-                    //let alternate_line_index = match &token.trivia {
-                    //    Some(trivia) => {
-                    //        // this index is bounded as we only have `Some` trivia if it's length > 0
-                    //        trivia[0].start_index()
-                    //    }
-                    //    None => token.start_index(),
-                    //};
-                    // debug_assert!(alternate_line_index == self.code.get_line_start_index(token.line_number));
                     expected_indent_spaces += self.correction_indent();
+
                     if indent_spaces == expected_indent_spaces {
                         return IndentResult {
                             kind: IndentResultKind::CorrectIndentation,
@@ -361,6 +376,7 @@ impl<'ctx> JarvilParser<'ctx> {
                             extra_newlines,
                         };
                     }
+
                     if indent_spaces > expected_indent_spaces {
                         return IndentResult {
                             kind: IndentResultKind::IncorrectIndentation((
@@ -371,6 +387,7 @@ impl<'ctx> JarvilParser<'ctx> {
                             extra_newlines,
                         };
                     }
+
                     return IndentResult {
                         kind: IndentResultKind::BlockOver,
                         skipped_tokens,
@@ -378,6 +395,7 @@ impl<'ctx> JarvilParser<'ctx> {
                     };
                 }
             }
+
             self.scan_next_token();
         }
     }

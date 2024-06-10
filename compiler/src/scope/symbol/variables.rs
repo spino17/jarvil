@@ -60,10 +60,7 @@ pub struct VariableSymbolData(SymbolIndex<VariableData>);
 impl AbstractSymbol for VariableSymbolData {
     type SymbolTy = VariableData;
 
-    fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy>
-    where
-        <Self as AbstractSymbol>::SymbolTy: IsInitialized,
-    {
+    fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy> {
         self.0
     }
 
@@ -79,9 +76,11 @@ impl AbstractSymbol for VariableSymbolData {
         _context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(!is_concrete_types_none_allowed);
+
         if concrete_types.is_some() {
             return Err(GenericTypeArgsCheckError::GenericTypeArgsNotExpected);
         }
+
         Ok(())
     }
 

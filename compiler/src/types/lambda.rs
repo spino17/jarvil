@@ -3,7 +3,7 @@ use super::traits::OperatorCompatiblity;
 use super::traits::TypeLike;
 use super::traits::UserDefinedType;
 use crate::ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode};
-use crate::core::string_interner::StrId;
+use crate::core::string_interner::IdentName;
 use crate::parser::type_checker::{
     InferredConcreteTypesEntry, JarvilTypeChecker, PrototypeEquivalenceCheckError,
 };
@@ -34,7 +34,7 @@ impl UserDefinedType for NamedLambdaCore {
         self.concrete_types.as_ref()
     }
 
-    fn name(&self) -> StrId {
+    fn name(&self) -> IdentName {
         self.symbol_index.identifier_name()
     }
 }
@@ -60,7 +60,7 @@ impl Lambda {
         Lambda::Unnamed(func_prototype)
     }
 
-    pub fn try_name(&self) -> Option<StrId> {
+    pub fn try_name(&self) -> Option<IdentName> {
         match self {
             Lambda::Named(named_lambda) => Some(named_lambda.symbol_index.identifier_name()),
             Lambda::Unnamed(_) => None,
@@ -85,13 +85,17 @@ impl Lambda {
                     lambda_data.prototype(type_checker.semantic_db().namespace_ref(), context);
                 let expected_param_types = prototype.params();
                 let return_ty = prototype.return_ty();
+
                 type_checker.check_params_ty_and_count(expected_param_types, received_params)?;
+
                 Ok(return_ty.clone())
             }
             Lambda::Unnamed(unnamed_lambda) => {
                 let expected_param_types = unnamed_lambda.params();
                 let return_ty = unnamed_lambda.return_ty();
+
                 type_checker.check_params_ty_and_count(expected_param_types, received_params)?;
+
                 Ok(return_ty.clone())
             }
         }
@@ -115,6 +119,7 @@ impl TypeLike for Lambda {
                 let self_context =
                     TypeGenericsInstantiationContext::new(self_concrete_types.as_ref());
                 let self_prototype = self_data.prototype(namespace, self_context);
+
                 match other_data {
                     Lambda::Named(other_named) => {
                         let other_ty_data = namespace
@@ -126,6 +131,7 @@ impl TypeLike for Lambda {
                         let other_context =
                             TypeGenericsInstantiationContext::new(other_concrete_types.as_ref());
                         let other_prototype = other_data.prototype(namespace, other_context);
+
                         other_prototype.is_eq(&self_prototype, namespace)
                     }
                     Lambda::Unnamed(other_prototype) => {
@@ -144,6 +150,7 @@ impl TypeLike for Lambda {
                     let other_context =
                         TypeGenericsInstantiationContext::new(other_concrete_types.as_ref());
                     let other_prototype = other_data.prototype(namespace, other_context);
+
                     other_prototype.is_eq(self_prototype, namespace)
                 }
                 Lambda::Unnamed(other_prototype) => {
@@ -172,6 +179,7 @@ impl TypeLike for Lambda {
                          namespace: &Namespace| {
                             ty1.is_structurally_eq(ty2, context, namespace)
                         };
+
                     user_defined_ty_compare_fn(
                         self_named_lambda,
                         other_named_lambda,
@@ -197,9 +205,11 @@ impl TypeLike for Lambda {
                     return Type::new_with_lambda_named(named_lambda.symbol_index, None);
                 };
                 let mut concretized_concrete_types = vec![];
+
                 for ty in concrete_types.iter() {
                     concretized_concrete_types.push(ty.concretize(context, namespace));
                 }
+
                 Type::new_with_lambda_named(
                     named_lambda.symbol_index,
                     Some(TurbofishTypes::new(concretized_concrete_types)),
@@ -240,6 +250,7 @@ impl TypeLike for Lambda {
         let self_concrete_types = &self_named.concrete_types;
         let self_context = TypeGenericsInstantiationContext::new(self_concrete_types.as_ref());
         let self_prototype = self_data.prototype(namespace, self_context);
+
         match lambda_ty {
             Lambda::Named(other_named) => {
                 let other_ty_data = namespace
@@ -251,6 +262,7 @@ impl TypeLike for Lambda {
                 let other_context =
                     TypeGenericsInstantiationContext::new(other_concrete_types.as_ref());
                 let other_prototype = other_data.prototype(namespace, other_context);
+
                 self_prototype.try_infer_ty(
                     &other_prototype,
                     inferred_concrete_types,
@@ -277,6 +289,7 @@ impl TypeLike for Lambda {
                 let mut s = context
                     .interner()
                     .lookup(named_lambda.symbol_index.identifier_name());
+
                 match &named_lambda.concrete_types {
                     Some(concrete_types) => {
                         s.push('<');
@@ -292,13 +305,16 @@ impl TypeLike for Lambda {
                 let self_return_ty = unnamed.return_ty();
                 let mut params_str = "".to_string();
                 let mut flag = false;
+
                 for param in self_param_types {
                     if flag {
                         params_str.push_str(", ")
                     }
+
                     params_str.push_str(&param.to_string(context));
                     flag = true;
                 }
+
                 format!(
                     "lambda({}) -> {}",
                     params_str,

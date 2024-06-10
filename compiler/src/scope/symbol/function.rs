@@ -59,12 +59,15 @@ impl CallablePrototypeData {
         let (other_param_types, other_return_ty) = (&other.params, &other.return_ty);
         let self_params_len = self_param_types.len();
         let other_params_len = other_param_types.len();
+
         if self_params_len != other_params_len {
             return false;
         }
+
         if !cmp_func(self_return_ty, other_return_ty, context, namespace) {
             return false;
         }
+
         for index in 0..self_params_len {
             if !cmp_func(
                 &self_param_types[index],
@@ -75,6 +78,7 @@ impl CallablePrototypeData {
                 return false;
             }
         }
+
         true
     }
 
@@ -83,6 +87,7 @@ impl CallablePrototypeData {
                         ty2: &Type,
                         _context: TypeGenericsInstantiationContext,
                         namespace: &Namespace| ty1.is_eq(ty2, namespace);
+
         self.compare(
             other,
             cmp_func,
@@ -102,6 +107,7 @@ impl CallablePrototypeData {
              ty2: &Type,
              context: TypeGenericsInstantiationContext,
              namespace: &Namespace| { ty1.is_structurally_eq(ty2, context, namespace) };
+
         self.compare(other, cmp_func, context, namespace)
     }
 
@@ -118,9 +124,11 @@ impl CallablePrototypeData {
         let (other_param_types, other_return_ty) = (&other.params, &other.return_ty);
         let self_params_len = self_param_types.len();
         let other_params_len = other_param_types.len();
+
         if self_params_len != other_params_len {
             return Err(());
         }
+
         self_return_ty.try_infer_ty_or_check_equivalence(
             other_return_ty,
             inferred_concrete_types,
@@ -129,6 +137,7 @@ impl CallablePrototypeData {
             inference_category,
             namespace,
         )?;
+
         for index in 0..self_params_len {
             let _ = &self_param_types[index].try_infer_ty_or_check_equivalence(
                 &other_param_types[index],
@@ -139,6 +148,7 @@ impl CallablePrototypeData {
                 namespace,
             )?;
         }
+
         Ok(())
     }
 
@@ -150,7 +160,9 @@ impl CallablePrototypeData {
     ) -> Result<Type, PrototypeEquivalenceCheckError> {
         let expected_params = &self.params;
         let return_ty = &self.return_ty;
+
         type_checker.check_params_ty_and_count(expected_params, received_params)?;
+
         Ok(return_ty.clone())
     }
 }
@@ -234,6 +246,7 @@ impl CallableData {
             .iter()
             .map(|ty| ty.concretize(context, namespace))
             .collect();
+
         RefOrOwned::Owned(CallablePrototypeData::new(
             concrete_params,
             concrete_return_ty,
@@ -291,6 +304,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, PartialCallableDataPrototypeCheckError> {
         let generic_ty_decls = &self.callable_data.generics;
+
         match local_concrete_types {
             Some(local_concrete_types) => match generic_ty_decls {
                 Some(generic_ty_decls) => {
@@ -302,6 +316,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         },
                         type_checker.err_logging_context(),
                     )?;
+
                     let context = self
                         .context
                         .attach_local_method_context(Some(&local_concrete_types));
@@ -310,6 +325,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                         .concretized_prototype(type_checker.semantic_db().namespace_ref(), context);
                     let return_ty = concrete_prototype
                         .is_received_params_valid(type_checker, received_params)?;
+
                     Ok(return_ty)
                 }
                 None => Err(
@@ -330,6 +346,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                     let context = self
                         .context
                         .attach_local_method_context(Some(&local_concrete_types));
+
                     Ok(self
                         .callable_data
                         .concretized_return_ty(type_checker.semantic_db().namespace_ref(), context))
@@ -341,6 +358,7 @@ impl<'a> PartialConcreteCallableDataRef<'a> {
                     );
                     let return_ty = concrete_prototype
                         .is_received_params_valid(type_checker, received_params)?;
+
                     Ok(return_ty)
                 }
             },
@@ -354,10 +372,7 @@ pub struct FunctionSymbolData(SymbolIndex<CallableData>);
 impl AbstractSymbol for FunctionSymbolData {
     type SymbolTy = CallableData;
 
-    fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy>
-    where
-        <Self as AbstractSymbol>::SymbolTy: IsInitialized,
-    {
+    fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy> {
         self.0
     }
 
@@ -373,12 +388,14 @@ impl AbstractSymbol for FunctionSymbolData {
         context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
         debug_assert!(is_concrete_types_none_allowed);
+
         let func_data = context
             .namespace()
             .funcs_ref()
             .symbol_ref(self.0)
             .data_ref();
         let generic_ty_decls = func_data.generics();
+
         check_concrete_types_bounded_by_interfaces(
             generic_ty_decls,
             concrete_types,

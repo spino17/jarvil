@@ -12,9 +12,7 @@ pub trait IsInitialized {
 
 pub trait AbstractSymbol {
     type SymbolTy;
-    fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy>
-    where
-        <Self as AbstractSymbol>::SymbolTy: IsInitialized;
+    fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy>;
     fn entry(&self) -> SymbolDataEntry;
     fn check_generic_ty_args(
         &self,
@@ -28,12 +26,12 @@ pub trait AbstractSymbol {
 
 pub trait InstantiationContext<'a> {
     fn is_empty(&self) -> bool {
-        return true;
+        true
     }
     fn ty_generics_instantiation_args(&self) -> Option<&'a TurbofishTypes> {
-        return None;
+        None
     }
     fn callable_generics_instantiation_args(&self) -> Option<&'a TurbofishTypes> {
-        return None;
+        None
     }
 }

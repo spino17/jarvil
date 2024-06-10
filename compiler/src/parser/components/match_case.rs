@@ -18,5 +18,6 @@ pub fn match_case(parser: &mut JarvilParser) -> MatchCaseStatementNode {
         &[CASE],
         BlockKind::Match,
     );
+
     MatchCaseStatementNode::new(match_keyword_node, expr_node, colon_node, block_node)
 }

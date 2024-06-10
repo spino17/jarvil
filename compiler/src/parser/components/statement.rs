@@ -4,7 +4,7 @@ use crate::ast::ast::{
     TokenNode, TypeExpressionNode,
 };
 use crate::lexer::token::{CoreToken, Token};
-use crate::parser::components::expression::core::is_expression_starting_with;
+use crate::parser::components::expression::core::is_expr_starting_with;
 use crate::parser::parser::JarvilParser;
 use crate::parser::resolver::BlockKind;
 
@@ -60,7 +60,7 @@ pub fn is_statement_within_func_starting_with(token: &Token) -> bool {
         CoreToken::INTERFACE_KEYWORD => true,
         CoreToken::RETURN => true,
         CoreToken::MATCH => true,
-        _ => is_expression_starting_with(token),
+        _ => is_expr_starting_with(token),
     }
 }
 
@@ -77,7 +77,7 @@ pub fn is_statement_within_control_flow_starting_with(token: &Token) -> bool {
         CoreToken::BREAK => true,
         CoreToken::CONTINUE => true,
         CoreToken::MATCH => true,
-        _ => is_expression_starting_with(token),
+        _ => is_expr_starting_with(token),
     }
 }
 
@@ -124,14 +124,17 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         CoreToken::RETURN => {
             let return_node = parser.expect("return");
             let token = parser.curr_token();
+
             match token.core_token() {
                 CoreToken::NEWLINE | CoreToken::ENDMARKER => {
                     let newline_node = parser.expect_terminators();
+
                     StatementNode::new_with_return_statement(return_node, None, newline_node)
                 }
                 _ => {
                     let expr_node = parser.expr();
                     let newline_node = parser.expect_terminators();
+
                     StatementNode::new_with_return_statement(
                         return_node,
                         Some(expr_node),
@@ -143,6 +146,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         CoreToken::BREAK => {
             let break_keyword_node = parser.expect("break");
             let newline_node = parser.expect_terminators();
+
             StatementNode::new_with_break_statment(BreakStatementNode::new(
                 break_keyword_node,
                 newline_node,
@@ -151,6 +155,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         CoreToken::CONTINUE => {
             let continue_keyword_node = parser.expect("continue");
             let newline_node = parser.expect_terminators();
+
             StatementNode::new_with_continue_statment(ContinueStatementNode::new(
                 continue_keyword_node,
                 newline_node,
@@ -159,14 +164,17 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
         _ => {
             let expr_node = parser.expr();
             let token = parser.curr_token();
+
             match token.core_token() {
                 CoreToken::EQUAL => {
                     let assignment_node = parser.assignment(expr_node);
+
                     StatementNode::new_with_assignment(assignment_node)
                 }
                 _ => {
                     let newline_node = parser.expect_terminators();
-                    StatementNode::new_with_expression(expr_node, newline_node)
+
+                    StatementNode::new_with_expr(expr_node, newline_node)
                 }
             }
         }
@@ -176,11 +184,13 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
 
 pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = parser.curr_token();
+
     match token.core_token() {
         CoreToken::IDENTIFIER => {
             let name_ty_spec_node = parser.name_ty_spec();
             let newline_node = parser.expect_terminators();
             let struct_stmt = StructPropertyDeclarationNode::new(name_ty_spec_node, newline_node);
+
             StatementNode::new_with_struct_stmt(struct_stmt)
         }
         CoreToken::DEF => parser.func_stmt(CallableKind::Method),
@@ -190,15 +200,18 @@ pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
 
 pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = parser.curr_token();
+
     match token.core_token() {
         CoreToken::IDENTIFIER => {
             let name_ty_spec_node = parser.name_ty_spec();
             let newline_node = parser.expect_terminators();
             let struct_stmt = StructPropertyDeclarationNode::new(name_ty_spec_node, newline_node);
+
             StatementNode::new_with_struct_stmt(struct_stmt)
         }
         CoreToken::DEF => {
             let decl_callable_prototype_node = parser.decl_callable_prototype();
+
             StatementNode::new_with_interface_method_prototype_wrapper(decl_callable_prototype_node)
         }
         _ => unreachable!(),
@@ -208,13 +221,17 @@ pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
 pub fn enum_stmt(parser: &mut JarvilParser) -> StatementNode {
     let mut optional_ty_node: Option<(TokenNode, TypeExpressionNode, TokenNode)> = None;
     let variant_name_node = parser.expect_identifier();
-    if parser.curr_token().is_eq("(") {
+
+    if parser.check_curr_token("(") {
         let lparen_node = parser.expect("(");
         let ty_node = parser.ty_expr();
         let rparen_node = parser.expect(")");
+
         optional_ty_node = Some((lparen_node, ty_node, rparen_node));
     }
+
     let newline_node = parser.expect_terminators();
+
     StatementNode::new_with_enum_stmt(EnumVariantDeclarationNode::new(
         variant_name_node,
         optional_ty_node,
@@ -226,16 +243,17 @@ pub fn case_branch_stmt(parser: &mut JarvilParser) -> StatementNode {
     let mut optional_variable_name_node: Option<(TokenNode, IdentifierInDeclNode, TokenNode)> =
         None;
     let case_keyword_node = parser.expect("case");
-    // TODO - here it can be `_` for handling default case
     let enum_name_node = parser.expect_identifier();
     let double_colon_node = parser.expect("::");
     let variant_name_node = parser.expect_identifier();
-    if parser.curr_token().is_eq("(") {
+
+    if parser.check_curr_token("(") {
         let lparen_node = parser.expect("(");
         let variable_name_node = parser.expect_identifier();
         let rparen_node = parser.expect(")");
         optional_variable_name_node = Some((lparen_node, variable_name_node, rparen_node));
     }
+
     let colon_node = parser.expect(":");
     let block_node = parser.block(
         is_statement_within_control_flow_starting_with,
@@ -243,6 +261,7 @@ pub fn case_branch_stmt(parser: &mut JarvilParser) -> StatementNode {
         &STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS,
         BlockKind::Case,
     );
+
     StatementNode::new_with_case_branch_statement(CaseBranchStatementNode::new(
         case_keyword_node,
         enum_name_node,

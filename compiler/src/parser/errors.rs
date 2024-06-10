@@ -17,7 +17,7 @@ impl<'ctx> JarvilParser<'ctx> {
         if self.ignore_all_errors() {
             return;
         }
-        // -> TODO - check whether error on same line already exists
+
         let err = MissingTokenError::new(expected_symbols, received_token);
         self.errors.log_error(Diagnostics::MissingToken(err));
     }
@@ -26,7 +26,7 @@ impl<'ctx> JarvilParser<'ctx> {
         if self.ignore_all_errors() {
             return;
         }
-        // -> TODO - check whether error on same line already exists
+
         let err = InvalidTrailingTokensError::new(
             skipped_tokens[0].range().start().into(),
             skipped_tokens[skipped_tokens.len() - 1]
@@ -47,7 +47,7 @@ impl<'ctx> JarvilParser<'ctx> {
         if self.ignore_all_errors() {
             return;
         }
-        // -> TODO - check whether error on same line already exists
+
         let err = IncorrectlyIndentedBlockError::new(expected_indent, received_indent, range);
         self.errors
             .log_error(Diagnostics::IncorrectlyIndentedBlock(err));
@@ -57,6 +57,7 @@ impl<'ctx> JarvilParser<'ctx> {
         if self.ignore_all_errors() {
             return;
         }
+
         let err = NoValidStatementFoundInsideBlockBodyError::new(range);
         self.errors
             .log_error(Diagnostics::NoValidStatementFoundInsideBlockBody(err));
@@ -66,7 +67,7 @@ impl<'ctx> JarvilParser<'ctx> {
         if self.ignore_all_errors() {
             return;
         }
-        // -> TODO - check whether error on same line already exists
+
         let err = InvalidLValueError::new(range);
         self.errors.log_error(Diagnostics::InvalidLValue(err));
     }
@@ -75,6 +76,7 @@ impl<'ctx> JarvilParser<'ctx> {
         if self.ignore_all_errors() {
             return;
         }
+
         let err = SingleSubTypeFoundInTupleError::new(range);
         self.errors
             .log_error(Diagnostics::SingleSubTypeFoundInTuple(err));
