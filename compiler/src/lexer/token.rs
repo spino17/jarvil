@@ -139,13 +139,17 @@ impl Serialize for Token {
         S: serde::Serializer,
     {
         let mut s = serializer.serialize_struct("token", 4)?;
+
         s.serialize_field("line_number", &self.line_number)?;
         s.serialize_field("core_token", &self.core_token)?;
+
         s.serialize_field::<(u32, u32)>(
             "range",
             &(self.range.start().into(), self.range.end().into()),
         )?;
+
         s.serialize_field("trivia", &self.trivia)?;
+
         s.end()
     }
 }

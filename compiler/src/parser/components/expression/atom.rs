@@ -63,6 +63,7 @@ pub fn trailing_atom(parser: &mut JarvilParser, atom_start_node: AtomNode) -> At
             let lsquare_node = parser.expect("[");
             let index_expr_node = parser.expr();
             let rsquare_node = parser.expect("]");
+
             let atom_node = AtomNode::new_with_index_access(
                 atom_start_node,
                 index_expr_node,
@@ -113,6 +114,7 @@ pub fn atom_start(parser: &mut JarvilParser) -> AtomStartNode {
 
                     if parser.check_curr_token("(") {
                         let lparen_node = parser.expect("(");
+
                         let mut params_node: Option<SymbolSeparatedSequenceNode<ExpressionNode>> =
                             None;
 

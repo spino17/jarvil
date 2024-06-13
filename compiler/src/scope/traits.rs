@@ -12,6 +12,7 @@ pub trait IsInitialized {
 
 pub trait AbstractSymbol {
     type SymbolTy;
+
     fn symbol_index(&self) -> SymbolIndex<Self::SymbolTy>;
     fn entry(&self) -> SymbolDataEntry;
     fn check_generic_ty_args(
