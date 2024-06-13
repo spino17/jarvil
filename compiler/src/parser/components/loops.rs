@@ -14,6 +14,7 @@ pub fn while_loop_stmt(parser: &mut JarvilParser) -> WhileLoopStatementNode {
     let while_keyword_node = parser.expect("while");
     let condition_expr_node = parser.expr();
     let colon_node = parser.expect(":");
+
     let block_node = parser.block(
         is_statement_within_control_flow_starting_with,
         |parser| parser.stmt(),
@@ -35,6 +36,7 @@ pub fn for_loop_stmt(parser: &mut JarvilParser) -> ForLoopStatementNode {
     let in_keyword_node = parser.expect("in");
     let iterable_expr_node = parser.expr();
     let colon_node = parser.expect(":");
+
     let block_node = parser.block(
         is_statement_within_control_flow_starting_with,
         |parser| parser.stmt(),

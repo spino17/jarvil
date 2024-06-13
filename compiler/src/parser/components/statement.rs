@@ -90,35 +90,43 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
     let statement_node = match token.core_token() {
         CoreToken::LET => {
             let variable_decl_node = parser.variable_decl();
+
             StatementNode::new_with_variable_decl(variable_decl_node)
         }
         CoreToken::DEF => parser.func_stmt(CallableKind::Function),
         CoreToken::DECLARE_KEYWORD => {
             let decl_func_prototype = parser.decl_func_prototype();
+
             StatementNode::new_with_declare_func_prototype(decl_func_prototype)
         }
         CoreToken::FOR => {
             let for_loop_node = parser.for_loop_stmt();
+
             StatementNode::new_with_for_loop(for_loop_node)
         }
         CoreToken::WHILE => {
             let while_loop_node = parser.while_loop_stmt();
+
             StatementNode::new_with_while_loop(while_loop_node)
         }
         CoreToken::MATCH => {
             let match_case_node = parser.match_case();
+
             StatementNode::new_with_match_case_statement(match_case_node)
         }
         CoreToken::IF => {
             let conditional_node = parser.conditional();
+
             StatementNode::new_with_conditional(conditional_node)
         }
         CoreToken::TYPE_KEYWORD => {
             let ty_decl_node = parser.ty_decl();
+
             StatementNode::new_with_ty_decl(ty_decl_node)
         }
         CoreToken::INTERFACE_KEYWORD => {
             let interface_decl = parser.interface_decl();
+
             StatementNode::new_with_interface_decl(interface_decl)
         }
         CoreToken::RETURN => {
@@ -189,6 +197,7 @@ pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {
         CoreToken::IDENTIFIER => {
             let name_ty_spec_node = parser.name_ty_spec();
             let newline_node = parser.expect_terminators();
+
             let struct_stmt = StructPropertyDeclarationNode::new(name_ty_spec_node, newline_node);
 
             StatementNode::new_with_struct_stmt(struct_stmt)
@@ -205,6 +214,7 @@ pub fn interface_stmt(parser: &mut JarvilParser) -> StatementNode {
         CoreToken::IDENTIFIER => {
             let name_ty_spec_node = parser.name_ty_spec();
             let newline_node = parser.expect_terminators();
+
             let struct_stmt = StructPropertyDeclarationNode::new(name_ty_spec_node, newline_node);
 
             StatementNode::new_with_struct_stmt(struct_stmt)
@@ -242,6 +252,7 @@ pub fn enum_stmt(parser: &mut JarvilParser) -> StatementNode {
 pub fn case_branch_stmt(parser: &mut JarvilParser) -> StatementNode {
     let mut optional_variable_name_node: Option<(TokenNode, IdentifierInDeclNode, TokenNode)> =
         None;
+
     let case_keyword_node = parser.expect("case");
     let enum_name_node = parser.expect_identifier();
     let double_colon_node = parser.expect("::");
@@ -255,6 +266,7 @@ pub fn case_branch_stmt(parser: &mut JarvilParser) -> StatementNode {
     }
 
     let colon_node = parser.expect(":");
+
     let block_node = parser.block(
         is_statement_within_control_flow_starting_with,
         |parser| parser.stmt(),

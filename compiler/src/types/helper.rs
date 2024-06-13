@@ -72,9 +72,11 @@ pub fn user_defined_ty_compare_fn<
     let Some(self_concrete_types) = base.concrete_types() else {
         return true;
     };
+
     let Some(other_concrete_types) = other.concrete_types() else {
         unreachable!()
     };
+
     let self_len = self_concrete_types.len();
     let other_len = other_concrete_types.len();
 
