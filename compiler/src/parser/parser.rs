@@ -46,7 +46,6 @@ impl<'ctx> JarvilParser<'ctx> {
     }
 
     pub fn parse(mut self, token_vec: Vec<Token>) -> BlockNode {
-        
         self.code(token_vec)
     }
 
@@ -124,14 +123,18 @@ impl<'ctx> JarvilParser<'ctx> {
             if token.is_eq("\n") {
                 self.log_trailing_skipped_tokens_error(skipped_tokens.clone());
                 skipped_tokens.push(SkippedTokenNode::new(token.clone()));
+
                 self.scan_next_token();
+
                 return skipped_tokens;
             } else if token.is_eq(ENDMARKER) {
                 self.log_trailing_skipped_tokens_error(skipped_tokens.clone());
                 skipped_tokens.push(SkippedTokenNode::new(token.clone()));
+
                 return skipped_tokens;
             } else {
                 skipped_tokens.push(SkippedTokenNode::new(token.clone()));
+
                 self.scan_next_token();
             }
         }
@@ -143,10 +146,12 @@ impl<'ctx> JarvilParser<'ctx> {
 
         if token.is_eq(symbol) {
             let token_node = TokenNode::new_with_ok(token.clone());
+
             self.scan_next_token();
             token_node
         } else {
             self.log_missing_token_error(&[symbol], token);
+
             TokenNode::new_with_missing_tokens(vec![symbol], token.clone())
         }
     }
@@ -161,10 +166,12 @@ impl<'ctx> JarvilParser<'ctx> {
         U: Fn(&mut JarvilParser) -> T,
     {
         let first_entity_node = entity_parsing_fn(self);
+
         let token = self.curr_token();
 
         if token.is_eq(separator) {
             let separator_node = self.expect(separator);
+
             let remaining_generic_ty_args_node =
                 self.expect_symbol_separated_sequence(entity_parsing_fn, separator);
 
@@ -190,6 +197,7 @@ impl<'ctx> JarvilParser<'ctx> {
             match token.core_token() {
                 CoreToken::COLON => {
                     let colon_node = parser.expect(":");
+
                     let interface_bounds_node = parser.expect_symbol_separated_sequence(
                         |parser: &mut JarvilParser| parser.expect_identifier_in_use(),
                         "+",
@@ -224,7 +232,9 @@ impl<'ctx> JarvilParser<'ctx> {
 
         if token.is_eq(symbol) {
             let ok_token_node = OkTokenNode::new(token.clone());
+
             self.scan_next_token();
+
             let next_token = self.curr_token();
 
             match next_token.core_token() {
@@ -242,6 +252,7 @@ impl<'ctx> JarvilParser<'ctx> {
             }
         } else {
             self.log_missing_token_error(&[symbol], token);
+
             node_creation_method_with_err(vec![symbol], token.clone())
         }
     }
@@ -252,10 +263,13 @@ impl<'ctx> JarvilParser<'ctx> {
 
         if token.is_eq(symbol) {
             let ok_token_node = OkTokenNode::new(token.clone());
+
             self.scan_next_token();
+
             IdentifierInDeclNode::new_with_ok(ok_token_node, None)
         } else {
             self.log_missing_token_error(&[symbol], token);
+
             IdentifierInDeclNode::new_with_missing_tokens(vec![symbol], token.clone())
         }
     }
@@ -264,6 +278,7 @@ impl<'ctx> JarvilParser<'ctx> {
         let angle_bracketed_content_parsing_fn = |parser: &mut JarvilParser| -> SymbolSeparatedSequenceNode<
             TypeExpressionNode,
         > { parser.expect_generic_ty_args() };
+
         let node_creation_method_with_some = |ident_name: OkTokenNode,
                                               symbol_separated_sequence: Option<(
             TokenNode,
@@ -272,6 +287,7 @@ impl<'ctx> JarvilParser<'ctx> {
         )>| {
             IdentifierInUseNode::new_with_ok(ident_name, symbol_separated_sequence)
         };
+
         let node_creation_method_with_err =
             |expected_symbols: Vec<&'static str>, received_token: Token| {
                 IdentifierInUseNode::new_with_missing_tokens(expected_symbols, received_token)
@@ -288,6 +304,7 @@ impl<'ctx> JarvilParser<'ctx> {
         let angle_bracketed_content_parsing_fn = |parser: &mut JarvilParser| -> SymbolSeparatedSequenceNode<
             GenericTypeDeclNode,
         > { parser.expect_generic_ty_decls() };
+
         let node_creation_method_with_some = |ident_name: OkTokenNode,
                                               symbol_separated_sequence: Option<(
             TokenNode,
@@ -296,6 +313,7 @@ impl<'ctx> JarvilParser<'ctx> {
         )>| {
             IdentifierInDeclNode::new_with_ok(ident_name, symbol_separated_sequence)
         };
+
         let node_creation_method_with_err =
             |expected_symbols: Vec<&'static str>, received_token: Token| {
                 IdentifierInDeclNode::new_with_missing_tokens(expected_symbols, received_token)
@@ -314,10 +332,13 @@ impl<'ctx> JarvilParser<'ctx> {
 
         if token.is_eq(symbol) {
             let ok_token_node = OkTokenNode::new(token.clone());
+
             self.scan_next_token();
+
             SelfKeywordNode::new_with_ok(ok_token_node)
         } else {
             self.log_missing_token_error(&[symbol], token);
+
             SelfKeywordNode::new_with_missing_tokens(vec![symbol], token.clone())
         }
     }
@@ -328,12 +349,15 @@ impl<'ctx> JarvilParser<'ctx> {
 
         if token.is_eq("\n") {
             let token_node = TokenNode::new_with_ok(token.clone());
+
             self.scan_next_token();
+
             token_node
         } else if token.is_eq(ENDMARKER) {
             return TokenNode::new_with_ok(token.clone());
         } else {
             self.log_missing_token_error(symbols, token);
+
             return TokenNode::new_with_missing_tokens(symbols.to_vec(), token.clone());
         }
     }
@@ -367,6 +391,7 @@ impl<'ctx> JarvilParser<'ctx> {
                     let indent_spaces = (token.start_index()
                         - self.code_handler.line_start_index(token.line_number()))
                         as i64;
+
                     expected_indent_spaces += self.correction_indent();
 
                     if indent_spaces == expected_indent_spaces {

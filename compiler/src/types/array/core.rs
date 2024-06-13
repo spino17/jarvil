@@ -118,6 +118,7 @@ impl OperatorCompatiblity for Array {
         let CoreType::Array(array) = other.core_ty() else {
             return None;
         };
+
         let sub_ty = &array.element_ty;
 
         if self.element_ty.is_eq(sub_ty, namespace) {

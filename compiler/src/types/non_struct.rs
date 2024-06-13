@@ -26,6 +26,7 @@ impl<T: CollectionType> CoreNonStructMethodsHandler<T> {
         let Some(callable_data) = self.methods.get(method_name) else {
             return None;
         };
+
         let concrete_types = ty.concrete_types();
         let context = TypeGenericsInstantiationContext::new(Some(&concrete_types));
 

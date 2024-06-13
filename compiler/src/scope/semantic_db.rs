@@ -345,6 +345,7 @@ impl SemanticStateDatabase {
         let Some(val) = self.self_keyword_binding_table.get(node) else {
             return None;
         };
+
         Some(*val)
     }
 

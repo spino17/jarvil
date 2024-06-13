@@ -185,6 +185,7 @@ impl<'ctx> JarvilLexer<'ctx> {
 
         let end_index = self.index;
         let end_line_number = self.line_number;
+
         let range = TextRange::new(
             TextSize::try_from(start_index).unwrap(),
             TextSize::try_from(end_index).unwrap(),

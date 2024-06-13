@@ -198,6 +198,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         semantic_db: SemanticStateDatabase,
     ) -> Self {
         let non_struct_methods_handler = NonStructMethodsHandler::new(semantic_db.interner());
+
         JarvilTypeChecker {
             code_handler,
             errors,
@@ -217,9 +218,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     pub fn check_ast(mut self, ast: &BlockNode) -> SemanticStateDatabase {
         let core_block = ast.0.as_ref();
+
         for stmt in &core_block.stmts {
             self.walk_stmt_indent_wrapper(stmt);
         }
+
         self.semantic_db
     }
 
@@ -234,6 +237,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let Some((_, generic_ty_args, _)) = &ok_identifier_in_use.core_ref().generic_ty_args else {
             return (None, None);
         };
+
         let mut concrete_types: Vec<Type> = vec![];
         let mut ty_ranges: Vec<TextRange> = vec![];
 
@@ -319,9 +323,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let Some(received_params) = received_params else {
             return Err(PrototypeEquivalenceCheckError::ConcreteTypesCannotBeInferred);
         };
+
         let generic_ty_decls_len = generic_ty_decls.len();
         let mut inferred_concrete_types: Vec<InferredConcreteTypesEntry> =
             vec![InferredConcreteTypesEntry::Uninferred; generic_ty_decls_len];
+
         let mut num_inferred_types = 0; // this should be `len_concrete_types` at the end of inference process
         let received_params_iter = received_params.iter();
         let expected_params = expected_prototype.params();
@@ -338,6 +344,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             }
 
             let expected_ty = &expected_params[index];
+
             let inference_result = expected_ty.try_infer_ty_or_check_equivalence(
                 &param_ty,
                 &mut inferred_concrete_types,
@@ -372,6 +379,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 InferredConcreteTypesEntry::Uninferred => unreachable!(),
             })
             .collect();
+
         let mut error_strs: Vec<(String, String)> = vec![]; // Vec of (inferred_ty string, interface_bounds string)
 
         for (index, inferred_ty) in unpacked_inferred_concrete_types.iter().enumerate() {
@@ -440,6 +448,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     received_param.range(),
                 ));
             }
+
             index += 1;
         }
 
@@ -467,11 +476,14 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let func_data = self
             .semantic_db
             .func_symbol_ref(concrete_symbol_index.symbol_index());
+
         let concrete_types = concrete_symbol_index.concrete_types();
+
         let prototype_result = match concrete_types {
             Some(concrete_types) => {
                 // CASE 1
                 let context = FunctionGenericsInstantiationContext::new(Some(concrete_types));
+
                 let concrete_prototype = func_data.concretized_prototype(
                     self.semantic_db.namespace_ref(),
                     context.into_method_context(),
@@ -514,6 +526,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     params,
                     GenericTypeDeclarationPlaceCategory::InCallable,
                 )?;
+
                 let context = FunctionGenericsInstantiationContext::new(Some(&concrete_types));
 
                 Ok(func_data.concretized_return_ty(
@@ -570,6 +583,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             Some(concrete_types) => {
                 // CASE 1
                 let context = TypeGenericsInstantiationContext::new(Some(concrete_types));
+
                 let concrete_prototype = constructor_meta_data.concretized_prototype(
                     self.semantic_db.namespace_ref(),
                     context.into_method_context(),
@@ -630,8 +644,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_atom_start_call_expr(&self, call_expr: &CallExpressionNode) -> Type {
         let core_call_expr = call_expr.core_ref();
+
         let func_name = &core_call_expr.func_name;
         let params = &core_call_expr.params;
+
         let CoreIdentifierInUseNode::Ok(ok_identifier) = func_name.core_ref() else {
             return Type::new_with_unknown();
         };
@@ -740,6 +756,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             Some((partial_concrete_callable_data, _)) => {
                 let (concrete_types, ty_ranges) =
                     self.extract_angle_bracket_content_from_identifier_in_use(property_name);
+
                 let result = partial_concrete_callable_data.is_received_params_valid(
                     self,
                     concrete_types,
@@ -805,6 +822,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let CoreIdentifierInUseNode::Ok(property_name) = property_name.core_ref() else {
             return Type::new_with_unknown();
         };
+
         let variant_name =
             property_name.token_value(self.code_handler, self.semantic_db.interner());
 
@@ -930,12 +948,15 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
     ) -> Type {
         let core_enum_variant_expr_or_class_method_call =
             enum_variant_expr_or_class_method_call.core_ref();
+
         let ty = &core_enum_variant_expr_or_class_method_call.ty_name;
         let property_name = &core_enum_variant_expr_or_class_method_call.property_name;
         let params = &core_enum_variant_expr_or_class_method_call.params;
+
         let CoreIdentifierInUseNode::Ok(ok_identifier) = ty.core_ref() else {
             return Type::new_with_unknown();
         };
+
         let ty_name = ok_identifier.token_value(self.code_handler, self.semantic_db.interner());
 
         match self
@@ -1024,9 +1045,12 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_call(&self, call: &CallNode) -> (Type, Option<Type>) {
         let core_call = call.core_ref();
+
         let atom = &core_call.atom;
         let params = &core_call.params;
+
         let (atom_ty, _) = self.check_atom(atom);
+
         match &atom_ty.core_ty() {
             CoreType::Lambda(lambda_data) => {
                 let result = lambda_data.is_received_params_valid(self, params);
@@ -1053,9 +1077,12 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_property_access(&self, property_access: &PropertyAccessNode) -> (Type, Option<Type>) {
         let core_property_access = property_access.core_ref();
+
         let atom = &core_property_access.atom;
         let (atom_ty, _) = self.check_atom(atom);
+
         let property = &core_property_access.propertry;
+
         let CoreIdentifierInUseNode::Ok(ok_identifier) = property.core_ref() else {
             return (Type::new_with_unknown(), Some(atom_ty));
         };
@@ -1080,6 +1107,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 let concrete_types = struct_ty.concrete_types();
                 let ty_data = self.semantic_db.ty_symbol_ref(struct_ty.symbol_index());
                 let struct_data = ty_data.struct_data_ref();
+
                 let context = TypeGenericsInstantiationContext::new(concrete_types);
 
                 match struct_data.try_field(
@@ -1155,9 +1183,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
         let method_name =
             method_name_ok_identifier.token_value(self.code_handler, self.semantic_db.interner());
+
         let concrete_types = struct_ty.concrete_types();
         let ty_data = self.semantic_db.ty_symbol_ref(struct_ty.symbol_index());
         let struct_data = ty_data.struct_data_ref();
+
         let context = TypeGenericsInstantiationContext::new(concrete_types);
 
         // first check if it's a property
@@ -1192,6 +1222,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             .extract_angle_bracket_content_from_identifier_in_use(
                                 method_name_ok_identifier,
                             );
+
                         let return_ty = partial_concrete_callable_data.is_received_params_valid(
                             self,
                             concrete_types,
@@ -1215,6 +1246,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
     ) -> Result<Type, MethodAccessTypeCheckError> {
         let method_name =
             method_name_ok_identifier.token_value(self.code_handler, self.semantic_db.interner());
+
         let ty_data = self.semantic_db.ty_symbol_ref(generic_ty.symbol_index());
         let generic_data = ty_data.generic_data_ref();
         let interface_bounds = generic_data.interface_bounds();
@@ -1258,6 +1290,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                             .semantic_db
                             .interface_symbol_ref(concrete_symbol_index.symbol_index());
                         let concrete_types = concrete_symbol_index.concrete_types();
+
                         let context = TypeGenericsInstantiationContext::new(concrete_types);
 
                         match interface_data.try_method(&method_name, context) {
@@ -1266,6 +1299,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                     .extract_angle_bracket_content_from_identifier_in_use(
                                         method_name_ok_identifier,
                                     );
+
                                 let return_ty = partial_concrete_callable_data
                                     .is_received_params_valid(
                                         self,
@@ -1299,6 +1333,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
         let method_name = method_name_ok_identifier.token_value_str(self.code_handler);
+
         let Some(prototype) = self.non_struct_methods_handler.try_method_for_array(
             array_ty,
             &method_name,
@@ -1330,6 +1365,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<Type, MethodAccessTypeCheckError> {
         let method_name = method_name_ok_identifier.token_value_str(self.code_handler);
+
         let Some(prototype) = self.non_struct_methods_handler.try_method_for_hashmap(
             hashmap_ty,
             &method_name,
@@ -1356,10 +1392,14 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_method_access(&self, method_access: &MethodAccessNode) -> (Type, Option<Type>) {
         let core_method_access = method_access.core_ref();
+
         let atom = &core_method_access.atom;
+
         let (atom_ty, _) = self.check_atom(atom);
+
         let method = &core_method_access.method_name;
         let params = &core_method_access.params;
+
         let CoreIdentifierInUseNode::Ok(ok_identifier) = method.core_ref() else {
             return (Type::new_with_unknown(), Some(atom_ty));
         };
@@ -1449,6 +1489,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         index_expr: &ExpressionNode,
     ) -> Type {
         let sub_types = tuple_ty.sub_types();
+
         let CoreExpressionNode::Unary(index_unary_expr) = index_expr.core_ref() else {
             let err = InvalidIndexExpressionForTupleError::new(index_expr.range());
 
@@ -1457,6 +1498,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
             return Type::new_with_unknown();
         };
+
         let Some(index_value) = self.is_unary_expr_int_valued(index_unary_expr) else {
             let err = UnresolvedIndexExpressionInTupleError::new(index_expr.range());
 
@@ -1465,6 +1507,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
             return Type::new_with_unknown();
         };
+
         match self.is_valid_index_for_tuple(index_value, sub_types.len()) {
             TupleIndexCheckResult::Ok(index_value) => sub_types[index_value].clone(),
             TupleIndexCheckResult::PositiveIndexOutOfBound => {
@@ -1488,8 +1531,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_index_access(&self, index_access: &IndexAccessNode) -> (Type, Option<Type>) {
         let core_index_access = index_access.core_ref();
+
         let atom = &core_index_access.atom;
         let (atom_ty, _) = self.check_atom(atom);
+
         let index_expr = &core_index_access.index;
         let index_ty = self.check_expr(index_expr);
 
@@ -1572,7 +1617,6 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_r_assign(&self, r_assign: &RAssignmentNode) -> Type {
         let core_r_assign = r_assign.core_ref();
-
         self.check_expr(&core_r_assign.expr.core_ref().expr)
     }
 
@@ -1590,13 +1634,16 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_array_expr(&self, array_expr: &ArrayExpressionNode) -> Type {
         let core_array_expr = array_expr.core_ref();
+
         let Some(initials) = &core_array_expr.initials else {
             //let err = ExpressionTypeCannotBeInferredError::new(array_expr.range());
             //self.log_error(Diagnostics::ExpressionTypeCannotBeInferred(err));
             //Type::new_with_array(Type::new_with_unknown())
             todo!()
         };
+
         let mut initials_iter = initials.iter();
+
         let first_expr_ty = match initials_iter.next() {
             Some(expr) => self.check_expr(expr),
             None => unreachable!(),
@@ -1604,6 +1651,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
         for expr in initials_iter {
             let ty = self.check_expr(expr);
+
             if !ty.is_eq(&first_expr_ty, self.semantic_db.namespace_ref()) {
                 let err = IncorrectExpressionTypeError::new(
                     first_expr_ty.to_string(self.err_logging_context()),
@@ -1621,13 +1669,16 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_hashmap_expr(&self, hashmap_expr: &HashMapExpressionNode) -> Type {
         let core_hashmap_expr = hashmap_expr.core_ref();
+
         let Some(initials) = &core_hashmap_expr.initials else {
             //let err = ExpressionTypeCannotBeInferredError::new(hashmap_expr.range());
             //self.log_error(Diagnostics::ExpressionTypeCannotBeInferred(err));
             //Type::new_with_array(Type::new_with_unknown())
             todo!()
         };
+
         let mut initials_iter = initials.iter();
+
         let (first_key_ty, first_value_ty) = match initials_iter.next() {
             Some(key_value_pair) => {
                 let key_ty = self.check_expr(&key_value_pair.core_ref().key_expr);
@@ -1640,6 +1691,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
         for key_value_pair in initials_iter {
             let core_key_value_pair = key_value_pair.core_ref();
+
             let key_ty = self.check_expr(&core_key_value_pair.key_expr);
             let value_ty = self.check_expr(&core_key_value_pair.value_expr);
 
@@ -1713,6 +1765,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_only_unary_expr(&self, only_unary_expr: &OnlyUnaryExpressionNode) -> Type {
         let core_only_unary_expr = only_unary_expr.core_ref();
+
         let unary_expr = &core_only_unary_expr.unary_expr;
         let operand_ty = self.check_unary_expr(unary_expr);
         let operator = &core_only_unary_expr.operator;
@@ -1768,12 +1821,16 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_binary_expr(&self, binary_expr: &BinaryExpressionNode) -> Type {
         let core_binary_expr = binary_expr.core_ref();
+
         let left_expr = &core_binary_expr.left_expr;
         let right_expr = &core_binary_expr.right_expr;
+
         let l_ty = self.check_expr(left_expr);
+        let r_ty = self.check_expr(right_expr);
+
         let operator = &core_binary_expr.operator;
         let operator_kind = &core_binary_expr.operator_kind;
-        let r_ty = self.check_expr(right_expr);
+
         let result = self.is_binary_operation_valid(&l_ty, &r_ty, operator_kind);
 
         match result {
@@ -1798,6 +1855,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_comp_expr(&self, comp_expr: &ComparisonNode) -> Type {
         let core_comp_expr = comp_expr.core_ref();
+
         let operands = &core_comp_expr.operands;
         let operators = &core_comp_expr.operators;
         let operands_len = operands.len();
@@ -1805,9 +1863,12 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         for index in 1..operands_len {
             let left_expr = &operands[index - 1];
             let right_expr = &operands[index];
+
             let l_ty = self.check_expr(left_expr);
             let r_ty = self.check_expr(right_expr);
+
             let operator = &operators[index - 1];
+
             let operator_kind = operators[index - 1]
                 .is_binary_operator()
                 .expect("operator token is always valid");
@@ -1862,7 +1923,9 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let (l_ty, r_assign, range) = match core_assignment {
             CoreAssignmentNode::Ok(ok_assignment) => {
                 let core_ok_assignment = ok_assignment.core_ref();
+
                 let l_expr = &core_ok_assignment.l_atom;
+
                 let (l_ty, interior_atom_ty) = self.check_atom(l_expr);
 
                 if let CoreAtomNode::IndexAccess(l_index_expr) = l_expr.core_ref() {
@@ -1885,8 +1948,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             }
             CoreAssignmentNode::InvalidLValue(invalid_l_value) => {
                 let core_invalid_l_value = invalid_l_value.core_ref();
+
                 let expr = &core_invalid_l_value.l_expr;
                 let r_assign = &core_invalid_l_value.r_assign;
+
                 let l_ty = self.check_expr(expr);
 
                 (l_ty, r_assign, expr.range())
@@ -1919,8 +1984,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_variable_decl(&mut self, variable_decl: &VariableDeclarationNode) {
         let core_variable_decl = variable_decl.core_ref();
+
         let r_variable_decl = &core_variable_decl.r_node;
         let core_r_variable_decl = r_variable_decl.core_ref();
+
         let r_ty = match core_r_variable_decl {
             CoreRVariableDeclarationNode::Expression(expr_stmt) => {
                 self.check_expr(&expr_stmt.core_ref().expr)
@@ -1944,12 +2011,14 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_variable_decl.name.core_ref() else {
             return;
         };
+
         let Some(symbol_index) = self
             .semantic_db
             .variable_symbol_for_identifier_in_decl(ok_identifier)
         else {
             return;
         };
+
         let variable_ty = self.semantic_db.variable_symbol_ref(symbol_index).ty();
 
         if variable_ty.is_unset() {
@@ -1985,7 +2054,9 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_callable_body(&mut self, prototype: &CallablePrototypeNode, body: &BlockNode) {
         let return_ty = self.check_callable_prototype(prototype);
+
         self.context.func_stack.push(return_ty.clone());
+
         let mut has_return_stmt: Option<TextRange> = None;
 
         for stmt in &body.0.as_ref().stmts {
@@ -2017,6 +2088,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_bounded_method(&mut self, bounded_method_wrapper: &BoundedMethodWrapperNode) {
         let core_bounded_method_wrapper = bounded_method_wrapper.0.as_ref();
+
         let body = core_bounded_method_wrapper
             .func_decl
             .core_ref()
@@ -2038,10 +2110,12 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
 
         let expr = &core_return_stmt.expr;
+
         let expr_ty = match expr {
             Some(expr) => self.check_expr(expr),
             _ => Type::new_with_void(),
         };
+
         let expected_ty = &self.context.func_stack[func_stack_len - 1];
 
         if !expr_ty.is_eq(expected_ty, self.semantic_db.namespace_ref()) {
@@ -2065,28 +2139,35 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let CoreIdentifierInDeclNode::Ok(ok_identifier) = core_struct_decl.name.core_ref() else {
             return;
         };
+
         let Some(symbol_index) = self
             .semantic_db
             .ty_symbol_for_identifier_in_decl(ok_identifier)
         else {
             return;
         };
+
         let ty_data = self.semantic_db.ty_symbol_ref(symbol_index);
         let struct_data = ty_data.struct_data_ref();
         let implementing_interfaces = struct_data.implementing_interfaces();
+
         let Some(implementing_interfaces) = implementing_interfaces else {
             return;
         };
+
         let struct_methods = struct_data.methods_ref();
         let struct_fields = struct_data.fields_ref();
 
         for (interface_obj, range) in implementing_interfaces.iter() {
             let interface_concrete_symbol_index = interface_obj.core_symbol();
             let concrete_types = interface_concrete_symbol_index.concrete_types();
+
             let interface_data = self
                 .semantic_db
                 .interface_symbol_ref(interface_concrete_symbol_index.symbol_index());
+
             let context = TypeGenericsInstantiationContext::new(concrete_types);
+
             let partial_concrete_interface_bounded_objs =
                 interface_data.partially_concrete_interface_bounded_objects(context);
 
@@ -2112,6 +2193,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_conditional_block(&mut self, conditional_block: &ConditionalBlockNode) {
         let core_conditional_block = conditional_block.core_ref();
+
         let condition_expr = &core_conditional_block.condition_expr;
         let ty = self.check_expr(condition_expr);
 
@@ -2131,6 +2213,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_conditional_stmt(&mut self, conditional_stmt: &ConditionalStatementNode) {
         let core_conditional_stmt = conditional_stmt.core_ref();
+
         self.check_conditional_block(&core_conditional_stmt.if_block);
 
         for elif in &core_conditional_stmt.elifs {
@@ -2144,8 +2227,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_match_case_stmt(&mut self, match_case: &MatchCaseStatementNode) {
         let core_match_case = match_case.core_ref();
+
         let expr = &core_match_case.expr;
         let match_block = &core_match_case.block;
+
         let expr_ty = self.check_expr(expr);
 
         let CoreType::Enum(enum_ty) = expr_ty.core_ty() else {
@@ -2167,6 +2252,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let context = TypeGenericsInstantiationContext::new(concrete_types);
         let ty_data = self.semantic_db.ty_symbol_ref(enum_ty.symbol_index());
         let enum_data = ty_data.enum_data_ref();
+
         let mut symbol_index_ty_vec = vec![];
         let mut case_blocks = vec![];
         let mut enum_name_decls = vec![];
@@ -2180,9 +2266,11 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 }
                 _ => continue,
             };
+
             let CoreStatementNode::CaseBranch(case_branch) = stmt.core_ref() else {
                 unreachable!()
             };
+
             let core_case_branch = case_branch.core_ref();
             let enum_name = &core_case_branch.enum_name;
 
@@ -2328,6 +2416,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_while_loop_stmt(&mut self, while_loop_stmt: &WhileLoopStatementNode) {
         let core_while_loop = while_loop_stmt.core_ref();
+
         let condition_expr = &core_while_loop.condition_expr;
         let ty = self.check_expr(condition_expr);
 
@@ -2347,6 +2436,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     fn check_for_loop_stmt(&mut self, for_loop_stmt: &ForLoopStatementNode) {
         let core_for_loop = for_loop_stmt.core_ref();
+
         let iterable_expr = &core_for_loop.iterable_expr;
         let iterable_expr_ty = self.check_expr(iterable_expr);
 
@@ -2403,6 +2493,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         match stmt.core_ref() {
             CoreStatementNode::Expression(expr_stmt) => {
                 let core_expr_stmt = expr_stmt.core_ref();
+
                 self.check_expr(&core_expr_stmt.expr);
             }
             CoreStatementNode::MatchCase(match_case_stmt) => {
