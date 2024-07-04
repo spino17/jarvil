@@ -739,6 +739,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         // This kind of check is similiar to how `Rust` programming language expects generic type resolution.
                         let (expected_scope_index, possible_expected_class_scope_index) =
                             self.enclosing_generics_declarative_scope_index();
+
                         let result = if resolved_scope_index != expected_scope_index {
                             match possible_expected_class_scope_index {
                                 Some(class_scope_index) => {
@@ -834,6 +835,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                         UnresolvedIdentifier::NotInitialized(identifier, decl_range) => {
                             let name = identifier
                                 .token_value(self.code_handler, self.semantic_db.interner());
+
                             let err = IdentifierUsedBeforeInitializedError::new(
                                 self.semantic_db.interner().lookup(name),
                                 IdentifierKind::UserDefinedType,
@@ -894,6 +896,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     ) {
                         let name = interface_expr
                             .token_value(self.code_handler, self.semantic_db.interner());
+
                         let err = InterfaceAlreadyExistInBoundsDeclarationError::new(
                             self.semantic_db.interner().lookup(name),
                             previous_decl_range,
@@ -945,6 +948,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         for (index, generic_ty_decl) in generic_ty_decls.iter().enumerate() {
             let core_generic_ty_decl = generic_ty_decl.core_ref();
+
             let CoreIdentifierInDeclNode::Ok(ok_identifier_in_decl) =
                 core_generic_ty_decl.generic_ty_name.core_ref()
             else {
@@ -1064,6 +1068,7 @@ impl<'ctx> JarvilResolver<'ctx> {
             for param in params_iter {
                 let core_param = param.core_ref();
                 let param_name = &core_param.name;
+
                 let CoreIdentifierInDeclNode::Ok(ok_identifier) = param_name.core_ref() else {
                     continue;
                 };
@@ -1518,6 +1523,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 }
                 CoreStatementNode::BoundedMethodWrapper(bounded_method_wrapper) => {
                     self.set_curr_class_context_is_containing_self(false);
+
                     let core_func_decl = bounded_method_wrapper.core_ref().func_decl.core_ref();
                     let mut is_constructor = false;
                     let mut optional_ok_identifier_node = None;
@@ -1710,6 +1716,7 @@ impl<'ctx> JarvilResolver<'ctx> {
 
     fn declare_enum_ty(&mut self, enum_ty_decl: &EnumDeclarationNode) {
         let core_enum_ty_decl = enum_ty_decl.core_ref();
+
         let name = &core_enum_ty_decl.name;
         let mut optional_ok_identifier_in_decl = None;
         let mut symbol_obj: Option<UserDefinedTypeSymbolData> = None;
