@@ -65,10 +65,12 @@ impl TypeLike for Generic {
             CoreType::Generic(generic_data) => Some(generic_data),
             _ => None,
         };
+
         let self_ty_data = namespace
             .types_ref()
             .symbol_ref(self.symbol_index)
             .data_ref();
+
         let self_generic_data = self_ty_data.generic_data_ref();
         let self_index = self_generic_data.index();
         let self_category = self_generic_data.category();
@@ -80,6 +82,7 @@ impl TypeLike for Generic {
                         .types_ref()
                         .symbol_ref(generic_data.symbol_index)
                         .data_ref();
+
                     let other_generic_data = other_data.generic_data_ref();
                     let other_index = other_generic_data.index();
                     let other_category = other_generic_data.category();
@@ -100,6 +103,7 @@ impl TypeLike for Generic {
                         Some(concrete_types) => concrete_types,
                         None => unreachable!(),
                     };
+
                     let concrete_self_ty = &concrete_types[self_index];
 
                     concrete_self_ty.is_eq(other_ty, namespace)
@@ -117,6 +121,7 @@ impl TypeLike for Generic {
             .types_ref()
             .symbol_ref(self.symbol_index)
             .data_ref();
+
         let generic_data = ty_data.generic_data_ref();
         let index = generic_data.index();
         let category = generic_data.category();
@@ -146,6 +151,7 @@ impl TypeLike for Generic {
             .types_ref()
             .symbol_ref(self.symbol_index)
             .data_ref();
+
         let ty_interface_bounds = ty_data.generic_data_ref().interface_bounds();
 
         interface_bounds.is_subset(ty_interface_bounds, namespace)
@@ -164,6 +170,7 @@ impl TypeLike for Generic {
             .types_ref()
             .symbol_ref(self.symbol_index)
             .data_ref();
+
         let generic_data_ref = ty_data.generic_data_ref();
         let index = generic_data_ref.index();
         let decl_place = generic_data_ref.category();
@@ -188,10 +195,12 @@ impl TypeLike for Generic {
             }
         } else {
             debug_assert!(decl_place == GenericTypeDeclarationPlaceCategory::InType);
+
             let global_concrete_types = match global_concrete_types {
                 Some(concrete_types) => concrete_types,
                 None => unreachable!(),
             };
+
             let expected_ty = &global_concrete_types[index];
 
             if !expected_ty.is_eq(received_ty, namespace) {
@@ -208,6 +217,7 @@ impl TypeLike for Generic {
             .types_ref()
             .symbol_ref(self.symbol_index)
             .data_ref();
+
         let generic_data = ty_data.generic_data_ref();
         let interface_bounds = generic_data.interface_bounds();
 

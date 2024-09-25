@@ -19,10 +19,12 @@ pub fn ty_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
                 TokenNode,
                 SymbolSeparatedSequenceNode<IdentifierInUseNode>,
             )> = None;
+
             let struct_keyword_node = parser.expect("struct");
 
             if parser.check_curr_token("implements") {
                 let implements_keyword_node = parser.expect("implements");
+
                 let interfaces_nodes = parser.expect_symbol_separated_sequence(
                     |parser: &mut JarvilParser| parser.expect_identifier_in_use(),
                     ",",
@@ -32,6 +34,7 @@ pub fn ty_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             }
 
             let colon_node = parser.expect(":");
+
             let block_node = parser.block(
                 |token| match token.core_token() {
                     CoreToken::IDENTIFIER => true,
@@ -55,6 +58,7 @@ pub fn ty_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
         CoreToken::ENUM_KEYWORD => {
             let enum_keyword_node = parser.expect("enum");
             let colon_node = parser.expect(":");
+
             let block_node = parser.block(
                 |token| match token.core_token() {
                     CoreToken::IDENTIFIER => true,
@@ -76,6 +80,7 @@ pub fn ty_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
         CoreToken::LAMBDA_KEYWORD => {
             let mut ty_tuple_node: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>> = None;
             let mut return_ty_node: Option<(TokenNode, TypeExpressionNode)> = None;
+
             let lambda_keyword_node = parser.expect("lambda");
             let equal_node = parser.expect("=");
             let lparen_node = parser.expect("(");
@@ -92,6 +97,7 @@ pub fn ty_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             }
 
             let newline_node = parser.expect_terminators();
+
             let lambda_node = LambdaTypeDeclarationNode::new(
                 ty_name_node,
                 type_keyword_node,

@@ -68,6 +68,7 @@ pub fn ty_tuple(
 
 pub fn callable_prototype(parser: &mut JarvilParser) -> CallablePrototypeNode {
     let mut args_node: Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>> = None;
+
     let lparen_node = parser.expect("(");
 
     if !parser.check_curr_token(")") {
@@ -94,6 +95,7 @@ pub fn callable_prototype(parser: &mut JarvilParser) -> CallablePrototypeNode {
 pub fn callable_body(parser: &mut JarvilParser, block_kind: BlockKind) -> CallableBodyNode {
     let callable_prototype = parser.callable_prototype();
     let colon_node = parser.expect(":");
+
     let func_block_node = parser.block(
         is_statement_within_func_starting_with,
         |parser| parser.stmt(),
@@ -105,15 +107,15 @@ pub fn callable_body(parser: &mut JarvilParser, block_kind: BlockKind) -> Callab
 }
 
 pub fn func_stmt(parser: &mut JarvilParser, callable_kind: CallableKind) -> StatementNode {
-    let def_keyword_node = parser.expect("def");
-    let func_name_node = parser.expect_identifier_in_decl();
-
     let block_kind = match callable_kind {
         CallableKind::Function => BlockKind::Function,
         CallableKind::Method => BlockKind::Method,
     };
 
+    let def_keyword_node = parser.expect("def");
+    let func_name_node = parser.expect_identifier_in_decl();
     let callable_body = parser.callable_body(block_kind);
+
     let func_decl_node =
         FunctionDeclarationNode::new(func_name_node, def_keyword_node, callable_body);
 

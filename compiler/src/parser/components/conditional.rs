@@ -17,6 +17,7 @@ pub fn conditional_block(
     let conditional_keyword_node = parser.expect(conditional_keyword_str);
     let conditional_expr_node = parser.expr();
     let colon_node = parser.expect(":");
+
     let block_node = parser.block(
         is_statement_within_control_flow_starting_with,
         |parser| parser.stmt(),
@@ -34,6 +35,7 @@ pub fn conditional_block(
 
 pub fn conditional(parser: &mut JarvilParser) -> ConditionalStatementNode {
     let if_block_node = parser.conditional_block("if");
+
     let mut elifs: Vec<ConditionalBlockNode> = vec![];
     let mut else_block_node: Option<(TokenNode, TokenNode, BlockNode)> = None;
 
@@ -45,6 +47,7 @@ pub fn conditional(parser: &mut JarvilParser) -> ConditionalStatementNode {
     if parser.check_curr_token("else") {
         let else_keyword_node = parser.expect("else");
         let colon_node = parser.expect(":");
+
         let block_node = parser.block(
             is_statement_within_control_flow_starting_with,
             |parser| parser.stmt(),

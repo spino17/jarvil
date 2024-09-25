@@ -55,6 +55,7 @@ impl TypeLike for Enum {
         let CoreType::Enum(enum_data) = other_ty.core_ty() else {
             return false;
         };
+
         let ty_cmp_func =
             |ty1: &Type,
              ty2: &Type,
@@ -79,6 +80,7 @@ impl TypeLike for Enum {
         let CoreType::Enum(enum_data) = other_ty.core_ty() else {
             return false;
         };
+
         let ty_cmp_func =
             |ty1: &Type,
              ty2: &Type,
@@ -96,6 +98,7 @@ impl TypeLike for Enum {
         let Some(concrete_types) = &self.concrete_types else {
             return Type::new_with_enum(self.symbol_index, None);
         };
+
         let mut concretized_concrete_types = vec![];
 
         for ty in concrete_types.iter() {
@@ -153,6 +156,7 @@ impl TypeLike for Enum {
 
     fn to_string(&self, context: TypeStringifyContext) -> String {
         let mut s = context.interner().lookup(self.name());
+
         let Some(concrete_types) = &self.concrete_types else {
             return s;
         };

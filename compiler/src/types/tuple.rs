@@ -42,6 +42,7 @@ impl Tuple {
         let CoreType::Tuple(other_tuple) = other.core_ty() else {
             return None;
         };
+
         let other_len = other_tuple.sub_types.len();
         let self_len = self.sub_types.len();
         let min_len = cmp::min(self_len, other_len);
@@ -139,6 +140,7 @@ impl TypeLike for Tuple {
         let CoreType::Tuple(tuple_ty) = received_ty.core_ty() else {
             return Err(());
         };
+
         let generics_containing_types_tuple = &self.sub_types;
         let base_types_tuple = &tuple_ty.sub_types;
 
@@ -169,8 +171,10 @@ impl OperatorCompatiblity for Tuple {
         let CoreType::Tuple(other_tuple) = other.core_ty() else {
             return None;
         };
+
         let self_sub_types = &self.sub_types;
         let other_sub_types = &other_tuple.sub_types;
+
         let mut combined_sub_types: Vec<Type> = vec![];
 
         for ty in self_sub_types {

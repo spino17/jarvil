@@ -30,6 +30,7 @@ where
     G: Fn(&mut JarvilParser) -> StatementNode,
 {
     let newline_node = parser.expect_terminators();
+
     let mut stmts_vec: Vec<StatementIndentWrapperNode> = vec![];
     let mut has_atleast_one_stmt = false;
 
@@ -37,6 +38,7 @@ where
 
     loop {
         let mut leading_skipped_tokens: Vec<SkippedTokenNode> = vec![];
+
         let indent_result = parser.expect_indent_spaces();
         let skipped_tokens = indent_result.skipped_tokens;
 
@@ -111,7 +113,9 @@ where
                     // a sub stmt of already incorrectly indented stmt some levels higher
                     let saved_correction_indent = parser.correction_indent();
                     parser.add_to_correction_indent(indent_data.1 - indent_data.0);
+
                     let stmt_node = statement_parsing_fn(parser);
+
                     parser.set_correction_indent(saved_correction_indent);
 
                     stmt_node
@@ -124,6 +128,7 @@ where
 
                     parser.set_ignore_all_errors(false);
                     parser.set_correction_indent(0);
+
                     parser.log_incorrectly_indented_block_error(
                         stmt_node.range(),
                         indent_data.0,
