@@ -112,26 +112,32 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
     let atomic_expr_node = match token.core_token() {
         CoreToken::TRUE                         => {
             let true_node = parser.expect(TRUE);
+
             AtomicExpressionNode::new_with_bool(true_node)
         }
         CoreToken::FALSE                        => {
             let false_node = parser.expect(FALSE);
+
             AtomicExpressionNode::new_with_bool(false_node)
         }
         CoreToken::INTEGER                      => {
             let integer_node = parser.expect(INTEGER);
+
             AtomicExpressionNode::new_with_integer(integer_node)
         }
         CoreToken::FLOATING_POINT_NUMBER        => {
             let floating_point_number_node = parser.expect(FLOATING_POINT_NUMBER);
+
             AtomicExpressionNode::new_with_floating_point_number(floating_point_number_node)
         }
         CoreToken::LITERAL                      => {
             let literal_node = parser.expect(LITERAL);
+
             AtomicExpressionNode::new_with_literal(literal_node)
         }
         CoreToken::IDENTIFIER | CoreToken::SELF => {
             let atom = parser.atom();
+
             AtomicExpressionNode::new_with_atom(atom)
         }
         CoreToken::LSQUARE => {
@@ -151,6 +157,7 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
         }
         CoreToken::LBRACE => {
             let mut initials_node = None;
+
             let lcurly_node = parser.expect("{");
             let curr_token = parser.curr_token();
 
@@ -175,10 +182,13 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
 
             if curr_token.is_eq(",") {
                 let comma_node = parser.expect(",");
+
                 let remaining_tuple_exprs_node = parser.expect_symbol_separated_sequence(|parser: &mut JarvilParser| {
                     parser.expr()
                 }, ",");
+
                 let exprs_node = SymbolSeparatedSequenceNode::new_with_entities(expr_node, remaining_tuple_exprs_node, comma_node);
+                
                 let rparen_node = parser.expect(")");
 
                 AtomicExpressionNode::new_with_tuple_expr(lparen_node, rparen_node, exprs_node)

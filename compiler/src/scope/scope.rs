@@ -115,6 +115,7 @@ impl<T> ScopeArena<T> {
 
     pub fn symbol_ref(&self, index: SymbolIndex<T>) -> &Symbol<T> {
         let scope = &self[index.scope_index()];
+
         let Some(symbol_ref) = scope.get(&index.ident_name()) else {
             unreachable!()
         };
@@ -124,6 +125,7 @@ impl<T> ScopeArena<T> {
 
     pub fn symbol_mut_ref(&mut self, index: SymbolIndex<T>) -> &mut Symbol<T> {
         let scope = &mut self[index.scope_index()];
+
         let Some(symbol_ref) = scope.get_mut(&index.ident_name()) else {
             unreachable!()
         };
@@ -179,7 +181,6 @@ impl<T> ScopeArena<T> {
         scope_index: ScopeIndex,
         key: IdentName,
     ) -> Option<(SymbolIndex<T>, usize, Option<usize>)> {
-        let mut enclosing_func_scope_depth: Option<usize> = None;
         let scope = &self[scope_index];
         let mut previous_scope_kind = scope.scope_kind;
 
@@ -189,6 +190,7 @@ impl<T> ScopeArena<T> {
 
         let mut parent_scope_index = scope.parent_scope;
         let mut depth = 1;
+        let mut enclosing_func_scope_depth: Option<usize> = None;
 
         while let Some(scope_index) = parent_scope_index {
             if enclosing_func_scope_depth.is_none() && previous_scope_kind.has_callable_body() {

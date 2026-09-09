@@ -14,6 +14,7 @@ pub fn nodify_macro_derive(input: TokenStream) -> TokenStream {
         Ok(it) => it,
         Err(e) => return token_stream_with_error(input, e),
     };
+
     impl_nodify_macro(&input_ast)
 }
 
@@ -23,6 +24,7 @@ pub fn tokenify_macro_derive(input: TokenStream) -> TokenStream {
         Ok(it) => it,
         Err(e) => return token_stream_with_error(input, e),
     };
+
     impl_tokenify_macro(&input_ast)
 }
 
@@ -32,5 +34,6 @@ pub fn node_macro_derive(input: TokenStream) -> TokenStream {
         Ok(it) => it,
         Err(e) => return token_stream_with_error(input, e),
     };
+
     impl_node_macro(&input_ast)
 }

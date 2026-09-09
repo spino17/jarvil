@@ -6,6 +6,7 @@ use crate::{ast::ast::VariableDeclarationNode, parser::parser::JarvilParser};
 
 pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
     let mut optional_ty_annotation_node = None;
+
     let let_keyword_node = parser.expect("let");
     let identifier_node = parser.expect_identifier();
     let curr_token = parser.curr_token();
@@ -19,10 +20,12 @@ pub fn variable_decl(parser: &mut JarvilParser) -> VariableDeclarationNode {
 
     let equal_node = parser.expect("=");
     let token = parser.curr_token();
+
     let r_node = match token.core_token() {
         CoreToken::LAMBDA_KEYWORD => {
             let lambda_keyword_node = parser.expect(LAMBDA_KEYWORD);
             let callable_body = parser.callable_body(BlockKind::Lambda);
+
             let lambda_decl_node = LambdaDeclarationNode::new(lambda_keyword_node, callable_body);
 
             RVariableDeclarationNode::new_with_lambda(lambda_decl_node)

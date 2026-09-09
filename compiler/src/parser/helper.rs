@@ -36,10 +36,12 @@ pub fn err_for_generic_ty_args(
     match err {
         GenericTypeArgsCheckError::GenericTypeArgsNotExpected => {
             let err = GenericTypeArgsNotExpectedError::new(identifier_kind, identifier_decl_range);
+
             Diagnostics::GenericTypeArgsNotExpected(err)
         }
         GenericTypeArgsCheckError::GenericTypeArgsExpected => {
             let err = GenericTypeArgsExpectedError::new(identifier_kind, identifier_decl_range);
+
             Diagnostics::GenericTypeArgsExpected(err)
         }
         GenericTypeArgsCheckError::GenericTypeArgsCountMismatched(
@@ -51,10 +53,12 @@ pub fn err_for_generic_ty_args(
                 *expected_count,
                 identifier_decl_range,
             );
+
             Diagnostics::GenericTypeArgsCountMismatched(err)
         }
         GenericTypeArgsCheckError::GenericTypeArgsIncorrectlyBounded(incorrectly_bounded_types) => {
             let err = GenericTypeArgsIncorrectlyBoundedError::new(incorrectly_bounded_types);
+
             Diagnostics::GenericTypeArgsIncorrectlyBounded(err)
         }
     }
