@@ -18,7 +18,7 @@ use crate::scope::symbol::types::core::UserDefinedTypeData;
 use crate::scope::symbol::types::generic_ty::GenericTypeDeclarationPlaceCategory;
 use crate::scope::traits::InstantiationContext;
 use crate::types::traits::OperatorCompatiblity;
-use crate::types::{array::core::Array, atomic::Atomic};
+use crate::types::{array::core::Array, atomic::core::Atomic};
 use std::fmt::Debug;
 use std::sync::Arc;
 

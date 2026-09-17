@@ -3,6 +3,7 @@ use crate::core::string_interner::Interner;
 use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
 use crate::types::array::core::Array;
+use crate::types::atomic::builtin::str_builtin_methods;
 use crate::types::hashmap::core::HashMap;
 use crate::{
     core::common::RefOrOwned,
@@ -38,6 +39,10 @@ impl<T: CollectionType> CoreNonStructMethodsHandler<T> {
 pub struct NonStructMethodsHandler {
     array_methods: CoreNonStructMethodsHandler<Array>,
     hashmap_methods: CoreNonStructMethodsHandler<HashMap>,
+    // `str` is not a collection type: it has no element type, so its methods
+    // need no concretization and are stored as finished prototypes rather than
+    // as `CallableData` awaiting generic substitution.
+    str_methods: FxHashMap<&'static str, CallablePrototypeData>,
 }
 
 impl NonStructMethodsHandler {
@@ -51,7 +56,12 @@ impl NonStructMethodsHandler {
                 methods: HashMap::builtin_methods(interner),
                 phanton: PhantomData,
             },
+            str_methods: str_builtin_methods(),
         }
+    }
+
+    pub fn try_method_for_str(&self, method_name: &str) -> Option<CallablePrototypeData> {
+        self.str_methods.get(method_name).cloned()
     }
 
     pub fn try_method_for_array(

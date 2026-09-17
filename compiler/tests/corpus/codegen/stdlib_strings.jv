@@ -1,0 +1,21 @@
+def main():
+    let s = "  Hello, World  "
+    let t = s.strip()
+    print(t.upper())
+    print(t.lower())
+    print(t.replace("World", "Jarvil"))
+    print(t.startswith("Hello"))
+    print(t.endswith("!"))
+    print(t.find("World"))
+    print(t.count("l"))
+    print(len(t))
+
+    let csv = "a,b,c"
+    print(csv.split(","))
+
+    let sep = "-"
+    print(sep.join(["x", "y", "z"]))
+
+    let digits = "12345"
+    print(digits.isdigit())
+    print(digits.isalpha())

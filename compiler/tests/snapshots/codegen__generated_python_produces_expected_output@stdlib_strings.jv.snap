@@ -1,0 +1,18 @@
+---
+source: compiler/tests/codegen.rs
+assertion_line: 54
+expression: run_python(&py_code)
+input_file: compiler/tests/corpus/codegen/stdlib_strings.jv
+---
+HELLO, WORLD
+hello, world
+Hello, Jarvil
+True
+False
+7
+3
+12
+['a', 'b', 'c']
+x-y-z
+True
+False

@@ -85,7 +85,7 @@ use crate::{
         symbol::types::core::UserDefinedTypeData,
     },
     types::{
-        atomic::Atomic,
+        atomic::core::Atomic,
         core::{CoreType, Type},
         traits::TypeLike,
     },
@@ -1387,6 +1387,36 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         }
     }
 
+    fn check_method_access_for_str_ty(
+        &self,
+        method_name_ok_identifier: &OkIdentifierInUseNode,
+        params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Result<Type, MethodAccessTypeCheckError> {
+        let method_name = method_name_ok_identifier.token_value_str(self.code_handler);
+
+        let Some(prototype) = self
+            .non_struct_methods_handler
+            .try_method_for_str(&method_name)
+        else {
+            return Err(MethodAccessTypeCheckError::MethodNotFound);
+        };
+
+        if method_name_ok_identifier
+            .core_ref()
+            .generic_ty_args
+            .is_some()
+        {
+            return Err(MethodAccessTypeCheckError::GenericTypeArgsCheckFailed(
+                GenericTypeArgsCheckError::GenericTypeArgsNotExpected,
+                IdentifierKind::Method,
+            ));
+        }
+
+        let return_ty = prototype.is_received_params_valid(self, params)?;
+
+        Ok(return_ty)
+    }
+
     fn check_method_access(&self, method_access: &MethodAccessNode) -> (Type, Option<Type>) {
         let core_method_access = method_access.core_ref();
 
@@ -1413,6 +1443,9 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             }
             CoreType::HashMap(hashmap_ty) => {
                 self.check_method_access_for_hashmap_ty(hashmap_ty, ok_identifier, params)
+            }
+            CoreType::Atomic(Atomic::String) => {
+                self.check_method_access_for_str_ty(ok_identifier, params)
             }
             _ => Err(MethodAccessTypeCheckError::MethodNotFound),
         };

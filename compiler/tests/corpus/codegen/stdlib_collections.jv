@@ -1,0 +1,24 @@
+def main():
+    let xs = [3, 1, 2]
+    xs.append(4)
+    xs.sort()
+    print(xs)
+    print(len(xs))
+    print(sum(xs))
+    print(xs.count(3))
+    xs.reverse()
+    print(xs.pop())
+    xs.extend([7, 8])
+    xs.insert(0, 0)
+    print(xs)
+    xs.clear()
+    print(len(xs))
+
+    let d = {"a": 1, "b": 2}
+    print(len(d))
+    print(d.pop("a"))
+    d.update({"c": 3})
+    for key in d:
+        print(key)
+    d.clear()
+    print(len(d))

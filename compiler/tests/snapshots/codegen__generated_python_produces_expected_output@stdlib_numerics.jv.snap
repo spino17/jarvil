@@ -1,0 +1,15 @@
+---
+source: compiler/tests/codegen.rs
+assertion_line: 54
+expression: run_python(&py_code)
+input_file: compiler/tests/corpus/codegen/stdlib_numerics.jv
+---
+7
+3
+9
+6
+J
+74
+0
+1
+2

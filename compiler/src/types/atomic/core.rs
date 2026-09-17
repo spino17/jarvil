@@ -1,5 +1,3 @@
-use super::core::TypeStringifyContext;
-use super::traits::{OperatorCompatiblity, TypeLike};
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};
@@ -7,7 +5,9 @@ use crate::scope::namespace::Namespace;
 use crate::scope::symbol::interfaces::InterfaceBounds;
 use crate::scope::symbol::types::generic_ty::GenericTypeDeclarationPlaceCategory;
 use crate::scope::traits::InstantiationContext;
+use crate::types::core::TypeStringifyContext;
 use crate::types::core::{CoreType, Type};
+use crate::types::traits::{OperatorCompatiblity, TypeLike};
 
 #[derive(Debug, Clone)]
 pub enum Atomic {
