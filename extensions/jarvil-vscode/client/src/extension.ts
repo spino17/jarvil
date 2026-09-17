@@ -65,12 +65,23 @@ export function activate(context: ExtensionContext) {
     },
   };
 
+  // Stopping an already-running client guards against `activate` being called
+  // twice in one extension host, which would otherwise leave an orphaned server
+  // answering requests alongside the new one — the symptom being every hover
+  // and completion appearing duplicated.
+  void client?.stop();
+
   client = new LanguageClient(
     "jarvil",
     "Jarvil Language Server",
     serverOptions,
     clientOptions,
   );
+
+  // Registering the client for disposal means VS Code shuts the server down
+  // when the extension is disabled or uninstalled, rather than relying on
+  // `deactivate` alone.
+  context.subscriptions.push(client);
 
   client.start().catch((error) => {
     window.showErrorMessage(

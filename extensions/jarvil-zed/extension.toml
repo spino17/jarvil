@@ -1,0 +1,11 @@
+id = "jarvil"
+name = "Jarvil"
+version = "0.1.0"
+schema_version = 1
+authors = ["Bhavya Bhatt <bhavyabhatt17@gmail.com>"]
+description = "Jarvil language support: diagnostics, go-to-definition and hover"
+repository = "https://github.com/spino17/jarvil"
+
+[language_servers.jarvil-lsp]
+name = "Jarvil Language Server"
+languages = ["Jarvil"]
