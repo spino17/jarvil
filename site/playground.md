@@ -1,6 +1,7 @@
 ---
 title: Playground
 aside: false
+pageClass: playground-page
 ---
 
 # Playground

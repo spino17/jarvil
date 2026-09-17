@@ -34,7 +34,17 @@ onMounted(async () => {
   // Everything here is browser-only: VitePress renders these pages on the
   // server at build time, where CodeMirror and WebAssembly are unavailable.
   const [
-    { EditorView, keymap, lineNumbers, highlightActiveLine, hoverTooltip },
+    {
+      EditorView,
+      keymap,
+      lineNumbers,
+      highlightActiveLine,
+      hoverTooltip,
+      drawSelection,
+      dropCursor,
+      rectangularSelection,
+      crosshairCursor,
+    },
     { EditorState },
     { defaultKeymap, history, historyKeymap, indentWithTab },
     { linter, lintGutter },
@@ -136,6 +146,12 @@ onMounted(async () => {
       extensions: [
         lineNumbers(),
         highlightActiveLine(),
+        // Without these the caret is the browser's, which cannot be themed and
+        // disappears against some backgrounds.
+        drawSelection(),
+        dropCursor(),
+        rectangularSelection(),
+        crosshairCursor(),
         history(),
         lintGutter(),
         indentUnit.of("    "),
@@ -182,12 +198,19 @@ onMounted(async () => {
             backgroundColor: "var(--vp-c-bg-elv)",
             color: "var(--vp-c-text-1)",
           },
-          ".cm-activeLine": { backgroundColor: "var(--vp-c-bg-soft)" },
+          ".cm-activeLine": { backgroundColor: "var(--jv-active-line)" },
+          ".cm-content": { caretColor: "var(--vp-c-brand-1)" },
           ".cm-cursor, .cm-dropCursor": {
-            borderLeftColor: "var(--vp-c-text-1)",
+            borderLeftColor: "var(--vp-c-brand-1)",
+            borderLeftWidth: "2px",
           },
-          "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
-            { backgroundColor: "var(--vp-c-brand-soft)" },
+          "&.cm-focused .cm-cursor": { borderLeftColor: "var(--vp-c-brand-1)" },
+          ".cm-selectionBackground": { backgroundColor: "var(--jv-selection)" },
+          "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground":
+            { backgroundColor: "var(--jv-selection)" },
+          ".cm-content ::selection, .cm-line ::selection": {
+            backgroundColor: "var(--jv-selection)",
+          },
           ".cm-tooltip": {
             backgroundColor: "var(--vp-c-bg-elv)",
             border: "1px solid var(--vp-c-divider)",
@@ -287,6 +310,37 @@ function reset() {
 </template>
 
 <style>
+/* The docs column is sized for prose. On the playground page it is widened so
+   the editor has room, while the surrounding text stays readable. */
+.playground-page .VPDoc .container,
+.playground-page .VPDoc .content,
+.playground-page .VPDoc .content-container {
+  max-width: 100% !important;
+}
+
+.playground-page .VPDoc {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+@media (min-width: 960px) {
+  .playground-page .VPDoc {
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+}
+
+/* Keep the prose itself from stretching to unreadable line lengths; only the
+   playground uses the full width. */
+.playground-page .vp-doc > div > :not(.jv-playground):not(.custom-block):not(h1):not(h2) {
+  max-width: 760px;
+}
+
+.playground-page .vp-doc > div > h1,
+.playground-page .vp-doc > div > h2 {
+  max-width: 760px;
+}
+
 /* Syntax colours, defined for both themes so the editor follows the site's
    light/dark toggle rather than assuming a light page. */
 :root {
@@ -298,6 +352,9 @@ function reset() {
   --jv-function: #6f42c1;
   --jv-operator: #d73a49;
   --jv-punctuation: #24292e;
+  --jv-selection: #b6d7ff;
+  /* translucent: this paints over the selection layer */
+  --jv-active-line: rgba(0, 0, 0, 0.04);
 }
 
 .dark {
@@ -309,6 +366,9 @@ function reset() {
   --jv-function: #d2a8ff;
   --jv-operator: #ff7b72;
   --jv-punctuation: #c9d1d9;
+  --jv-selection: #2d4f76;
+  /* translucent: this paints over the selection layer */
+  --jv-active-line: rgba(255, 255, 255, 0.045);
 }
 
 .jv-playground {
