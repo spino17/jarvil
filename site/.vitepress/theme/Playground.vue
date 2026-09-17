@@ -179,7 +179,7 @@ onMounted(async () => {
         gotoDefinition,
         EditorView.theme({
           "&": {
-            height: props.height,
+            height: "100%",
             fontSize: "14px",
             backgroundColor: "var(--vp-c-bg)",
             color: "var(--vp-c-text-1)",
@@ -283,7 +283,7 @@ function reset() {
 </script>
 
 <template>
-  <div class="jv-playground">
+  <div class="jv-playground" :style="{ height }">
     <div class="jv-toolbar">
       <button class="jv-run" :disabled="!ready || outputKind === 'running'" @click="run">
         {{ outputKind === "running" ? "Running…" : "▶ Run" }}
@@ -372,10 +372,19 @@ function reset() {
 }
 
 .jv-playground {
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
   border: 1px solid var(--vp-c-divider);
   border-radius: 8px;
   overflow: hidden;
   margin: 16px 0;
+}
+
+.jv-editor {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .jv-toolbar {
