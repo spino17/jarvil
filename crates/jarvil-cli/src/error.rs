@@ -15,7 +15,7 @@ pub struct VanillaError {
     msg: String,
 }
 
-pub enum AnyonError {
+pub enum CliError {
     Report(Report),
     Io(Error),
     Vanilla(VanillaError),
@@ -23,54 +23,54 @@ pub enum AnyonError {
     Command(VanillaError),
 }
 
-impl AnyonError {
+impl CliError {
     pub fn new_with_report(report_err: Report) -> Self {
-        AnyonError::Report(report_err)
+        CliError::Report(report_err)
     }
 
     pub fn new_with_io(io_err: Error) -> Self {
-        AnyonError::Io(io_err)
+        CliError::Io(io_err)
     }
 
     pub fn new_with_utf8(utf8: Utf8Error) -> Self {
-        AnyonError::UTF8(utf8)
+        CliError::UTF8(utf8)
     }
 
     pub fn new_with_vanilla(msg: String) -> Self {
-        AnyonError::Vanilla(VanillaError { msg })
+        CliError::Vanilla(VanillaError { msg })
     }
 
     pub fn new_with_command(msg: String) -> Self {
-        AnyonError::Command(VanillaError { msg })
+        CliError::Command(VanillaError { msg })
     }
 }
 
-impl From<Report> for AnyonError {
+impl From<Report> for CliError {
     fn from(value: Report) -> Self {
-        AnyonError::new_with_report(value)
+        CliError::new_with_report(value)
     }
 }
 
-impl From<Error> for AnyonError {
+impl From<Error> for CliError {
     fn from(value: Error) -> Self {
-        AnyonError::new_with_io(value)
+        CliError::new_with_io(value)
     }
 }
 
-impl From<Utf8Error> for AnyonError {
+impl From<Utf8Error> for CliError {
     fn from(value: Utf8Error) -> Self {
-        AnyonError::new_with_utf8(value)
+        CliError::new_with_utf8(value)
     }
 }
 
-impl Debug for AnyonError {
+impl Debug for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result {
         match self {
-            AnyonError::Report(report) => report.fmt(f),
-            AnyonError::Vanilla(vanilla) => write!(f, "{}", vanilla.msg),
-            AnyonError::Io(io) => write!(f, "{}", io),
-            AnyonError::UTF8(utf8) => write!(f, "{}", utf8),
-            AnyonError::Command(command) => {
+            CliError::Report(report) => report.fmt(f),
+            CliError::Vanilla(vanilla) => write!(f, "{}", vanilla.msg),
+            CliError::Io(io) => write!(f, "{}", io),
+            CliError::UTF8(utf8) => write!(f, "{}", utf8),
+            CliError::Command(command) => {
                 write!(f, "{}\nView all commands with `jarvil help`", command.msg)
             }
         }

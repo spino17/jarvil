@@ -65,7 +65,7 @@ fn attach_source_code(err: Report, source: String) -> Report {
 ///
 /// Returns the generated Python alongside a JSON rendering of the syntax tree.
 /// The JSON is produced whether or not compilation succeeded, which is why it
-/// sits outside the `Result`: `anyon` writes it next to the source as a
+/// sits outside the `Result`: `jarvil` writes it next to the source as a
 /// debugging aid even for a program that failed to compile.
 ///
 /// # Errors

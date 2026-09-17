@@ -1,14 +1,14 @@
-//! The `anyon` command line entry point.
+//! The `jarvil` command line entry point.
 //!
 //! Parses arguments, configures how diagnostics are rendered, and exits
 //! non-zero when a command fails so the tool composes with scripts and CI.
 
-use anyon::{
+use clap::{Parser, Subcommand};
+use jarvil_cli::{
     build::{BuildMode, execute_build_or_run},
-    error::AnyonError,
+    error::CliError,
     new::execute_new,
 };
-use clap::{Parser, Subcommand};
 use miette::{GraphicalReportHandler, GraphicalTheme};
 use owo_colors::Style;
 use std::io::IsTerminal;
@@ -24,8 +24,8 @@ fn use_color() -> bool {
 }
 
 #[derive(Parser)]
-#[command(name = "Anyon")]
-#[command(version, about = "Jarvil's Package Manager and Build System")]
+#[command(name = "jarvil")]
+#[command(version, about = "The Jarvil compiler and project tool")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -33,12 +33,20 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    New { project_name: String },
+    /// Create a new project directory containing a starter `main.jv`
+    New {
+        /// Directory to create
+        project_name: String,
+    },
+
+    /// Compile `main.jv` to Python beside it, without running it
     Build,
+
+    /// Compile `main.jv` and execute the generated Python
     Run,
 }
 
-fn execute_cmd(commands: &Commands) -> Result<(), AnyonError> {
+fn execute_cmd(commands: &Commands) -> Result<(), CliError> {
     match commands {
         Commands::New { project_name } => execute_new(project_name),
         Commands::Build => execute_build_or_run(BuildMode::Build),
@@ -52,7 +60,7 @@ fn main() {
         // `GraphicalTheme::default()` decides for itself whether colour is
         // appropriate, falling back to an uncoloured ASCII theme when output is
         // redirected or `NO_COLOR` is set. Only layer our palette on top when it
-        // chose a colourful theme -- otherwise `anyon build 2> log` would write
+        // chose a colourful theme -- otherwise `jarvil build 2> log` would write
         // escape codes into the file.
         let mut my_theme = GraphicalTheme::default();
 

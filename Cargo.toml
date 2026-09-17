@@ -5,7 +5,7 @@ members = [
     "crates/jarvil-py",
     "crates/jarvil-macros",
     "crates/jarvil-lsp",
-    "crates/anyon",
+    "crates/jarvil-cli",
     "crates/jarvil-wasm",
 ]
 

@@ -1,6 +1,6 @@
 //! Serialises the syntax tree to JSON.
 //!
-//! `anyon build` writes this next to the source as `__ast_<name>.json`, as a
+//! `jarvil build` writes this next to the source as `__ast_<name>.json`, as a
 //! debugging aid. Each token is annotated with the source text it covers, which
 //! the tree itself does not store -- nodes hold ranges, not strings.
 

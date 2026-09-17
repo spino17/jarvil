@@ -50,15 +50,25 @@ cargo build --release
 ### 4. Confirm Installation
 
 ```bash
-ls ./target/release/    
+ls ./target/release/
 ```
 
-The CLI is called `anyon`. You should see the `anyon` binary in the `target/release/` directory.
+The CLI is called `jarvil`. You should see the `jarvil` binary in
+`target/release/`.
+
+To put it on your `PATH` so you can just type `jarvil` anywhere:
+
+```bash
+cargo install --path crates/jarvil-cli
+```
+
+The steps below use `./target/release/jarvil`; if you installed it, drop the
+path and use `jarvil`.
 
 ### 5. Run the CLI Tool
 
 ```bash
-./target/release/anyon --help
+./target/release/jarvil --help
 ```
 
 You should see the help message for the CLI tool.
@@ -66,16 +76,16 @@ You should see the help message for the CLI tool.
 ### 6. Create a Basic Project
 
 ```bash
-./target/release/anyon new MyProject
+./target/release/jarvil new MyProject
 ```
 
-This generates a new folder with a starter `.jv` file and config.
+This generates a folder containing a starter `main.jv`.
 
 ### 7. Run the Project
 
 ```bash
 cd MyProject
-../target/release/anyon run 
+../target/release/jarvil run 
 ```
 
 This will compile the `.jv` source file and execute the generated Python code. You should see the output `Hello, World!` printed to the console.
@@ -99,7 +109,7 @@ The repository is a Cargo workspace:
 | `crates/jarvil-parser` | the front end — lexer, parser, name resolution, type checking |
 | `crates/jarvil-py` | the Python backend, and the `build_code` entry point |
 | `crates/jarvil-lsp` | the language server |
-| `crates/anyon` | the `anyon` CLI |
+| `crates/jarvil` | the `jarvil` CLI |
 | `crates/jarvil-wasm` | browser bindings |
 | `crates/jarvil-macros` | derive macros generating the syntax tree's boilerplate |
 | `extensions/jarvil-vscode` | the VS Code extension ([setup](extensions/jarvil-vscode/README.md)) |

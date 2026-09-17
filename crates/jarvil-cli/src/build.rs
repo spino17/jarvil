@@ -1,11 +1,11 @@
-//! `anyon build` and `anyon run`.
+//! `jarvil build` and `jarvil run`.
 //!
 //! Compiles `main.jv` in the working directory, writes the Python beside it,
 //! and -- for `run` -- executes it with the system `python3`. The generated
 //! file is passed through `black` when that is available, purely so the output
 //! is pleasant to read.
 
-use super::error::AnyonError;
+use super::error::CliError;
 use crate::helper::curr_dir_path;
 use jarvil_parser::code::JarvilCode;
 use jarvil_py::build_code;
@@ -19,7 +19,7 @@ pub enum BuildMode {
     Run,
 }
 
-pub fn execute_build_or_run(mode: BuildMode) -> Result<(), AnyonError> {
+pub fn execute_build_or_run(mode: BuildMode) -> Result<(), CliError> {
     let curr_dir_path = curr_dir_path();
     let code_file_name = "main";
     let jarvil_code_file_path = format!("{}/{}.jv", curr_dir_path, code_file_name);

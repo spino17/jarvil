@@ -77,17 +77,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anyon"
-version = "0.1.0"
-dependencies = [
- "clap",
- "jarvil-parser",
- "jarvil-py",
- "miette",
- "owo-colors",
-]
-
-[[package]]
 name = "async-trait"
 version = "0.1.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -621,6 +610,17 @@ name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
+
+[[package]]
+name = "jarvil-cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "jarvil-parser",
+ "jarvil-py",
+ "miette",
+ "owo-colors",
+]
 
 [[package]]
 name = "jarvil-lsp"

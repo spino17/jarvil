@@ -1,11 +1,11 @@
-//! `anyon new`: scaffolds a project directory with a starter `main.jv`.
+//! `jarvil new`: scaffolds a project directory with a starter `main.jv`.
 
-use super::error::AnyonError;
+use super::error::CliError;
 use crate::helper::curr_dir_path;
 use jarvil_py::python::whitespaces_from_indent_level;
 use std::{fs, process::Command};
 
-pub fn execute_new(project_name: &str) -> Result<(), AnyonError> {
+pub fn execute_new(project_name: &str) -> Result<(), CliError> {
     let curr_dir_path = curr_dir_path();
     let main_file_path = format!("{}/{}/main.jv", curr_dir_path, project_name);
     let _ = Command::new("mkdir").arg(project_name).output()?;
