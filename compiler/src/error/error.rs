@@ -27,6 +27,18 @@ impl JarvilProgramAnalysisErrors {
         }
     }
 
+    // Borrows every diagnostic logged so far, in discovery order.
+    //
+    // Safe on the same terms as `log_error`: callers hold this only long enough
+    // to read the diagnostics, and nothing logs during that read.
+    pub fn iter(&self) -> std::slice::Iter<'_, Diagnostics> {
+        unsafe {
+            let errors_ref = &*self.core.get();
+
+            errors_ref.iter()
+        }
+    }
+
     // Every diagnostic logged during the run, in the order they were found.
     //
     // `build_code` still surfaces only the first one; this exists so that tests

@@ -24,6 +24,7 @@ use parser::parser::JarvilParser;
 use parser::resolver::JarvilResolver;
 use parser::type_checker::JarvilTypeChecker;
 
+pub mod analysis;
 pub mod ast;
 pub mod builtin;
 pub mod code;
@@ -34,6 +35,7 @@ pub mod core;
 pub mod error;
 pub mod lexer;
 pub mod parser;
+pub mod queries;
 pub mod scope;
 #[cfg(test)]
 pub mod tests;

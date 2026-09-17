@@ -9,7 +9,6 @@ use crate::{
     types::core::Type,
 };
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
-use owo_colors::{OwoColorize, Style};
 use std::{
     fmt::{self, Display},
     vec,
@@ -393,12 +392,7 @@ impl InvalidLValueError {
     pub fn new(range: TextRange) -> Self {
         InvalidLValueError {
             span: range_to_span(range).into(),
-            help: Some(
-                "constants and output of function call is not assignable"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("constants and output of function call is not assignable".to_string()),
         }
     }
 }
@@ -434,12 +428,7 @@ impl NonVoidConstructorReturnTypeError {
     pub fn new(range: TextRange) -> Self {
         NonVoidConstructorReturnTypeError {
             span: range_to_span(range).into(),
-            help: Some(
-                "constructor should not have any return-type"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("constructor should not have any return-type".to_string()),
         }
     }
 }
@@ -462,8 +451,6 @@ impl MismatchedConstructorReturnTypeError {
             span: range_to_span(range).into(),
             help: Some(
                 "constructor should have return-type same as the struct it is defined in"
-                    .to_string()
-                    .style(Style::new().yellow())
                     .to_string(),
             ),
         }
@@ -486,8 +473,6 @@ impl NonStructConstructorReturnTypeError {
             span: range_to_span(range).into(),
             help: Some(
                 "constructor should have return-type same as the struct it is defined in"
-                    .to_string()
-                    .style(Style::new().yellow())
                     .to_string(),
             ),
         }
@@ -552,7 +537,7 @@ impl IdentifierAlreadyDeclaredError {
             name,
             previous_decl_span: range_to_span(previous_decl_range).into(),
             redecl_span: range_to_span(redecl_range).into(),
-            help: Some(help_str.style(Style::new().yellow()).to_string()),
+            help: Some(help_str),
         }
     }
 }
@@ -576,8 +561,6 @@ impl IdentifierNotDeclaredError {
             help: Some(
                 "identifiers are declared in one of the three namespaces: variables, functions and types"
                 .to_string()
-                .style(Style::new().yellow())
-                .to_string()
             )
         }
     }
@@ -599,8 +582,6 @@ impl ConstructorNotFoundInsideStructDeclarationError {
             span: range_to_span(range).into(),
             help: Some(
                 "struct declaration should always have constructor definition with signature: `def __init__([<params>]): <block>"
-                .to_string()
-                .style(Style::new().yellow())
                 .to_string()
             )
         }
@@ -639,8 +620,6 @@ impl FieldsNotInitializedInConstructorError {
             span: range_to_span(range).into(),
             help: Some(
                 "all fields of struct should be initialized through assignment inside the constructor"
-                .to_string()
-                .style(Style::new().yellow())
                 .to_string()
             )
         }
@@ -690,8 +669,6 @@ impl EnumVariantsMissingFromMatchCaseStatementError {
             span: range_to_span(range).into(),
             help: Some(
                 "all variants should be handled inside the match-case statement for the expression with enum type"
-                    .to_string()
-                    .style(Style::new().yellow())
                     .to_string(),
             ),
         }
@@ -732,12 +709,7 @@ impl SelfNotFoundError {
     pub fn new(range: TextRange) -> Self {
         SelfNotFoundError {
             span: range_to_span(range).into(),
-            help: Some(
-                "`self` should only be used inside a class scope"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("`self` should only be used inside a class scope".to_string()),
         }
     }
 }
@@ -761,8 +733,6 @@ impl InferredLambdaVariableTypeMismatchedWithTypeFromAnnotationError {
             span: range_to_span(range).into(),
             help: Some(
                 "use lambda type in annotation matching the prototype with the lambda on the right side"
-                .to_string()
-                .style(Style::new().yellow())
                 .to_string()
             )
         }
@@ -808,12 +778,7 @@ impl IdentifierUsedBeforeInitializedError {
             identifier_kind,
             decl_span: range_to_span(decl_range).into(),
             usage_span: range_to_span(usage_range).into(),
-            help: Some(
-                help_str
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some(help_str.to_string()),
         }
     }
 }
@@ -838,10 +803,7 @@ impl InterfaceAlreadyExistInBoundsDeclarationError {
             previous_decl_span: range_to_span(previous_decl_span).into(),
             decl_span: range_to_span(decl_span).into(),
             help: Some(
-                "interface can only be included once inside the bounds declaration"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
+                "interface can only be included once inside the bounds declaration".to_string(),
             ),
         }
     }
@@ -895,12 +857,7 @@ impl GenericTypesDeclarationInsideConstructorFoundError {
     pub fn new(span: TextRange) -> Self {
         GenericTypesDeclarationInsideConstructorFoundError {
             span: range_to_span(span).into(),
-            help: Some(
-                "generic types declaration is not allowed inside constructor"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("generic types declaration is not allowed inside constructor".to_string()),
         }
     }
 }
@@ -925,8 +882,6 @@ impl GenericTypeResolvedToOutsideScopeError {
             help: Some(
                 "generic types are not allowed to be resolved to declarations outside the enclosing generics declarative constructs like functions, methods, structs and interfaces."
                 .to_string()
-                .style(Style::new().yellow())
-                .to_string()
             )
         }
     }
@@ -949,8 +904,6 @@ impl IdentifierNotFoundInAnyNamespaceError {
             help: Some(
                 "callable identifier are resolved in the following order of namespace: function => type => variable"
                 .to_string()
-                .style(Style::new().yellow())
-                .to_string()
             )
         }
     }
@@ -971,10 +924,7 @@ impl RightSideWithVoidTypeNotAllowedError {
         RightSideWithVoidTypeNotAllowedError {
             span: range_to_span(range).into(),
             help: Some(
-                "variable declaration or assignment with type `void` is not allowed"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
+                "variable declaration or assignment with type `void` is not allowed".to_string(),
             ),
         }
     }
@@ -997,10 +947,7 @@ impl ImmutableTypeNotAssignableError {
             ty,
             span: range_to_span(range).into(),
             help: Some(
-                "`str` and `tuple` are immutable types which are not assignable"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
+                "`str` and `tuple` are immutable types which are not assignable".to_string(),
             ),
         }
     }
@@ -1283,12 +1230,7 @@ impl NotAllConcreteTypesInferredError {
     pub fn new(range: TextRange) -> Self {
         NotAllConcreteTypesInferredError {
             span: range_to_span(range).into(),
-            help: Some(
-                "explicitly specify the generic type arguments using <...>"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("explicitly specify the generic type arguments using <...>".to_string()),
         }
     }
 }
@@ -1307,12 +1249,7 @@ impl TypeInferenceFailedError {
     pub fn new(range: TextRange) -> Self {
         TypeInferenceFailedError {
             span: range_to_span(range).into(),
-            help: Some(
-                "explicitly specify the generic type arguments using <...>"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("explicitly specify the generic type arguments using <...>".to_string()),
         }
     }
 }
@@ -1362,12 +1299,7 @@ impl InferredTypesNotBoundedByInterfacesError {
                 "inferred types `{}` are not bounded:\n{}",
                 concrete_types_str, err_msg
             ),
-            help: Some(
-                "explicitly specify the generic type arguments using <...>"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("explicitly specify the generic type arguments using <...>".to_string()),
         }
     }
 }
@@ -1401,8 +1333,6 @@ impl PropertyResolvedToMultipleInterfaceObjectsError {
             ),
             help: Some(
                 "there should not be name collision for fields and methods between interfaces inside bounds of any generic type"
-                    .to_string()
-                    .style(Style::new().yellow())
                     .to_string(),
             ),
         }
@@ -1425,12 +1355,7 @@ impl IdentifierNotCallableError {
         IdentifierNotCallableError {
             ty,
             span: range_to_span(range).into(),
-            help: Some(
-                "only variables with `lambda` types are callable"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("only variables with `lambda` types are callable".to_string()),
         }
     }
 }
@@ -1453,8 +1378,6 @@ impl NonIterableExpressionError {
             span: range_to_span(range).into(),
             help: Some(
                 "only expressions with iterable type like `array`, `hashmap`, `str` should be used inside `for` loop"
-                    .to_string()
-                    .style(Style::new().yellow())
                     .to_string(),
             ),
         }
@@ -1477,12 +1400,7 @@ impl ConstructorNotFoundForTypeError {
         ConstructorNotFoundForTypeError {
             ty: ty_str,
             span: range_to_span(range).into(),
-            help: Some(
-                "only struct type is allowed to call constructor via self name"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("only struct type is allowed to call constructor via self name".to_string()),
         }
     }
 }
@@ -1662,12 +1580,7 @@ impl UnresolvedIndexExpressionInTupleError {
     pub fn new(index_span: TextRange) -> Self {
         UnresolvedIndexExpressionInTupleError {
             index_span: range_to_span(index_span).into(),
-            help: Some(
-                "tuple index should be a fixed integer value"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("tuple index should be a fixed integer value".to_string()),
         }
     }
 }
@@ -1712,8 +1625,6 @@ impl ExpressionTypeCannotBeInferredError {
             span: range_to_span(range).into(),
             help: Some(
                 "while declaring the variable, use explicit type annotation to remove ambiguity associated with empty collections like lists and dicts"
-                    .to_string()
-                    .style(Style::new().yellow())
                     .to_string(),
             ),
         }
@@ -1753,7 +1664,7 @@ impl UnaryOperatorInvalidUseError {
             operator: operator.to_string(),
             operand_span: range_to_span(operand_range).into(),
             operator_span: range_to_span(operator_range).into(),
-            help: Some(help_str.style(Style::new().yellow()).to_string()),
+            help: Some(help_str),
         }
     }
 }
@@ -1822,12 +1733,7 @@ impl MismatchedTypesOnLeftRightError {
             right_ty: right_ty.to_string(context),
             left_span: range_to_span(left_range).into(),
             right_span: range_to_span(right_range).into(),
-            help: Some(
-                "types on both sides should be same"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("types on both sides should be same".to_string()),
         }
     }
 }
@@ -1878,8 +1784,6 @@ impl NoReturnStatementInFunctionError {
             help: Some(
                 "function with a return value should have atleast one `return` statement inside the top-level block"
                 .to_string()
-                .style(Style::new().yellow())
-                .to_string()
             )
         }
     }
@@ -1899,12 +1803,7 @@ impl NoValidStatementFoundInsideBlockBodyError {
     pub fn new(range: TextRange) -> Self {
         NoValidStatementFoundInsideBlockBodyError {
             span: range_to_span(range).into(),
-            help: Some(
-                "block body should have atleast one valid statement"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("block body should have atleast one valid statement".to_string()),
         }
     }
 }
@@ -1923,12 +1822,7 @@ impl InvalidReturnStatementError {
     pub fn new(range: TextRange) -> Self {
         InvalidReturnStatementError {
             span: range_to_span(range).into(),
-            help: Some(
-                "`return` statement should be used inside function body"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("`return` statement should be used inside function body".to_string()),
         }
     }
 }
@@ -2028,8 +1922,6 @@ impl NonHashableTypeInIndexError {
             index_span: range_to_span(index_span).into(),
             help: Some(
                 "only `int`, `float`, `str` and `tuple` with hashable sub-types are hashable types"
-                    .to_string()
-                    .style(Style::new().yellow())
                     .to_string(),
             ),
         }
@@ -2050,12 +1942,7 @@ impl SingleSubTypeFoundInTupleError {
     pub fn new(index_span: TextRange) -> Self {
         SingleSubTypeFoundInTupleError {
             index_span: range_to_span(index_span).into(),
-            help: Some(
-                "tuple should have more than one sub-type"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("tuple should have more than one sub-type".to_string()),
         }
     }
 }
@@ -2077,12 +1964,7 @@ impl Default for MainFunctionNotFoundError {
 impl MainFunctionNotFoundError {
     pub fn new() -> Self {
         MainFunctionNotFoundError {
-            help: Some(
-                "the entry point to the code is through `main` function"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("the entry point to the code is through `main` function".to_string()),
         }
     }
 }
@@ -2101,12 +1983,7 @@ impl MainFunctionWrongTypeError {
     pub fn new(span: TextRange) -> Self {
         MainFunctionWrongTypeError {
             index_span: range_to_span(span).into(),
-            help: Some(
-                "`main` function should have no params and no return type"
-                    .to_string()
-                    .style(Style::new().yellow())
-                    .to_string(),
-            ),
+            help: Some("`main` function should have no params and no return type".to_string()),
         }
     }
 }

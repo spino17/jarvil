@@ -24,42 +24,6 @@ use compiler::parser::type_checker::JarvilTypeChecker;
 use miette::NarratableReportHandler;
 use std::process::{Command, Stdio};
 
-// Removes ANSI CSI sequences (`ESC [ ... <letter>`).
-//
-// Several diagnostics in `error::diagnostics` bake colour into their `help`
-// string at construction time via owo-colors, rather than leaving it to the
-// renderer, so escape codes survive into even the plain-text handler's output.
-// Snapshots must not contain them: they are unreadable in a diff and would
-// churn if the palette were ever adjusted.
-//
-// Worth noting that the same leakage will put escape codes into LSP hover and
-// diagnostic text, so the underlying layering is worth fixing at the source.
-fn strip_ansi(input: &str) -> String {
-    let mut out = String::with_capacity(input.len());
-    let mut chars = input.chars();
-
-    while let Some(ch) = chars.next() {
-        if ch != '\u{1b}' {
-            out.push(ch);
-
-            continue;
-        }
-
-        // consume the `[` and everything up to the terminating letter
-        if chars.next() != Some('[') {
-            continue;
-        }
-
-        for ch in chars.by_ref() {
-            if ch.is_ascii_alphabetic() {
-                break;
-            }
-        }
-    }
-
-    out
-}
-
 // Renders every diagnostic logged so far, in discovery order.
 fn render_diagnostics(errors: &JarvilProgramAnalysisErrors, source: &str) -> String {
     let reports = errors.reports();
@@ -85,7 +49,7 @@ fn render_diagnostics(errors: &JarvilProgramAnalysisErrors, source: &str) -> Str
             rendered.push_str("<failed to render diagnostic>\n");
         }
 
-        out.push_str(&strip_ansi(&rendered));
+        out.push_str(&rendered);
         out.push('\n');
     }
 
