@@ -199,6 +199,18 @@ npm run install-extension
 Full setup and troubleshooting:
 [`extensions/jarvil-vscode/README.md`](extensions/jarvil-vscode/README.md).
 
+### On GitHub
+
+GitHub highlights code with [Linguist](https://github.com/github/linguist),
+which has no entry for Jarvil — so `.jv` files would render as plain text.
+[`.gitattributes`](.gitattributes) borrows Python's grammar instead, which
+covers roughly 85% of Jarvil's keyword tokens. `//` comments and the
+declaration keywords (`let`, `type`, `interface`, `struct`, `enum`) are the
+notable misses.
+
+A proper entry in Linguist requires the language to be in use across a few
+hundred public repositories, so that comes later, if at all.
+
 ## Project status
 
 Jarvil is a **working compiler and an incomplete language**. Everything above is

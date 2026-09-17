@@ -1,0 +1,23 @@
+# GitHub highlights files using Linguist, which has no entry for Jarvil, so `.jv`
+# files render as plain text by default. Borrowing Python's grammar gets most of
+# the way there: Jarvil shares `def`, `if`/`elif`/`else`, `for`, `while`,
+# `return`, `match`/`case`, `in`, `lambda`, `and`/`or`/`not`, `True`/`False`,
+# `self`, the atomic type names, and `->` in signatures -- about 85% of keyword
+# tokens across `examples/` and `std/`.
+#
+# What it gets wrong: `let`, `type`, `interface`, `struct`, `enum`, `implements`
+# and `declare` are not highlighted, and `//` comments render as plain text
+# rather than as comments, since Python spells them `#`.
+#
+# Replace `Python` with any Linguist language name to try an alternative. The
+# real fix is an entry in github/linguist, which requires the language to be in
+# use across a few hundred public repositories -- see that project's
+# CONTRIBUTING for the current bar.
+*.jv linguist-language=Python
+
+# Keep generated output out of language statistics and collapsed in diffs.
+__transpiled_*_py_code__.py linguist-generated=true
+__ast_*.json               linguist-generated=true
+
+# The VS Code extension's vendored dependencies are not our code.
+extensions/*/node_modules/** linguist-vendored=true
