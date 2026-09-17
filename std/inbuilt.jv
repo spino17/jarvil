@@ -1,6 +1,79 @@
+// The Jarvil prelude, written in Jarvil.
+//
+// NOTHING LOADS THIS FILE. It is a target, not source.
+//
+// Two separate things are missing before it could become real:
+//
+//   1. No module system, so there is no mechanism to load it.
+//   2. `declare def` is inert. The parser accepts the syntax and builds a
+//      `DeclareFunctionPrototype` node, but the resolver has no case for it,
+//      and both the type checker and code generator skip it. A `declare def`
+//      today registers nothing -- calling one is "callable is not declared in
+//      any namespace".
+//
+// The prelude that actually takes effect is defined in Rust:
+//
+//   free functions   compiler/src/builtin.rs
+//   `str` methods    compiler/src/types/atomic/builtin.rs
+//   `[T]` methods    compiler/src/types/array/builtin.rs
+//   `{K: V}` methods compiler/src/types/hashmap/builtin.rs
+//
+// This file is kept in sync with those by hand so that it shows the shape the
+// prelude should eventually take. See std/README.md for the full surface and
+// for why certain Python builtins are deliberately excluded.
+
+// ---------------------------------------------------------------- free funcs
+
+declare def print<V>(obj: V)
+declare def len<V>(obj: V) -> int
+
+declare def range(start: int, end: int) -> [int]
+
+declare def abs(x: int) -> int
+declare def min(a: int, b: int) -> int
+declare def max(a: int, b: int) -> int
+declare def sum(l: [int]) -> int
+declare def round(x: float) -> int
+
+// No conversions (`int`, `str`, `bool`, `float`): those names are atomic type
+// keywords, so a call to one is a syntax error. See std/README.md.
+
+declare def ord(c: str) -> int
+declare def chr(code: int) -> str
+declare def input() -> str
+
+// ------------------------------------------------------------------- methods
+//
+// Methods on the built-in types have no declaration syntax at all yet -- there
+// is no way to write an impl block for `str` or `[T]`. They are listed here as
+// comments so this file still describes the whole prelude.
+//
+// str:
+//   upper() -> str            lower() -> str
+//   capitalize() -> str       title() -> str
+//   strip() -> str            lstrip() -> str       rstrip() -> str
+//   startswith(s: str) -> bool
+//   endswith(s: str) -> bool
+//   find(s: str) -> int       count(s: str) -> int
+//   isdigit() -> bool         isalpha() -> bool     isspace() -> bool
+//   islower() -> bool         isupper() -> bool
+//   replace(old: str, new: str) -> str
+//   split(sep: str) -> [str]  join(parts: [str]) -> str
+//
+// [T]:
+//   append(x: T)              extend(other: [T])    insert(i: int, x: T)
+//   pop() -> T                count(x: T) -> int
+//   reverse()                 sort()                clear()
+//
+// {K: V}:
+//   pop(key: K) -> V          update(other: {K: V}) clear()
+
+// ---------------------------------------------------------------------- types
+//
+// `Result` is *not* currently in the prelude: with no module system there is
+// nothing to import it from, so a program that wants it declares it itself --
+// as examples/factorial.jv does. It belongs here once modules land.
+
 type Result<T, E> enum:
     Ok(T)
     Err(E)
-
-declare def print<T>(obj: T)
-declare def range(start: int, end: int) -> [int]

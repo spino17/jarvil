@@ -1,0 +1,30 @@
+---
+source: compiler/tests/codegen.rs
+assertion_line: 24
+expression: py_code
+input_file: compiler/tests/corpus/codegen/stdlib_strings.jv
+---
+def main_0_func():
+    s_0_var = '''  Hello, World  '''
+    t_1_var = s_0_var.strip()
+    print(t_1_var.upper())
+    print(t_1_var.lower())
+    print(t_1_var.replace('''World''', '''Jarvil'''))
+    print(t_1_var.startswith('''Hello'''))
+    print(t_1_var.endswith('''!'''))
+    print(t_1_var.find('''World'''))
+    print(t_1_var.count('''l'''))
+    print(len(t_1_var))
+
+    csv_2_var = '''a,b,c'''
+    print(csv_2_var.split(''','''))
+
+    sep_3_var = '''-'''
+    print(sep_3_var.join(['''x''', '''y''', '''z''']))
+
+    digits_4_var = '''12345'''
+    print(digits_4_var.isdigit())
+    print(digits_4_var.isalpha())
+
+
+main_0_func()

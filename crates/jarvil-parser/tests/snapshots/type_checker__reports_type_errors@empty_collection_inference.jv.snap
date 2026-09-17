@@ -1,0 +1,28 @@
+---
+source: compiler/tests/type_checker.rs
+assertion_line: 17
+expression: type_check_to_diagnostics(&source)
+input_file: compiler/tests/corpus/type_checker/err/empty_collection_inference.jv
+---
+--- diagnostic 1 ---
+expression type cannot be inferred
+    Diagnostic severity: error
+Begin snippet starting at line 1, column 1
+
+snippet line 1: def main():
+snippet line 2:     let x = []
+    label at line 2, columns 13 to 14: expression type is not clear
+snippet line 3:     let d = {}
+diagnostic help: while declaring the variable, use explicit type annotation to remove ambiguity associated with empty collections like lists and dicts
+diagnostic code: TypeCheckError
+
+--- diagnostic 2 ---
+expression type cannot be inferred
+    Diagnostic severity: error
+Begin snippet starting at line 2, column 1
+
+snippet line 2:     let x = []
+snippet line 3:     let d = {}
+    label at line 3, columns 13 to 14: expression type is not clear
+diagnostic help: while declaring the variable, use explicit type annotation to remove ambiguity associated with empty collections like lists and dicts
+diagnostic code: TypeCheckError

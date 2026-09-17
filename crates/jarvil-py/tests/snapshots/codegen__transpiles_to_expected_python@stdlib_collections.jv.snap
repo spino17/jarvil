@@ -1,0 +1,33 @@
+---
+source: compiler/tests/codegen.rs
+assertion_line: 24
+expression: py_code
+input_file: compiler/tests/corpus/codegen/stdlib_collections.jv
+---
+def main_0_func():
+    xs_0_var = [3, 1, 2]
+    xs_0_var.append(4)
+    xs_0_var.sort()
+    print(xs_0_var)
+    print(len(xs_0_var))
+    print(sum(xs_0_var))
+    print(xs_0_var.count(3))
+    xs_0_var.reverse()
+    print(xs_0_var.pop())
+    xs_0_var.extend([7, 8])
+    xs_0_var.insert(0, 0)
+    print(xs_0_var)
+    xs_0_var.clear()
+    print(len(xs_0_var))
+
+    d_1_var = {'''a''': 1, '''b''': 2}
+    print(len(d_1_var))
+    print(d_1_var.pop('''a'''))
+    d_1_var.update({'''c''': 3})
+    for key_2_var in d_1_var:
+        print(key_2_var)
+    d_1_var.clear()
+    print(len(d_1_var))
+
+
+main_0_func()

@@ -1,0 +1,7 @@
+---
+source: compiler/tests/codegen.rs
+assertion_line: 54
+expression: run_python(&py_code)
+input_file: compiler/tests/corpus/codegen/factorial.jv
+---
+3628800

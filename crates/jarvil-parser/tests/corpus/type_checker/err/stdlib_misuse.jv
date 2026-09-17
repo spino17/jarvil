@@ -1,0 +1,13 @@
+def main():
+    let n = 5
+    print(n.upper())
+
+    let s = "text"
+    print(s.replace(1, 2))
+    print(s.frobnicate())
+
+    let xs = [1, 2]
+    xs.append("not an int")
+
+    let d = {"a": 1}
+    print(d.pop(3))

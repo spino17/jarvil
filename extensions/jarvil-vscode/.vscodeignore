@@ -1,0 +1,13 @@
+# Development-only files. Everything not listed here ends up in the .vsix.
+#
+# Note that `node_modules/` is deliberately NOT excluded: `vscode-languageclient`
+# is a runtime dependency that `extension.js` requires on activation, so it has
+# to ship. `vsce` already omits devDependencies by itself, so excluding the whole
+# directory would only break the extension at load time.
+.vscode/**
+.gitignore
+client/src/**
+client/tsconfig.json
+**/tsconfig.json
+**/*.ts
+**/*.map

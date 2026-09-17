@@ -1,0 +1,3 @@
+def main():
+    let x: int = "hello"
+    let y: str = 42

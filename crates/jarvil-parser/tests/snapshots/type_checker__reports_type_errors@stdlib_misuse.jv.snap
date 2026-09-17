@@ -1,0 +1,62 @@
+---
+source: compiler/tests/type_checker.rs
+assertion_line: 17
+expression: type_check_to_diagnostics(&source)
+input_file: compiler/tests/corpus/type_checker/err/stdlib_misuse.jv
+---
+--- diagnostic 1 ---
+property does not exist
+    Diagnostic severity: error
+Begin snippet starting at line 2, column 1
+
+snippet line 2:     let n = 5
+snippet line 3:     print(n.upper())
+    label at line 3, column 11: expression has type `int`
+    label at line 3, columns 13 to 17: no method with this name exist for the expression
+snippet line 4: 
+diagnostic code: TypeCheckError
+
+--- diagnostic 2 ---
+mismatched types
+    Diagnostic severity: error
+Begin snippet starting at line 5, column 1
+
+snippet line 5:     let s = "text"
+snippet line 6:     print(s.replace(1, 2))
+    label at line 6, column 21: expected type `str`, got `int`
+    label at line 6, column 24: expected type `str`, got `int`
+snippet line 7:     print(s.frobnicate())
+diagnostic code: TypeCheckError
+
+--- diagnostic 3 ---
+property does not exist
+    Diagnostic severity: error
+Begin snippet starting at line 6, column 1
+
+snippet line 6:     print(s.replace(1, 2))
+snippet line 7:     print(s.frobnicate())
+    label at line 7, column 11: expression has type `str`
+    label at line 7, columns 13 to 22: no method with this name exist for the expression
+snippet line 8: 
+diagnostic code: TypeCheckError
+
+--- diagnostic 4 ---
+mismatched types
+    Diagnostic severity: error
+Begin snippet starting at line 9, column 1
+
+snippet line 9:     let xs = [1, 2]
+snippet line 10:     xs.append("not an int")
+    label at line 10, columns 15 to 26: expected type `int`, got `str`
+snippet line 11: 
+diagnostic code: TypeCheckError
+
+--- diagnostic 5 ---
+mismatched types
+    Diagnostic severity: error
+Begin snippet starting at line 12, column 1
+
+snippet line 12:     let d = {"a": 1}
+snippet line 13:     print(d.pop(3))
+    label at line 13, column 17: expected type `str`, got `int`
+diagnostic code: TypeCheckError

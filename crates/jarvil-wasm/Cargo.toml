@@ -1,0 +1,19 @@
+[package]
+name = "jarvil-wasm"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+jarvil-parser = { path = "../jarvil-parser" }
+jarvil-py = { path = "../jarvil-py" }
+wasm-bindgen = "0.2"
+miette = { version = "7.6", features = ["fancy"] }
+owo-colors = "4.4"
+console_error_panic_hook = "0.1.7"

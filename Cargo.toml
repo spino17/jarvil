@@ -1,6 +1,22 @@
 [workspace]
+resolver = "2"
 members = [
-    "compiler",
-    "tools/anyon",
-    "tools/jarvil-wasm",
+    "crates/jarvil-parser",
+    "crates/jarvil-py",
+    "crates/jarvil-macros",
+    "crates/jarvil-lsp",
+    "crates/jarvil-cli",
+    "crates/jarvil-wasm",
 ]
+
+# Shared package metadata, inherited by every member via `<key>.workspace = true`,
+# so the edition and version are bumped in one place rather than four.
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+# Edition 2024 needs 1.85, but the `if let` chains in the resolver and type
+# checker were stabilised in 1.88.
+rust-version = "1.88"
+authors = ["Bhavya Bhatt bhavyabhatt17@gmail.com"]
+license = "MIT"
+repository = "https://github.com/spino17/jarvil"

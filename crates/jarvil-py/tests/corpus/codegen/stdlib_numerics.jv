@@ -1,0 +1,9 @@
+def main():
+    print(abs(0 - 7))
+    print(min(3, 9))
+    print(max(3, 9))
+    print(sum([1, 2, 3]))
+    print(chr(74))
+    print(ord("J"))
+    for i in range(0, 3):
+        print(i)

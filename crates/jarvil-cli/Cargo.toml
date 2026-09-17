@@ -1,0 +1,21 @@
+[package]
+name = "jarvil-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# The crate is `jarvil-cli` so it reads consistently alongside `jarvil-parser`
+# and `jarvil-py`, but the command people actually type is `jarvil`.
+[[bin]]
+name = "jarvil"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.6.7", features = ["derive"] }
+jarvil-parser = { path = "../jarvil-parser" }
+jarvil-py = { path = "../jarvil-py" }
+miette = { version = "7.6", features = ["fancy"] }
+owo-colors = "4.4"

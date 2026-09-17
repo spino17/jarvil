@@ -1,0 +1,16 @@
+---
+source: compiler/tests/resolver.rs
+assertion_line: 17
+expression: resolve_to_diagnostics(&source)
+input_file: compiler/tests/corpus/resolver/err/undeclared_identifier.jv
+---
+--- diagnostic 1 ---
+variable is not declared in the scope
+    Diagnostic severity: error
+Begin snippet starting at line 1, column 1
+
+snippet line 1: def main():
+snippet line 2:     let x = y
+    label at line 2, column 13: not found in the scope
+diagnostic help: identifiers are declared in one of the three namespaces: variables, functions and types
+diagnostic code: SemanticError

@@ -1,0 +1,7 @@
+def core_factorial(n: int) -> int:
+    if n == 0 or n == 1:
+        return 1
+    return n * core_factorial(n - 1)
+
+def main():
+    print(core_factorial(10))

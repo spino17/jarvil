@@ -1,0 +1,2627 @@
+//! Constructors and accessors for every syntax tree node.
+//!
+//! Split out from [`super::ast`], which holds only the shapes: this file has
+//! the `new_with_*` constructors that wrap each node in its `Arc`, the
+//! `core_ref` accessors that unwrap it, and the [`Node`] impls that compute a
+//! node's source range from its children.
+//!
+//! [`Node`]: super::traits::Node
+
+use super::ast::{
+    ArrayExpressionNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode,
+    AtomicExpressionNode, AtomicTypeNode, BinaryExpressionNode, BlockNode,
+    BoundedMethodWrapperNode, BreakStatementNode, CallExpressionNode, CallNode, CallableBodyNode,
+    CallablePrototypeNode, CaseBranchStatementNode, ComparisonNode, ConditionalBlockNode,
+    ConditionalStatementNode, ContinueStatementNode, CoreArrayExpressionNode, CoreArrayTypeNode,
+    CoreAssignmentNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode,
+    CoreAtomicTypeNode, CoreBinaryExpressionNode, CoreBlockNode, CoreBoundedMethodWrapperNode,
+    CoreBreakStatementNode, CoreCallExpressionNode, CoreCallNode, CoreCallableBodyNode,
+    CoreCallablePrototypeNode, CoreCaseBranchStatementNode, CoreComparisonNode,
+    CoreConditionalBlockNode, CoreConditionalStatementNode, CoreContinueStatementNode,
+    CoreDeclareCallablePrototypeNode, CoreDeclareFunctionPrototypeNode, CoreEnumDeclarationNode,
+    CoreEnumVariantDeclarationNode, CoreEnumVariantExprOrClassMethodCallNode, CoreExpressionNode,
+    CoreExpressionStatementNode, CoreForLoopStatementNode, CoreFunctionDeclarationNode,
+    CoreFunctionWrapperNode, CoreGenericTypeDeclNode, CoreHashMapExpressionNode,
+    CoreHashMapTypeNode, CoreIdentifierInDeclNode, CoreIdentifierInUseNode,
+    CoreIncorrectlyIndentedStatementNode, CoreIndexAccessNode, CoreInterfaceDeclarationNode,
+    CoreInvalidLValueNode, CoreKeyValuePairNode, CoreLambdaDeclarationNode,
+    CoreLambdaTypeDeclarationNode, CoreMatchCaseStatementNode, CoreMethodAccessNode,
+    CoreMissingTokenNode, CoreNameTypeSpecNode, CoreOkAssignmentNode, CoreOkIdentifierInDeclNode,
+    CoreOkIdentifierInUseNode, CoreOkSelfKeywordNode, CoreOkTokenNode, CoreOnlyUnaryExpressionNode,
+    CoreParenthesisedExpressionNode, CorePropertyAccessNode, CoreRAssignmentNode,
+    CoreRVariableDeclarationNode, CoreReturnStatementNode, CoreSelfKeywordNode,
+    CoreSkippedTokenNode, CoreSkippedTokensNode, CoreStatementIndentWrapperNode, CoreStatementNode,
+    CoreStructDeclarationNode, CoreStructPropertyDeclarationNode, CoreSymbolSeparatedSequenceNode,
+    CoreTokenNode, CoreTupleExpressionNode, CoreTupleTypeNode, CoreTypeDeclarationNode,
+    CoreTypeExpressionNode, CoreUnaryExpressionNode, CoreUserDefinedTypeNode,
+    CoreVariableDeclarationNode, CoreWhileLoopStatementNode, DeclareCallablePrototypeNode,
+    DeclareFunctionPrototypeNode, EnumDeclarationNode, EnumVariantDeclarationNode,
+    EnumVariantExprOrClassMethodCallNode, ExpressionNode, ExpressionStatementNode,
+    ForLoopStatementNode, FunctionDeclarationNode, FunctionWrapperNode, GenericTypeDeclNode,
+    HashMapExpressionNode, HashMapTypeNode, IdentifierInDeclNode, IdentifierInUseNode,
+    IncorrectlyIndentedStatementNode, IndexAccessNode, InterfaceDeclarationNode, InvalidLValueNode,
+    KeyValuePairNode, LambdaDeclarationNode, LambdaTypeDeclarationNode, MatchCaseStatementNode,
+    MethodAccessNode, NameTypeSpecNode, OkAssignmentNode, OkIdentifierInDeclNode,
+    OkIdentifierInUseNode, OkSelfKeywordNode, OkTokenNode, OnlyUnaryExpressionNode,
+    ParenthesisedExpressionNode, PropertyAccessNode, RAssignmentNode, RVariableDeclarationNode,
+    ReturnStatementNode, SelfKeywordNode, SkippedTokenNode, StatementIndentWrapperNode,
+    StatementNode, StructDeclarationNode, StructPropertyDeclarationNode,
+    SymbolSeparatedSequenceNode, TokenNode, TupleExpressionNode, TupleTypeNode,
+    TypeDeclarationNode, TypeExpressionNode, TypeResolveKind, UnaryExpressionNode,
+    UnresolvedIdentifier, UserDefinedTypeNode, VariableDeclarationNode, WhileLoopStatementNode,
+};
+use super::iterators::SymbolSeparatedSequenceIterator;
+use crate::ast::ast::MissingTokenNode;
+use crate::ast::ast::SkippedTokensNode;
+use crate::ast::traits::ErrornousNode;
+use crate::ast::traits::Node;
+use crate::code::JarvilCodeHandler;
+use crate::core::string_interner::{IdentName, Interner};
+use crate::lexer::token::{BinaryOperatorKind, Token, UnaryOperatorKind};
+use crate::parser::resolver::{BlockKind, JarvilResolver};
+use crate::scope::scope::ScopeIndex;
+use crate::types::core::Type;
+use serde::Serialize;
+use std::hash::{Hash, Hasher};
+use std::sync::Arc;
+use text_size::TextRange;
+use text_size::TextSize;
+
+impl BlockNode {
+    pub fn new(
+        stmts: Vec<StatementIndentWrapperNode>,
+        newline: TokenNode,
+        kind: BlockKind,
+    ) -> Self {
+        let node = Arc::new(CoreBlockNode {
+            newline,
+            stmts,
+            kind,
+        });
+        BlockNode(node)
+    }
+
+    impl_core_ref!(CoreBlockNode);
+}
+
+impl Node for BlockNode {
+    fn range(&self) -> TextRange {
+        let core_block = self.0.as_ref();
+        let stmts_len = core_block.stmts.len();
+
+        if stmts_len == 0 {
+            return impl_range!(self.0.as_ref().newline, self.0.as_ref().newline);
+        }
+
+        // Scan backwards for the last statement that isn't just blank lines.
+        //
+        // `index` is decremented before the check rather than after, so that it
+        // cannot underflow once it reaches 0: `index >= 0` is vacuously true for
+        // a `usize`, which left the original loop relying entirely on `break`.
+        let mut index = stmts_len;
+        let mut is_empty = true;
+
+        while index > 0 {
+            index -= 1;
+
+            match core_block.stmts[index].core_ref() {
+                CoreStatementIndentWrapperNode::ExtraNewlines(_) => {}
+                _ => {
+                    is_empty = false;
+                    break;
+                }
+            }
+        }
+
+        if is_empty {
+            impl_range!(self.0.as_ref().newline, self.0.as_ref().newline)
+        } else {
+            impl_range!(self.0.as_ref().newline, self.0.as_ref().stmts[index])
+        }
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().newline.start_line_number()
+    }
+}
+
+impl PartialEq for BlockNode {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for BlockNode {}
+
+impl Hash for BlockNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Arc::as_ptr(&self.0);
+        ptr.hash(state);
+    }
+}
+
+impl StatementIndentWrapperNode {
+    pub fn new_with_correctly_indented(stmt: StatementNode) -> Self {
+        let node = Arc::new(CoreStatementIndentWrapperNode::CorrectlyIndented(stmt));
+        StatementIndentWrapperNode(node)
+    }
+
+    pub fn new_with_incorrectly_indented(
+        stmt: StatementNode,
+        expected_indent: i64,
+        received_indent: i64,
+    ) -> Self {
+        let node = Arc::new(CoreStatementIndentWrapperNode::IncorrectlyIndented(
+            IncorrectlyIndentedStatementNode::new(stmt, expected_indent, received_indent),
+        ));
+        StatementIndentWrapperNode(node)
+    }
+
+    pub fn new_with_leading_skipped_tokens(skipped_tokens: SkippedTokensNode) -> Self {
+        let node = Arc::new(CoreStatementIndentWrapperNode::LeadingSkippedTokens(
+            skipped_tokens,
+        ));
+        StatementIndentWrapperNode(node)
+    }
+
+    pub fn new_with_trailing_skipped_tokens(skipped_tokens: SkippedTokensNode) -> Self {
+        let node = Arc::new(CoreStatementIndentWrapperNode::TrailingSkippedTokens(
+            skipped_tokens,
+        ));
+        StatementIndentWrapperNode(node)
+    }
+
+    pub fn new_with_extra_newlines(skipped_tokens: SkippedTokensNode) -> Self {
+        let node = Arc::new(CoreStatementIndentWrapperNode::ExtraNewlines(
+            skipped_tokens,
+        ));
+        StatementIndentWrapperNode(node)
+    }
+
+    impl_core_ref!(CoreStatementIndentWrapperNode);
+}
+
+impl SkippedTokensNode {
+    pub fn new_with_leading_skipped_tokens(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
+        let node = Arc::new(CoreSkippedTokensNode { skipped_tokens });
+        SkippedTokensNode(node)
+    }
+
+    pub fn new_with_trailing_skipped_tokens(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
+        let node = Arc::new(CoreSkippedTokensNode { skipped_tokens });
+        SkippedTokensNode(node)
+    }
+
+    pub fn new_with_extra_newlines(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
+        let node = Arc::new(CoreSkippedTokensNode { skipped_tokens });
+        SkippedTokensNode(node)
+    }
+
+    impl_core_ref!(CoreSkippedTokensNode);
+}
+
+impl Node for SkippedTokensNode {
+    fn range(&self) -> TextRange {
+        let core_skipped_tokens = &self.0.as_ref().skipped_tokens;
+        impl_range!(
+            core_skipped_tokens[0],
+            core_skipped_tokens[core_skipped_tokens.len() - 1]
+        )
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().skipped_tokens[0].start_line_number()
+    }
+}
+
+impl StatementNode {
+    pub fn new_with_expr(expr: ExpressionNode, newline: TokenNode) -> Self {
+        let node = Arc::new(CoreStatementNode::Expression(ExpressionStatementNode::new(
+            expr, newline,
+        )));
+        StatementNode(node)
+    }
+
+    pub fn new_with_break_statment(break_stmt: BreakStatementNode) -> Self {
+        let node = Arc::new(CoreStatementNode::Break(break_stmt));
+        StatementNode(node)
+    }
+
+    pub fn new_with_continue_statment(continue_stmt: ContinueStatementNode) -> Self {
+        let node = Arc::new(CoreStatementNode::Continue(continue_stmt));
+        StatementNode(node)
+    }
+
+    pub fn new_with_match_case_statement(match_case_stmt: MatchCaseStatementNode) -> Self {
+        let node = Arc::new(CoreStatementNode::MatchCase(match_case_stmt));
+        StatementNode(node)
+    }
+
+    pub fn new_with_case_branch_statement(case_branch_stmt: CaseBranchStatementNode) -> Self {
+        let node = Arc::new(CoreStatementNode::CaseBranch(case_branch_stmt));
+        StatementNode(node)
+    }
+
+    pub fn new_with_assignment(assignment: AssignmentNode) -> Self {
+        let node = Arc::new(CoreStatementNode::Assignment(assignment));
+        StatementNode(node)
+    }
+
+    pub fn new_with_variable_decl(variable_decl: VariableDeclarationNode) -> Self {
+        let node = Arc::new(CoreStatementNode::VariableDeclaration(variable_decl));
+        StatementNode(node)
+    }
+
+    pub fn new_with_conditional(conditional: ConditionalStatementNode) -> Self {
+        let node = Arc::new(CoreStatementNode::Conditional(conditional));
+        StatementNode(node)
+    }
+
+    pub fn new_with_while_loop(while_loop: WhileLoopStatementNode) -> Self {
+        let node = Arc::new(CoreStatementNode::WhileLoop(while_loop));
+        StatementNode(node)
+    }
+
+    pub fn new_with_for_loop(for_loop: ForLoopStatementNode) -> Self {
+        let node = Arc::new(CoreStatementNode::ForLoop(for_loop));
+        StatementNode(node)
+    }
+
+    pub fn new_with_func_wrapper(func_wrapper: FunctionWrapperNode) -> Self {
+        let node = Arc::new(CoreStatementNode::FunctionWrapper(func_wrapper));
+        StatementNode(node)
+    }
+
+    pub fn new_with_bounded_method_wrapper(
+        bounded_method_wrapper: BoundedMethodWrapperNode,
+    ) -> Self {
+        let node = Arc::new(CoreStatementNode::BoundedMethodWrapper(
+            bounded_method_wrapper,
+        ));
+        StatementNode(node)
+    }
+
+    pub fn new_with_ty_decl(ty_decl: TypeDeclarationNode) -> Self {
+        let node = Arc::new(CoreStatementNode::TypeDeclaration(ty_decl));
+        StatementNode(node)
+    }
+
+    pub fn new_with_struct_stmt(struct_stmt: StructPropertyDeclarationNode) -> Self {
+        let node = Arc::new(CoreStatementNode::StructPropertyDeclaration(struct_stmt));
+        StatementNode(node)
+    }
+
+    pub fn new_with_enum_stmt(enum_stmt: EnumVariantDeclarationNode) -> Self {
+        let node = Arc::new(CoreStatementNode::EnumVariantDeclaration(enum_stmt));
+        StatementNode(node)
+    }
+
+    pub fn new_with_interface_decl(interface_decl: InterfaceDeclarationNode) -> Self {
+        let node = Arc::new(CoreStatementNode::InterfaceDeclaration(interface_decl));
+        StatementNode(node)
+    }
+
+    pub fn new_with_declare_func_prototype(
+        decl_func_prototype: DeclareFunctionPrototypeNode,
+    ) -> Self {
+        let node = Arc::new(CoreStatementNode::DeclareFunctionPrototype(
+            decl_func_prototype,
+        ));
+        StatementNode(node)
+    }
+
+    pub fn new_with_interface_method_prototype_wrapper(
+        decl_callable_prototype: DeclareCallablePrototypeNode,
+    ) -> Self {
+        let node = Arc::new(CoreStatementNode::InterfaceMethodPrototypeWrapper(
+            decl_callable_prototype,
+        ));
+        StatementNode(node)
+    }
+
+    pub fn new_with_return_statement(
+        return_keyword: TokenNode,
+        expr: Option<ExpressionNode>,
+        newline: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreStatementNode::Return(ReturnStatementNode::new(
+            return_keyword,
+            expr,
+            newline,
+        )));
+        StatementNode(node)
+    }
+
+    impl_core_ref!(CoreStatementNode);
+}
+
+impl IncorrectlyIndentedStatementNode {
+    pub fn new(stmt: StatementNode, expected_indent: i64, received_indent: i64) -> Self {
+        let node = Arc::new(CoreIncorrectlyIndentedStatementNode {
+            stmt,
+            expected_indent,
+            received_indent,
+        });
+        IncorrectlyIndentedStatementNode(node)
+    }
+
+    impl_core_ref!(CoreIncorrectlyIndentedStatementNode);
+}
+
+impl Node for IncorrectlyIndentedStatementNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().stmt, self.0.as_ref().stmt)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().stmt.start_line_number()
+    }
+}
+
+impl BreakStatementNode {
+    pub fn new(break_keyword: TokenNode, newline: TokenNode) -> Self {
+        let node = Arc::new(CoreBreakStatementNode {
+            break_keyword,
+            newline,
+        });
+        BreakStatementNode(node)
+    }
+
+    impl_core_ref!(CoreBreakStatementNode);
+}
+
+impl Node for BreakStatementNode {
+    fn range(&self) -> TextRange {
+        self.core_ref().break_keyword.range()
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().break_keyword.start_line_number()
+    }
+}
+
+impl ContinueStatementNode {
+    pub fn new(continue_keyword: TokenNode, newline: TokenNode) -> Self {
+        let node = Arc::new(CoreContinueStatementNode {
+            continue_keyword,
+            newline,
+        });
+        ContinueStatementNode(node)
+    }
+
+    impl_core_ref!(CoreContinueStatementNode);
+}
+
+impl MatchCaseStatementNode {
+    pub fn new(
+        match_keyword: TokenNode,
+        expr: ExpressionNode,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Arc::new(CoreMatchCaseStatementNode {
+            match_keyword,
+            expr,
+            colon,
+            block,
+        });
+        MatchCaseStatementNode(node)
+    }
+
+    impl_core_ref!(CoreMatchCaseStatementNode);
+}
+
+impl Node for MatchCaseStatementNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().match_keyword, self.core_ref().block)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().match_keyword.start_line_number()
+    }
+}
+
+impl CaseBranchStatementNode {
+    pub fn new(
+        case_keyword: TokenNode,
+        enum_name: IdentifierInDeclNode,
+        double_colon_node: TokenNode,
+        variant_name: IdentifierInDeclNode,
+        variable_name: Option<(TokenNode, IdentifierInDeclNode, TokenNode)>,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Arc::new(CoreCaseBranchStatementNode {
+            case_keyword,
+            enum_name,
+            double_colon_node,
+            variant_name,
+            variable_name,
+            colon,
+            block,
+        });
+        CaseBranchStatementNode(node)
+    }
+
+    impl_core_ref!(CoreCaseBranchStatementNode);
+}
+
+impl Node for CaseBranchStatementNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().case_keyword, self.core_ref().block)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().case_keyword.start_line_number()
+    }
+}
+
+impl Node for ContinueStatementNode {
+    fn range(&self) -> TextRange {
+        self.core_ref().continue_keyword.range()
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().continue_keyword.start_line_number()
+    }
+}
+
+impl WhileLoopStatementNode {
+    pub fn new(
+        while_keyword: TokenNode,
+        condition_expr: ExpressionNode,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Arc::new(CoreWhileLoopStatementNode {
+            while_keyword,
+            condition_expr,
+            colon,
+            block,
+        });
+        WhileLoopStatementNode(node)
+    }
+
+    impl_core_ref!(CoreWhileLoopStatementNode);
+}
+
+impl Node for WhileLoopStatementNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().while_keyword, self.core_ref().block)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().while_keyword.start_line_number()
+    }
+}
+
+impl ForLoopStatementNode {
+    pub fn new(
+        for_keyword: TokenNode,
+        loop_variable: IdentifierInDeclNode,
+        in_keyword: TokenNode,
+        iterable_expr: ExpressionNode,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Arc::new(CoreForLoopStatementNode {
+            for_keyword,
+            loop_variable,
+            in_keyword,
+            iterable_expr,
+            colon,
+            block,
+        });
+        ForLoopStatementNode(node)
+    }
+
+    impl_core_ref!(CoreForLoopStatementNode);
+}
+
+impl Node for ForLoopStatementNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().for_keyword, self.core_ref().block)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().for_keyword.start_line_number()
+    }
+}
+
+impl ExpressionStatementNode {
+    pub fn new(expr: ExpressionNode, newline: TokenNode) -> Self {
+        let node = Arc::new(CoreExpressionStatementNode { expr, newline });
+        ExpressionStatementNode(node)
+    }
+
+    impl_core_ref!(CoreExpressionStatementNode);
+}
+
+impl Node for ExpressionStatementNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().expr, self.0.as_ref().expr)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().expr.start_line_number()
+    }
+}
+
+impl AssignmentNode {
+    pub fn new(l_atom: AtomNode, r_assign: RAssignmentNode, equal: TokenNode) -> Self {
+        let node = Arc::new(CoreAssignmentNode::Ok(OkAssignmentNode::new(
+            l_atom, r_assign, equal,
+        )));
+        AssignmentNode(node)
+    }
+
+    pub fn new_with_invalid_l_value(
+        l_expr: ExpressionNode,
+        r_assign: RAssignmentNode,
+        equal: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreAssignmentNode::InvalidLValue(InvalidLValueNode::new(
+            l_expr, r_assign, equal,
+        )));
+        AssignmentNode(node)
+    }
+
+    impl_core_ref!(CoreAssignmentNode);
+}
+
+impl OkAssignmentNode {
+    pub fn new(l_atom: AtomNode, r_assign: RAssignmentNode, equal: TokenNode) -> Self {
+        let node = Arc::new(CoreOkAssignmentNode {
+            equal,
+            l_atom,
+            r_assign,
+        });
+        OkAssignmentNode(node)
+    }
+
+    impl_core_ref!(CoreOkAssignmentNode);
+}
+
+impl Node for OkAssignmentNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().l_atom, self.0.as_ref().r_assign)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().l_atom.start_line_number()
+    }
+}
+
+impl InvalidLValueNode {
+    pub fn new(l_expr: ExpressionNode, r_assign: RAssignmentNode, equal: TokenNode) -> Self {
+        let node = Arc::new(CoreInvalidLValueNode {
+            l_expr,
+            equal,
+            r_assign,
+        });
+        InvalidLValueNode(node)
+    }
+
+    impl_core_ref!(CoreInvalidLValueNode);
+}
+
+impl Node for InvalidLValueNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().l_expr, self.0.as_ref().r_assign)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().l_expr.start_line_number()
+    }
+}
+
+impl StructPropertyDeclarationNode {
+    pub fn new(name_ty_spec: NameTypeSpecNode, newline: TokenNode) -> Self {
+        let node = Arc::new(CoreStructPropertyDeclarationNode {
+            newline,
+            name_ty_spec,
+        });
+        StructPropertyDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreStructPropertyDeclarationNode);
+}
+
+impl Node for StructPropertyDeclarationNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().name_ty_spec, self.0.as_ref().name_ty_spec)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().name_ty_spec.start_line_number()
+    }
+}
+
+impl EnumVariantDeclarationNode {
+    pub fn new(
+        variant: IdentifierInDeclNode,
+        ty: Option<(TokenNode, TypeExpressionNode, TokenNode)>,
+        newline: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreEnumVariantDeclarationNode {
+            variant,
+            ty,
+            newline,
+        });
+        EnumVariantDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreEnumVariantDeclarationNode);
+}
+
+impl Node for EnumVariantDeclarationNode {
+    fn range(&self) -> TextRange {
+        match &self.core_ref().ty {
+            Some((_, _, rbracket)) => impl_range!(self.core_ref().variant, rbracket),
+            None => self.core_ref().variant.range(),
+        }
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().variant.start_line_number()
+    }
+}
+
+impl TypeDeclarationNode {
+    pub fn new_with_struct(
+        name: IdentifierInDeclNode,
+        block: BlockNode,
+        type_keyword: TokenNode,
+        struct_keyword: TokenNode,
+        implementing_interfaces: Option<(
+            TokenNode,
+            SymbolSeparatedSequenceNode<IdentifierInUseNode>,
+        )>,
+        colon: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreTypeDeclarationNode::Struct(StructDeclarationNode::new(
+            name,
+            block,
+            type_keyword,
+            struct_keyword,
+            implementing_interfaces,
+            colon,
+        )));
+        TypeDeclarationNode(node)
+    }
+
+    pub fn new_with_enum(
+        type_keyword: TokenNode,
+        name: IdentifierInDeclNode,
+        enum_keyword: TokenNode,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Arc::new(CoreTypeDeclarationNode::Enum(EnumDeclarationNode::new(
+            type_keyword,
+            name,
+            enum_keyword,
+            colon,
+            block,
+        )));
+        TypeDeclarationNode(node)
+    }
+
+    pub fn new_with_lambda(lambda: LambdaTypeDeclarationNode) -> Self {
+        let node = Arc::new(CoreTypeDeclarationNode::Lambda(lambda));
+        TypeDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreTypeDeclarationNode);
+}
+default_errornous_node_impl!(TypeDeclarationNode, CoreTypeDeclarationNode);
+
+impl StructDeclarationNode {
+    pub fn new(
+        name: IdentifierInDeclNode,
+        block: BlockNode,
+        type_keyword: TokenNode,
+        struct_keyword: TokenNode,
+        implementing_interfaces: Option<(
+            TokenNode,
+            SymbolSeparatedSequenceNode<IdentifierInUseNode>,
+        )>,
+        colon: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreStructDeclarationNode {
+            type_keyword,
+            colon,
+            struct_keyword,
+            implementing_interfaces,
+            name,
+            block,
+        });
+        StructDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreStructDeclarationNode);
+}
+
+impl Node for StructDeclarationNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().type_keyword, self.0.as_ref().block)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().type_keyword.start_line_number()
+    }
+}
+
+impl EnumDeclarationNode {
+    pub fn new(
+        type_keyword: TokenNode,
+        name: IdentifierInDeclNode,
+        enum_keyword: TokenNode,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Arc::new(CoreEnumDeclarationNode {
+            type_keyword,
+            name,
+            enum_keyword,
+            colon,
+            block,
+        });
+        EnumDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreEnumDeclarationNode);
+}
+
+impl Node for EnumDeclarationNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().type_keyword, self.core_ref().block)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().type_keyword.start_line_number()
+    }
+}
+
+impl LambdaTypeDeclarationNode {
+    pub fn new(
+        name: IdentifierInDeclNode,
+        type_keyword: TokenNode,
+        lambda_keyword: TokenNode,
+        equal: TokenNode,
+        lparen: TokenNode,
+        rparen: TokenNode,
+        ty_tuple: Option<SymbolSeparatedSequenceNode<TypeExpressionNode>>,
+        return_ty: Option<(TokenNode, TypeExpressionNode)>,
+        newline: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreLambdaTypeDeclarationNode {
+            name,
+            type_keyword,
+            lambda_keyword,
+            equal,
+            lparen,
+            rparen,
+            ty_tuple,
+            return_ty,
+            newline,
+        });
+        LambdaTypeDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreLambdaTypeDeclarationNode);
+}
+
+impl Node for LambdaTypeDeclarationNode {
+    fn range(&self) -> TextRange {
+        self.0.as_ref().newline.range()
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().type_keyword.start_line_number()
+    }
+}
+
+impl CallablePrototypeNode {
+    pub fn new(
+        params: Option<SymbolSeparatedSequenceNode<NameTypeSpecNode>>,
+        return_ty: Option<(TokenNode, TypeExpressionNode)>,
+        lparen: TokenNode,
+        rparen: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreCallablePrototypeNode {
+            lparen,
+            rparen,
+            params,
+            return_ty,
+        });
+        CallablePrototypeNode(node)
+    }
+
+    impl_core_ref!(CoreCallablePrototypeNode);
+}
+
+impl Node for CallablePrototypeNode {
+    fn range(&self) -> TextRange {
+        match &self.0.as_ref().return_ty {
+            Some((_, return_ty)) => impl_range!(self.0.as_ref().lparen, return_ty),
+            None => impl_range!(self.0.as_ref().lparen, self.0.as_ref().rparen),
+        }
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().lparen.start_line_number()
+    }
+}
+
+impl CallableBodyNode {
+    pub fn new(block: BlockNode, colon: TokenNode, prototype: CallablePrototypeNode) -> Self {
+        let node = Arc::new(CoreCallableBodyNode {
+            block,
+            colon,
+            prototype,
+        });
+        CallableBodyNode(node)
+    }
+
+    impl_core_ref!(CoreCallableBodyNode);
+}
+
+impl Node for CallableBodyNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().prototype, self.0.as_ref().block)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().prototype.start_line_number()
+    }
+}
+
+impl FunctionDeclarationNode {
+    pub fn new(name: IdentifierInDeclNode, def_keyword: TokenNode, body: CallableBodyNode) -> Self {
+        let node = Arc::new(CoreFunctionDeclarationNode {
+            name,
+            def_keyword,
+            body,
+        });
+        FunctionDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreFunctionDeclarationNode);
+}
+
+impl Node for FunctionDeclarationNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().def_keyword, self.0.as_ref().body)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().def_keyword.start_line_number()
+    }
+}
+
+impl FunctionWrapperNode {
+    pub fn new(func_decl: FunctionDeclarationNode) -> Self {
+        let node = Arc::new(CoreFunctionWrapperNode { func_decl });
+        FunctionWrapperNode(node)
+    }
+
+    impl_core_ref!(CoreFunctionWrapperNode);
+}
+
+impl Node for FunctionWrapperNode {
+    fn range(&self) -> TextRange {
+        self.0.as_ref().func_decl.range()
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().func_decl.start_line_number()
+    }
+}
+
+impl BoundedMethodWrapperNode {
+    pub fn new(func_decl: FunctionDeclarationNode) -> Self {
+        let node = Arc::new(CoreBoundedMethodWrapperNode { func_decl });
+        BoundedMethodWrapperNode(node)
+    }
+
+    impl_core_ref!(CoreBoundedMethodWrapperNode);
+}
+
+impl Node for BoundedMethodWrapperNode {
+    fn range(&self) -> TextRange {
+        self.0.as_ref().func_decl.range()
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().func_decl.start_line_number()
+    }
+}
+
+impl PartialEq for BoundedMethodWrapperNode {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for BoundedMethodWrapperNode {}
+
+impl Hash for BoundedMethodWrapperNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Arc::as_ptr(&self.0);
+        ptr.hash(state);
+    }
+}
+
+impl LambdaDeclarationNode {
+    pub fn new(lambda_keyword: TokenNode, body: CallableBodyNode) -> Self {
+        let node = Arc::new(CoreLambdaDeclarationNode {
+            lambda_keyword,
+            body,
+        });
+        LambdaDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreLambdaDeclarationNode);
+}
+
+impl Node for LambdaDeclarationNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().lambda_keyword, self.0.as_ref().body)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().lambda_keyword.start_line_number()
+    }
+}
+
+impl VariableDeclarationNode {
+    pub fn new(
+        name: IdentifierInDeclNode,
+        r_node: RVariableDeclarationNode,
+        let_keyword: TokenNode,
+        equal: TokenNode,
+        optional_ty_annotation: Option<(TokenNode, TypeExpressionNode)>,
+    ) -> Self {
+        let node = Arc::new(CoreVariableDeclarationNode {
+            let_keyword,
+            equal,
+            name,
+            r_node,
+            ty_annotation: optional_ty_annotation,
+        });
+        VariableDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreVariableDeclarationNode);
+}
+
+impl Node for VariableDeclarationNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().let_keyword, self.0.as_ref().r_node)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().let_keyword.start_line_number()
+    }
+}
+
+impl InterfaceDeclarationNode {
+    pub fn new(
+        interface_keyword: TokenNode,
+        name: IdentifierInDeclNode,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Arc::new(CoreInterfaceDeclarationNode {
+            interface_keyword,
+            name,
+            colon,
+            block,
+        });
+        InterfaceDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreInterfaceDeclarationNode);
+}
+
+impl Node for InterfaceDeclarationNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().interface_keyword, self.0.as_ref().block)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().interface_keyword.start_line_number()
+    }
+}
+
+impl DeclareFunctionPrototypeNode {
+    pub fn new(decl_keyword: TokenNode, decl: DeclareCallablePrototypeNode) -> Self {
+        let node = Arc::new(CoreDeclareFunctionPrototypeNode {
+            declare_keyword: decl_keyword,
+            decl,
+        });
+        DeclareFunctionPrototypeNode(node)
+    }
+
+    impl_core_ref!(CoreDeclareFunctionPrototypeNode);
+}
+
+impl Node for DeclareFunctionPrototypeNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().declare_keyword, self.core_ref().decl)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().declare_keyword.start_line_number()
+    }
+}
+
+impl DeclareCallablePrototypeNode {
+    pub fn new(
+        def_keyword: TokenNode,
+        name: IdentifierInDeclNode,
+        prototype: CallablePrototypeNode,
+        newline: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreDeclareCallablePrototypeNode {
+            def_keyword,
+            name,
+            prototype,
+            newline,
+        });
+        DeclareCallablePrototypeNode(node)
+    }
+
+    impl_core_ref!(CoreDeclareCallablePrototypeNode);
+}
+
+impl Node for DeclareCallablePrototypeNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().def_keyword, self.core_ref().newline)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().def_keyword.start_line_number()
+    }
+}
+
+impl ConditionalBlockNode {
+    pub fn new(
+        condition_keyword: TokenNode,
+        condition_expr: ExpressionNode,
+        colon: TokenNode,
+        block: BlockNode,
+    ) -> Self {
+        let node = Arc::new(CoreConditionalBlockNode {
+            condition_keyword,
+            condition_expr,
+            colon,
+            block,
+        });
+        ConditionalBlockNode(node)
+    }
+
+    impl_core_ref!(CoreConditionalBlockNode);
+}
+
+impl Node for ConditionalBlockNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().condition_keyword, self.core_ref().block)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().condition_keyword.start_line_number()
+    }
+}
+
+impl ConditionalStatementNode {
+    pub fn new(
+        if_block: ConditionalBlockNode,
+        elifs: Vec<ConditionalBlockNode>,
+        else_block: Option<(TokenNode, TokenNode, BlockNode)>,
+    ) -> Self {
+        let node = Arc::new(CoreConditionalStatementNode {
+            if_block,
+            elifs,
+            else_block,
+        });
+        ConditionalStatementNode(node)
+    }
+
+    impl_core_ref!(CoreConditionalStatementNode);
+}
+
+impl Node for ConditionalStatementNode {
+    fn range(&self) -> TextRange {
+        let core_ref = self.core_ref();
+        match &core_ref.else_block {
+            Some((_, _, else_block)) => {
+                impl_range!(core_ref.if_block, else_block)
+            }
+            None => {
+                if core_ref.elifs.is_empty() {
+                    core_ref.if_block.range()
+                } else {
+                    impl_range!(core_ref.if_block, core_ref.elifs.last().unwrap())
+                }
+            }
+        }
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().if_block.start_line_number()
+    }
+}
+
+impl ReturnStatementNode {
+    pub fn new(
+        return_keyword: TokenNode,
+        expr: Option<ExpressionNode>,
+        newline: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreReturnStatementNode {
+            return_keyword,
+            expr,
+            newline,
+        });
+        ReturnStatementNode(node)
+    }
+
+    impl_core_ref!(CoreReturnStatementNode);
+}
+
+impl Node for ReturnStatementNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().return_keyword, self.core_ref().newline)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().return_keyword.start_line_number()
+    }
+}
+
+impl NameTypeSpecNode {
+    pub fn new(name: IdentifierInDeclNode, data_ty: TypeExpressionNode, colon: TokenNode) -> Self {
+        let node = Arc::new(CoreNameTypeSpecNode {
+            colon,
+            name,
+            data_ty,
+        });
+        NameTypeSpecNode(node)
+    }
+
+    impl_core_ref!(CoreNameTypeSpecNode);
+}
+
+impl Node for NameTypeSpecNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().name, self.0.as_ref().data_ty)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().name.start_line_number()
+    }
+}
+
+impl TypeExpressionNode {
+    pub fn new_with_atomic_ty(atomic_ty: TokenNode) -> Self {
+        let node = Arc::new(CoreTypeExpressionNode::Atomic(AtomicTypeNode::new(
+            atomic_ty,
+        )));
+        TypeExpressionNode(node)
+    }
+
+    pub fn new_with_user_defined_ty(identifier: IdentifierInUseNode) -> Self {
+        let node = Arc::new(CoreTypeExpressionNode::UserDefined(
+            UserDefinedTypeNode::new(identifier),
+        ));
+        TypeExpressionNode(node)
+    }
+
+    pub fn new_with_array_ty(
+        sub_ty: TypeExpressionNode,
+        lsquare: TokenNode,
+        rsquare: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreTypeExpressionNode::Array(ArrayTypeNode::new(
+            sub_ty, lsquare, rsquare,
+        )));
+        TypeExpressionNode(node)
+    }
+
+    pub fn new_with_tuple_ty(
+        lparen: TokenNode,
+        rparen: TokenNode,
+        types: SymbolSeparatedSequenceNode<TypeExpressionNode>,
+    ) -> Self {
+        let node = Arc::new(CoreTypeExpressionNode::Tuple(TupleTypeNode::new(
+            lparen, rparen, types,
+        )));
+        TypeExpressionNode(node)
+    }
+
+    pub fn new_with_hashmap_ty(
+        lcurly: TokenNode,
+        rcurly: TokenNode,
+        colon: TokenNode,
+        key_ty: TypeExpressionNode,
+        value_ty: TypeExpressionNode,
+    ) -> Self {
+        let node = Arc::new(CoreTypeExpressionNode::HashMap(HashMapTypeNode::new(
+            lcurly, rcurly, colon, key_ty, value_ty,
+        )));
+        TypeExpressionNode(node)
+    }
+
+    pub fn ty_before_resolved(
+        &self,
+        resolver: &mut JarvilResolver,
+        scope_index: ScopeIndex,
+    ) -> TypeResolveKind<'_> {
+        match self.core_ref() {
+            CoreTypeExpressionNode::Atomic(atomic) => {
+                atomic.ty_before_resolved(resolver.code_handler(), resolver.interner())
+            }
+            CoreTypeExpressionNode::Array(array) => array.ty_before_resolved(resolver, scope_index),
+            CoreTypeExpressionNode::Tuple(tuple) => tuple.ty_before_resolved(resolver, scope_index),
+            CoreTypeExpressionNode::HashMap(hashmap) => {
+                hashmap.ty_before_resolved(resolver, scope_index)
+            }
+            CoreTypeExpressionNode::UserDefined(user_defined) => {
+                user_defined.ty_before_resolved(resolver, scope_index)
+            }
+            CoreTypeExpressionNode::MissingTokens(_) => TypeResolveKind::Invalid,
+        }
+    }
+
+    impl_core_ref!(CoreTypeExpressionNode);
+}
+default_errornous_node_impl!(TypeExpressionNode, CoreTypeExpressionNode);
+
+impl PartialEq for TypeExpressionNode {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for TypeExpressionNode {}
+
+impl Hash for TypeExpressionNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Arc::as_ptr(&self.0);
+        ptr.hash(state);
+    }
+}
+
+impl AtomicTypeNode {
+    pub fn new(token: TokenNode) -> Self {
+        let node = Arc::new(CoreAtomicTypeNode { kind: token });
+        AtomicTypeNode(node)
+    }
+
+    pub fn ty_before_resolved(
+        &self,
+        code: &JarvilCodeHandler,
+        interner: &Interner,
+    ) -> TypeResolveKind<'_> {
+        self.ty_after_resolved(code, interner)
+    }
+
+    pub fn ty_after_resolved(
+        &self,
+        code: &JarvilCodeHandler,
+        interner: &Interner,
+    ) -> TypeResolveKind<'_> {
+        let CoreTokenNode::Ok(ok_token) = self.core_ref().kind.core_ref() else {
+            return TypeResolveKind::Invalid;
+        };
+        let idx = ok_token.token_value(code, interner);
+        TypeResolveKind::Resolved(Type::new_with_atomic(&interner.lookup(idx)))
+    }
+
+    impl_core_ref!(CoreAtomicTypeNode);
+}
+
+impl Node for AtomicTypeNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().kind, self.0.as_ref().kind)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().kind.start_line_number()
+    }
+}
+
+impl ArrayTypeNode {
+    pub fn new(sub_ty: TypeExpressionNode, lsquare: TokenNode, rsquare: TokenNode) -> Self {
+        let node = Arc::new(CoreArrayTypeNode {
+            lsquare,
+            rsquare,
+            sub_ty,
+        });
+        ArrayTypeNode(node)
+    }
+
+    pub fn ty_before_resolved(
+        &self,
+        resolver: &mut JarvilResolver,
+        scope_index: ScopeIndex,
+    ) -> TypeResolveKind<'_> {
+        match self
+            .core_ref()
+            .sub_ty
+            .ty_before_resolved(resolver, scope_index)
+        {
+            TypeResolveKind::Resolved(element_ty) => {
+                TypeResolveKind::Resolved(Type::new_with_array(element_ty))
+            }
+            TypeResolveKind::Unresolved(identifier_node) => {
+                TypeResolveKind::Unresolved(identifier_node)
+            }
+            TypeResolveKind::Invalid => TypeResolveKind::Invalid,
+        }
+    }
+
+    impl_core_ref!(CoreArrayTypeNode);
+}
+
+impl Node for ArrayTypeNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().lsquare, self.0.as_ref().rsquare)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().lsquare.start_line_number()
+    }
+}
+
+impl TupleTypeNode {
+    pub fn new(
+        lparen: TokenNode,
+        rparen: TokenNode,
+        types: SymbolSeparatedSequenceNode<TypeExpressionNode>,
+    ) -> Self {
+        let node = Arc::new(CoreTupleTypeNode {
+            lparen,
+            rparen,
+            types,
+        });
+        TupleTypeNode(node)
+    }
+
+    pub fn ty_before_resolved(
+        &self,
+        resolver: &mut JarvilResolver,
+        scope_index: ScopeIndex,
+    ) -> TypeResolveKind<'_> {
+        let mut unresolved_identifiers: Vec<UnresolvedIdentifier> = vec![];
+        let mut resolved_types: Vec<Type> = vec![];
+
+        for ty in self.core_ref().types.iter() {
+            match ty.ty_before_resolved(resolver, scope_index) {
+                TypeResolveKind::Resolved(ty) => resolved_types.push(ty),
+                TypeResolveKind::Unresolved(mut unresolved) => {
+                    unresolved_identifiers.append(&mut unresolved);
+                }
+                TypeResolveKind::Invalid => resolved_types.push(Type::new_with_unknown()),
+            }
+        }
+
+        if !unresolved_identifiers.is_empty() {
+            TypeResolveKind::Unresolved(unresolved_identifiers)
+        } else if !resolved_types.is_empty() {
+            TypeResolveKind::Resolved(Type::new_with_tuple(resolved_types))
+        } else {
+            TypeResolveKind::Invalid
+        }
+    }
+
+    impl_core_ref!(CoreTupleTypeNode);
+}
+
+impl Node for TupleTypeNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().lparen, self.0.as_ref().rparen)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().lparen.start_line_number()
+    }
+}
+
+impl HashMapTypeNode {
+    pub fn new(
+        lcurly: TokenNode,
+        rcurly: TokenNode,
+        colon: TokenNode,
+        key_ty: TypeExpressionNode,
+        value_ty: TypeExpressionNode,
+    ) -> Self {
+        let node = Arc::new(CoreHashMapTypeNode {
+            lcurly,
+            rcurly,
+            colon,
+            key_ty,
+            value_ty,
+        });
+        HashMapTypeNode(node)
+    }
+
+    fn aggregate_key_value_result<'a>(
+        &'a self,
+        key_result: TypeResolveKind<'a>,
+        value_result: TypeResolveKind<'a>,
+    ) -> TypeResolveKind<'a> {
+        match key_result {
+            TypeResolveKind::Resolved(key_ty) => match value_result {
+                TypeResolveKind::Resolved(value_ty) => {
+                    TypeResolveKind::Resolved(Type::new_with_hashmap(key_ty, value_ty))
+                }
+                TypeResolveKind::Unresolved(unresolved_vec) => {
+                    TypeResolveKind::Unresolved(unresolved_vec)
+                }
+                TypeResolveKind::Invalid => TypeResolveKind::Resolved(Type::new_with_hashmap(
+                    key_ty,
+                    Type::new_with_unknown(),
+                )),
+            },
+            TypeResolveKind::Unresolved(mut key_unresolved_vec) => match value_result {
+                TypeResolveKind::Resolved(_) => TypeResolveKind::Unresolved(key_unresolved_vec),
+                TypeResolveKind::Unresolved(mut value_unresolved_vec) => {
+                    key_unresolved_vec.append(&mut value_unresolved_vec);
+                    TypeResolveKind::Unresolved(key_unresolved_vec)
+                }
+                TypeResolveKind::Invalid => TypeResolveKind::Unresolved(key_unresolved_vec),
+            },
+            TypeResolveKind::Invalid => match value_result {
+                TypeResolveKind::Resolved(value_ty) => TypeResolveKind::Resolved(
+                    Type::new_with_hashmap(Type::new_with_unknown(), value_ty),
+                ),
+                TypeResolveKind::Unresolved(unresolved_vec) => {
+                    TypeResolveKind::Unresolved(unresolved_vec)
+                }
+                TypeResolveKind::Invalid => TypeResolveKind::Invalid,
+            },
+        }
+    }
+
+    pub fn ty_before_resolved(
+        &self,
+        resolver: &mut JarvilResolver,
+        scope_index: ScopeIndex,
+    ) -> TypeResolveKind<'_> {
+        let key_result = self
+            .core_ref()
+            .key_ty
+            .ty_before_resolved(resolver, scope_index);
+        let value_result = self
+            .core_ref()
+            .value_ty
+            .ty_before_resolved(resolver, scope_index);
+        self.aggregate_key_value_result(key_result, value_result)
+    }
+
+    impl_core_ref!(CoreHashMapTypeNode);
+}
+
+impl Node for HashMapTypeNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().lcurly, self.0.as_ref().rcurly)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().lcurly.start_line_number()
+    }
+}
+
+impl UserDefinedTypeNode {
+    pub fn new(identifier: IdentifierInUseNode) -> Self {
+        let node = Arc::new(CoreUserDefinedTypeNode { name: identifier });
+        UserDefinedTypeNode(node)
+    }
+
+    pub fn ty_before_resolved(
+        &self,
+        resolver: &mut JarvilResolver,
+        scope_index: ScopeIndex,
+    ) -> TypeResolveKind<'_> {
+        resolver.ty_from_user_defined_ty_expr(self, scope_index)
+    }
+
+    impl_core_ref!(CoreUserDefinedTypeNode);
+}
+
+impl Node for UserDefinedTypeNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().name, self.0.as_ref().name)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().name.start_line_number()
+    }
+}
+
+impl RAssignmentNode {
+    pub fn new_with_expr(expr: ExpressionNode, newline: TokenNode) -> Self {
+        let node = Arc::new(CoreRAssignmentNode {
+            expr: ExpressionStatementNode::new(expr, newline),
+        });
+        RAssignmentNode(node)
+    }
+
+    impl_core_ref!(CoreRAssignmentNode);
+}
+
+impl Node for RAssignmentNode {
+    fn range(&self) -> TextRange {
+        self.core_ref().expr.range()
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().expr.start_line_number()
+    }
+}
+
+impl RVariableDeclarationNode {
+    pub fn new_with_lambda(lambda_decl: LambdaDeclarationNode) -> Self {
+        let node = Arc::new(CoreRVariableDeclarationNode::Lambda(lambda_decl));
+        RVariableDeclarationNode(node)
+    }
+
+    pub fn new_with_expr(expr: ExpressionNode, newline: TokenNode) -> Self {
+        let node = Arc::new(CoreRVariableDeclarationNode::Expression(
+            ExpressionStatementNode::new(expr, newline),
+        ));
+        RVariableDeclarationNode(node)
+    }
+
+    impl_core_ref!(CoreRVariableDeclarationNode);
+}
+
+impl ExpressionNode {
+    pub fn new_with_unary(unary_expr: UnaryExpressionNode) -> Self {
+        let node = Arc::new(CoreExpressionNode::Unary(unary_expr));
+        ExpressionNode(node)
+    }
+
+    pub fn new_with_binary(
+        operator: TokenNode,
+        left_expr: ExpressionNode,
+        right_expr: ExpressionNode,
+    ) -> Self {
+        let operator_kind = match operator.is_binary_operator() {
+            Some(operator_kind) => operator_kind,
+            None => unreachable!(
+                "any node passed in this method as operator should be a valid operator"
+            ),
+        };
+        let node = Arc::new(CoreExpressionNode::Binary(BinaryExpressionNode::new(
+            operator_kind,
+            operator,
+            left_expr,
+            right_expr,
+        )));
+        ExpressionNode(node)
+    }
+
+    pub fn new_with_comparison(operands: Vec<ExpressionNode>, operators: Vec<TokenNode>) -> Self {
+        let node = Arc::new(CoreExpressionNode::Comparison(ComparisonNode::new(
+            operands, operators,
+        )));
+        ExpressionNode(node)
+    }
+
+    pub fn is_valid_l_value(&self) -> Option<AtomNode> {
+        let CoreExpressionNode::Unary(unary_expr_node) = &self.0.as_ref() else {
+            return None;
+        };
+        let CoreUnaryExpressionNode::Atomic(atomic_expr_node) = &unary_expr_node.0.as_ref() else {
+            return None;
+        };
+        let CoreAtomicExpressionNode::Atom(atom_node) = &atomic_expr_node.0.as_ref() else {
+            return None;
+        };
+
+        if atom_node.is_valid_l_value() {
+            Some(atom_node.clone())
+        } else {
+            None
+        }
+    }
+
+    impl_core_ref!(CoreExpressionNode);
+}
+
+impl AtomicExpressionNode {
+    pub fn new_with_bool(bool_value: TokenNode) -> Self {
+        let node = Arc::new(CoreAtomicExpressionNode::Bool(bool_value));
+        AtomicExpressionNode(node)
+    }
+
+    pub fn new_with_integer(integer_value: TokenNode) -> Self {
+        let node = Arc::new(CoreAtomicExpressionNode::Integer(integer_value));
+        AtomicExpressionNode(node)
+    }
+
+    pub fn new_with_floating_point_number(floating_point_value: TokenNode) -> Self {
+        let node = Arc::new(CoreAtomicExpressionNode::FloatingPointNumber(
+            floating_point_value,
+        ));
+        AtomicExpressionNode(node)
+    }
+
+    pub fn new_with_literal(literal_value: TokenNode) -> Self {
+        let node = Arc::new(CoreAtomicExpressionNode::Literal(literal_value));
+        AtomicExpressionNode(node)
+    }
+
+    pub fn new_with_parenthesised_expr(
+        expr: ExpressionNode,
+        lparen: TokenNode,
+        rparen: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreAtomicExpressionNode::ParenthesisedExpression(
+            ParenthesisedExpressionNode::new(expr, lparen, rparen),
+        ));
+        AtomicExpressionNode(node)
+    }
+
+    pub fn new_with_atom(atom: AtomNode) -> Self {
+        let node = Arc::new(CoreAtomicExpressionNode::Atom(atom));
+        AtomicExpressionNode(node)
+    }
+
+    pub fn new_with_array_expr(
+        lsquare: TokenNode,
+        rsquare: TokenNode,
+        initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> AtomicExpressionNode {
+        let node = Arc::new(CoreAtomicExpressionNode::ArrayExpression(
+            ArrayExpressionNode::new(lsquare, rsquare, initials),
+        ));
+        AtomicExpressionNode(node)
+    }
+
+    pub fn new_with_hashmap_expr(
+        lcurly: TokenNode,
+        rcurly: TokenNode,
+        initials: Option<SymbolSeparatedSequenceNode<KeyValuePairNode>>,
+    ) -> AtomicExpressionNode {
+        let node = Arc::new(CoreAtomicExpressionNode::HashMapExpression(
+            HashMapExpressionNode::new(lcurly, rcurly, initials),
+        ));
+        AtomicExpressionNode(node)
+    }
+
+    pub fn new_with_tuple_expr(
+        lround: TokenNode,
+        rround: TokenNode,
+        initials: SymbolSeparatedSequenceNode<ExpressionNode>,
+    ) -> AtomicExpressionNode {
+        let node = Arc::new(CoreAtomicExpressionNode::TupleExpression(
+            TupleExpressionNode::new(lround, rround, initials),
+        ));
+        AtomicExpressionNode(node)
+    }
+
+    impl_core_ref!(CoreAtomicExpressionNode);
+}
+default_errornous_node_impl!(AtomicExpressionNode, CoreAtomicExpressionNode);
+
+impl ParenthesisedExpressionNode {
+    pub fn new(expr: ExpressionNode, lparen: TokenNode, rparen: TokenNode) -> Self {
+        let node = Arc::new(CoreParenthesisedExpressionNode {
+            lparen,
+            rparen,
+            expr,
+        });
+        ParenthesisedExpressionNode(node)
+    }
+
+    impl_core_ref!(CoreParenthesisedExpressionNode);
+}
+
+impl Node for ParenthesisedExpressionNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().lparen, self.0.as_ref().rparen)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().lparen.start_line_number()
+    }
+}
+
+impl UnaryExpressionNode {
+    pub fn new_with_atomic(atomic_expr: AtomicExpressionNode) -> Self {
+        let node = Arc::new(CoreUnaryExpressionNode::Atomic(atomic_expr));
+        UnaryExpressionNode(node)
+    }
+
+    pub fn new_with_unary(
+        unary_expr: UnaryExpressionNode,
+        operator: TokenNode,
+        operator_kind: UnaryOperatorKind,
+    ) -> Self {
+        let node = Arc::new(CoreUnaryExpressionNode::Unary(
+            OnlyUnaryExpressionNode::new(operator, unary_expr, operator_kind),
+        ));
+        UnaryExpressionNode(node)
+    }
+
+    impl_core_ref!(CoreUnaryExpressionNode);
+}
+
+impl OnlyUnaryExpressionNode {
+    pub fn new(
+        operator: TokenNode,
+        unary_expr: UnaryExpressionNode,
+        operator_kind: UnaryOperatorKind,
+    ) -> Self {
+        let node = Arc::new(CoreOnlyUnaryExpressionNode {
+            operator,
+            unary_expr,
+            operator_kind,
+        });
+        OnlyUnaryExpressionNode(node)
+    }
+
+    impl_core_ref!(CoreOnlyUnaryExpressionNode);
+}
+
+impl Node for OnlyUnaryExpressionNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().operator, self.0.as_ref().unary_expr)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().operator.start_line_number()
+    }
+}
+
+impl BinaryExpressionNode {
+    pub fn new(
+        operator_kind: BinaryOperatorKind,
+        operator: TokenNode,
+        left_expr: ExpressionNode,
+        right_expr: ExpressionNode,
+    ) -> Self {
+        let node = Arc::new(CoreBinaryExpressionNode {
+            operator_kind,
+            operator,
+            left_expr,
+            right_expr,
+        });
+        BinaryExpressionNode(node)
+    }
+
+    impl_core_ref!(CoreBinaryExpressionNode);
+}
+
+impl Node for BinaryExpressionNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().left_expr, self.0.as_ref().right_expr)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().left_expr.start_line_number()
+    }
+}
+
+impl ComparisonNode {
+    pub fn new(operands: Vec<ExpressionNode>, operators: Vec<TokenNode>) -> Self {
+        let node = Arc::new(CoreComparisonNode {
+            operands,
+            operators,
+        });
+        ComparisonNode(node)
+    }
+
+    impl_core_ref!(CoreComparisonNode);
+}
+
+impl Node for ComparisonNode {
+    fn range(&self) -> TextRange {
+        let core_node = self.0.as_ref();
+        impl_range!(
+            core_node.operands[0],
+            core_node.operands[core_node.operands.len() - 1]
+        )
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().operands[0].start_line_number()
+    }
+}
+
+impl<T: Node + Serialize + Clone> SymbolSeparatedSequenceNode<T> {
+    pub fn new_with_single_entity(entity: T) -> Self {
+        let node = Arc::new(CoreSymbolSeparatedSequenceNode {
+            entity,
+            remaining_entities: None,
+        });
+        SymbolSeparatedSequenceNode(node)
+    }
+
+    pub fn new_with_entities(
+        entity: T,
+        remaining_entities: SymbolSeparatedSequenceNode<T>,
+        comma: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreSymbolSeparatedSequenceNode {
+            entity,
+            remaining_entities: Some((comma, remaining_entities)),
+        });
+        SymbolSeparatedSequenceNode(node)
+    }
+
+    pub fn iter(&self) -> SymbolSeparatedSequenceIterator<'_, T> {
+        SymbolSeparatedSequenceIterator::new(self)
+    }
+
+    pub fn core_ref(&self) -> &CoreSymbolSeparatedSequenceNode<T> {
+        self.0.as_ref()
+    }
+}
+
+impl<T: Clone + Node + Serialize> Node for SymbolSeparatedSequenceNode<T> {
+    fn range(&self) -> TextRange {
+        match &self.0.as_ref().remaining_entities {
+            Some((_, remaining_entities)) => {
+                impl_range!(self.0.as_ref().entity, remaining_entities)
+            }
+            None => impl_range!(self.0.as_ref().entity, self.0.as_ref().entity),
+        }
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().entity.start_line_number()
+    }
+}
+
+impl<T: Clone + Node + Serialize> Serialize for SymbolSeparatedSequenceNode<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.0.as_ref().serialize(serializer)
+    }
+}
+
+impl CallExpressionNode {
+    pub fn new(
+        func_name: IdentifierInUseNode,
+        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        lparen: TokenNode,
+        rparen: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreCallExpressionNode {
+            lparen,
+            rparen,
+            func_name,
+            params,
+        });
+        CallExpressionNode(node)
+    }
+
+    impl_core_ref!(CoreCallExpressionNode);
+}
+
+impl Node for CallExpressionNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().func_name, self.0.as_ref().rparen)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().func_name.start_line_number()
+    }
+}
+
+impl EnumVariantExprOrClassMethodCallNode {
+    pub fn new(
+        ty_name: IdentifierInUseNode,
+        property_name: IdentifierInUseNode,
+        params: Option<(
+            TokenNode,
+            Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+            TokenNode,
+        )>,
+        double_colon: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreEnumVariantExprOrClassMethodCallNode {
+            double_colon,
+            ty_name,
+            property_name,
+            params,
+        });
+        EnumVariantExprOrClassMethodCallNode(node)
+    }
+
+    impl_core_ref!(CoreEnumVariantExprOrClassMethodCallNode);
+}
+
+impl Node for EnumVariantExprOrClassMethodCallNode {
+    fn range(&self) -> TextRange {
+        match &self.core_ref().params {
+            Some((_, _, rparen)) => impl_range!(self.core_ref().ty_name, rparen),
+            None => impl_range!(self.core_ref().ty_name, self.core_ref().property_name),
+        }
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().ty_name.start_line_number()
+    }
+}
+
+impl ArrayExpressionNode {
+    pub fn new(
+        lsquare: TokenNode,
+        rsquare: TokenNode,
+        initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+    ) -> Self {
+        let node = Arc::new(CoreArrayExpressionNode {
+            lsquare,
+            rsquare,
+            initials,
+        });
+        ArrayExpressionNode(node)
+    }
+
+    impl_core_ref!(CoreArrayExpressionNode);
+}
+
+impl Node for ArrayExpressionNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().lsquare, self.core_ref().rsquare)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().lsquare.start_line_number()
+    }
+}
+
+impl KeyValuePairNode {
+    pub fn new(key_expr: ExpressionNode, value_expr: ExpressionNode, colon: TokenNode) -> Self {
+        let node = Arc::new(CoreKeyValuePairNode {
+            key_expr,
+            value_expr,
+            colon,
+        });
+        KeyValuePairNode(node)
+    }
+
+    impl_core_ref!(CoreKeyValuePairNode);
+}
+
+impl Node for KeyValuePairNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().key_expr, self.core_ref().value_expr)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().key_expr.start_line_number()
+    }
+}
+
+impl HashMapExpressionNode {
+    pub fn new(
+        lcurly: TokenNode,
+        rcurly: TokenNode,
+        initials: Option<SymbolSeparatedSequenceNode<KeyValuePairNode>>,
+    ) -> Self {
+        let node = Arc::new(CoreHashMapExpressionNode {
+            lcurly,
+            rcurly,
+            initials,
+        });
+        HashMapExpressionNode(node)
+    }
+
+    impl_core_ref!(CoreHashMapExpressionNode);
+}
+
+impl Node for HashMapExpressionNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().lcurly, self.core_ref().rcurly)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().lcurly.start_line_number()
+    }
+}
+
+impl TupleExpressionNode {
+    pub fn new(
+        lround: TokenNode,
+        rround: TokenNode,
+        initials: SymbolSeparatedSequenceNode<ExpressionNode>,
+    ) -> Self {
+        let node = Arc::new(CoreTupleExpressionNode {
+            lround,
+            rround,
+            initials,
+        });
+        TupleExpressionNode(node)
+    }
+
+    impl_core_ref!(CoreTupleExpressionNode);
+}
+
+impl Node for TupleExpressionNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.core_ref().lround, self.core_ref().rround)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().lround.start_line_number()
+    }
+}
+
+impl AtomNode {
+    pub fn new_with_atom_start(atom_start: AtomStartNode) -> Self {
+        let node = Arc::new(CoreAtomNode::AtomStart(atom_start));
+        AtomNode(node)
+    }
+
+    pub fn new_with_call(
+        atom: AtomNode,
+        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        lparen: TokenNode,
+        rparen: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreAtomNode::Call(CallNode::new(
+            atom, params, lparen, rparen,
+        )));
+        AtomNode(node)
+    }
+
+    pub fn new_with_propertry_access(
+        atom: AtomNode,
+        propertry: IdentifierInUseNode,
+        dot: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreAtomNode::PropertyAccess(PropertyAccessNode::new(
+            atom, propertry, dot,
+        )));
+        AtomNode(node)
+    }
+
+    pub fn new_with_method_access(
+        atom: AtomNode,
+        method_name: IdentifierInUseNode,
+        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        lparen: TokenNode,
+        rparen: TokenNode,
+        dot: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreAtomNode::MethodAccess(MethodAccessNode::new(
+            atom,
+            method_name,
+            params,
+            lparen,
+            rparen,
+            dot,
+        )));
+        AtomNode(node)
+    }
+
+    pub fn new_with_index_access(
+        atom: AtomNode,
+        index: ExpressionNode,
+        lsquare: TokenNode,
+        rsquare: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreAtomNode::IndexAccess(IndexAccessNode::new(
+            atom, index, lsquare, rsquare,
+        )));
+        AtomNode(node)
+    }
+
+    pub fn is_valid_l_value(&self) -> bool {
+        match &self.0.as_ref() {
+            CoreAtomNode::AtomStart(atom_start_node) => atom_start_node.is_valid_l_value(),
+            CoreAtomNode::Call(_) => false,
+            CoreAtomNode::MethodAccess(_) => false,
+            CoreAtomNode::IndexAccess(atom_index_access_node) => {
+                let atom = &atom_index_access_node.0.as_ref().atom;
+                atom.is_valid_l_value()
+            }
+            CoreAtomNode::PropertyAccess(atom_property_access_node) => {
+                let atom = &atom_property_access_node.0.as_ref().atom;
+                atom.is_valid_l_value()
+            }
+        }
+    }
+
+    impl_core_ref!(CoreAtomNode);
+}
+
+impl AtomStartNode {
+    pub fn new_with_identifier(token: IdentifierInUseNode) -> Self {
+        let node = Arc::new(CoreAtomStartNode::Identifier(token));
+        AtomStartNode(node)
+    }
+
+    pub fn new_with_self_keyword(self_keyword: SelfKeywordNode) -> Self {
+        let node = Arc::new(CoreAtomStartNode::SelfKeyword(self_keyword));
+        AtomStartNode(node)
+    }
+
+    pub fn new_with_func_call(call_expr: CallExpressionNode) -> Self {
+        let node = Arc::new(CoreAtomStartNode::Call(call_expr));
+        AtomStartNode(node)
+    }
+
+    pub fn new_with_enum_variant_expr_or_class_method_call(
+        ty_name: IdentifierInUseNode,
+        property_name: IdentifierInUseNode,
+        params: Option<(
+            TokenNode,
+            Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+            TokenNode,
+        )>,
+        double_colon: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreAtomStartNode::EnumVariantExprOrClassMethodCall(
+            EnumVariantExprOrClassMethodCallNode::new(ty_name, property_name, params, double_colon),
+        ));
+        AtomStartNode(node)
+    }
+
+    pub fn is_valid_l_value(&self) -> bool {
+        matches!(
+            self.0.as_ref(),
+            CoreAtomStartNode::Identifier(_) | CoreAtomStartNode::SelfKeyword(_)
+        )
+    }
+
+    impl_core_ref!(CoreAtomStartNode);
+}
+
+impl CallNode {
+    pub fn new(
+        atom: AtomNode,
+        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        lparen: TokenNode,
+        rparen: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreCallNode {
+            atom,
+            lparen,
+            rparen,
+            params,
+        });
+        CallNode(node)
+    }
+
+    impl_core_ref!(CoreCallNode);
+}
+
+impl Node for CallNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().atom, self.0.as_ref().rparen)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().atom.start_line_number()
+    }
+}
+
+impl PropertyAccessNode {
+    pub fn new(atom: AtomNode, propertry: IdentifierInUseNode, dot: TokenNode) -> Self {
+        let node = Arc::new(CorePropertyAccessNode {
+            dot,
+            atom,
+            propertry,
+        });
+        PropertyAccessNode(node)
+    }
+
+    impl_core_ref!(CorePropertyAccessNode);
+}
+
+impl Node for PropertyAccessNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().atom, self.0.as_ref().propertry)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().atom.start_line_number()
+    }
+}
+
+impl MethodAccessNode {
+    pub fn new(
+        atom: AtomNode,
+        method_name: IdentifierInUseNode,
+        params: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
+        lparen: TokenNode,
+        rparen: TokenNode,
+        dot: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreMethodAccessNode {
+            lparen,
+            rparen,
+            dot,
+            atom,
+            method_name,
+            params,
+        });
+        MethodAccessNode(node)
+    }
+
+    impl_core_ref!(CoreMethodAccessNode);
+}
+
+impl Node for MethodAccessNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().atom, self.0.as_ref().rparen)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().atom.start_line_number()
+    }
+}
+
+impl IndexAccessNode {
+    pub fn new(
+        atom: AtomNode,
+        index: ExpressionNode,
+        lsquare: TokenNode,
+        rsquare: TokenNode,
+    ) -> Self {
+        let node = Arc::new(CoreIndexAccessNode {
+            lsquare,
+            rsquare,
+            atom,
+            index,
+        });
+        IndexAccessNode(node)
+    }
+
+    impl_core_ref!(CoreIndexAccessNode);
+}
+
+impl Node for IndexAccessNode {
+    fn range(&self) -> TextRange {
+        impl_range!(self.0.as_ref().atom, self.0.as_ref().rsquare)
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().atom.start_line_number()
+    }
+}
+
+impl SelfKeywordNode {
+    pub fn new_with_ok(token: OkTokenNode) -> Self {
+        let node = Arc::new(CoreSelfKeywordNode::Ok(OkSelfKeywordNode::new(token)));
+        SelfKeywordNode(node)
+    }
+
+    impl_core_ref!(CoreSelfKeywordNode);
+}
+default_errornous_node_impl!(SelfKeywordNode, CoreSelfKeywordNode);
+
+impl OkSelfKeywordNode {
+    pub fn new(token: OkTokenNode) -> Self {
+        let node = Arc::new(CoreOkSelfKeywordNode { token });
+        OkSelfKeywordNode(node)
+    }
+
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> IdentName {
+        self.0.as_ref().token.token_value(code, interner)
+    }
+}
+
+impl Node for OkSelfKeywordNode {
+    fn range(&self) -> TextRange {
+        self.0.as_ref().token.range()
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().token.start_line_number()
+    }
+}
+
+impl PartialEq for OkSelfKeywordNode {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for OkSelfKeywordNode {}
+
+impl Hash for OkSelfKeywordNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Arc::as_ptr(&self.0);
+        ptr.hash(state);
+    }
+}
+
+impl TokenNode {
+    pub fn new_with_ok(token: Token) -> Self {
+        let node = Arc::new(CoreTokenNode::Ok(OkTokenNode::new(token)));
+        TokenNode(node)
+    }
+
+    pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
+        match &self.0.as_ref() {
+            CoreTokenNode::Ok(ok_token) => ok_token.is_binary_operator(),
+            _ => None,
+        }
+    }
+
+    impl_core_ref!(CoreTokenNode);
+}
+default_errornous_node_impl!(TokenNode, CoreTokenNode);
+
+impl OkTokenNode {
+    pub fn new(token: Token) -> Self {
+        OkTokenNode(Arc::new(CoreOkTokenNode { token }))
+    }
+
+    pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
+        self.core_ref().token.try_as_binary_operator()
+    }
+
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> IdentName {
+        self.0.as_ref().token.token_value(code, interner)
+    }
+
+    pub fn token_value_str(&self, code: &JarvilCodeHandler) -> String {
+        self.0.as_ref().token.token_value_str(code)
+    }
+
+    impl_core_ref!(CoreOkTokenNode);
+}
+
+impl Node for OkTokenNode {
+    fn range(&self) -> TextRange {
+        self.0.as_ref().token.range()
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().token.line_number()
+    }
+}
+
+impl PartialEq for OkTokenNode {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for OkTokenNode {}
+
+impl Hash for OkTokenNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Arc::as_ptr(&self.0);
+        ptr.hash(state);
+    }
+}
+
+impl MissingTokenNode {
+    pub fn new(expected_symbols: Vec<&'static str>, received_token: Token) -> Self {
+        let node = Arc::new(CoreMissingTokenNode {
+            // NOTE: Below is traditionally an expensive clone but in our case,
+            // mostly `expected_symbols.len()` is less so we avoid runtime overhead of using `Arc`
+            // which ideally should be used if length is large for example: in `BlockNode`, see `stmts` field.
+            expected_symbols,
+            received_token,
+        });
+        MissingTokenNode(node)
+    }
+
+    impl_core_ref!(CoreMissingTokenNode);
+}
+
+impl Node for MissingTokenNode {
+    fn range(&self) -> TextRange {
+        let received_token = &self.0.as_ref().received_token;
+        TextRange::new(
+            received_token.range().start(),
+            received_token.range().start(),
+        )
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().received_token.line_number()
+    }
+}
+
+impl SkippedTokenNode {
+    pub fn new(skipped_token: Token) -> Self {
+        let node = Arc::new(CoreSkippedTokenNode { skipped_token });
+        SkippedTokenNode(node)
+    }
+
+    impl_core_ref!(CoreSkippedTokenNode);
+}
+
+impl Node for SkippedTokenNode {
+    fn range(&self) -> TextRange {
+        self.0.as_ref().skipped_token.range()
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.0.as_ref().skipped_token.line_number()
+    }
+}
+
+impl IdentifierInUseNode {
+    pub fn new_with_ok(
+        token: OkTokenNode,
+        generic_ty_args: Option<(
+            TokenNode,
+            SymbolSeparatedSequenceNode<TypeExpressionNode>,
+            TokenNode,
+        )>,
+    ) -> Self {
+        let node = Arc::new(CoreIdentifierInUseNode::Ok(OkIdentifierInUseNode::new(
+            token,
+            generic_ty_args,
+        )));
+        IdentifierInUseNode(node)
+    }
+
+    impl_core_ref!(CoreIdentifierInUseNode);
+}
+default_errornous_node_impl!(IdentifierInUseNode, CoreIdentifierInUseNode);
+
+impl IdentifierInDeclNode {
+    pub fn new_with_ok(
+        token: OkTokenNode,
+        generic_ty_decls: Option<(
+            TokenNode,
+            SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
+            TokenNode,
+        )>,
+    ) -> Self {
+        let node = Arc::new(CoreIdentifierInDeclNode::Ok(OkIdentifierInDeclNode::new(
+            token,
+            generic_ty_decls,
+        )));
+        IdentifierInDeclNode(node)
+    }
+
+    impl_core_ref!(CoreIdentifierInDeclNode);
+}
+default_errornous_node_impl!(IdentifierInDeclNode, CoreIdentifierInDeclNode);
+
+impl OkIdentifierInUseNode {
+    fn new(
+        token: OkTokenNode,
+        generic_ty_args: Option<(
+            TokenNode,
+            SymbolSeparatedSequenceNode<TypeExpressionNode>,
+            TokenNode,
+        )>,
+    ) -> Self {
+        let node = Arc::new(CoreOkIdentifierInUseNode {
+            name: token,
+            generic_ty_args,
+        });
+        OkIdentifierInUseNode(node)
+    }
+
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> IdentName {
+        self.0.as_ref().name.token_value(code, interner)
+    }
+
+    pub fn token_value_str(&self, code: &JarvilCodeHandler) -> String {
+        self.0.as_ref().name.token_value_str(code)
+    }
+
+    impl_core_ref!(CoreOkIdentifierInUseNode);
+}
+
+impl Node for OkIdentifierInUseNode {
+    fn range(&self) -> TextRange {
+        match &self.core_ref().generic_ty_args {
+            Some((_, _, rangle)) => impl_range!(self.core_ref().name, rangle),
+            None => self.core_ref().name.range(),
+        }
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().name.start_line_number()
+    }
+}
+
+impl PartialEq for OkIdentifierInUseNode {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for OkIdentifierInUseNode {}
+
+impl Hash for OkIdentifierInUseNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Arc::as_ptr(&self.0);
+        ptr.hash(state);
+    }
+}
+
+impl OkIdentifierInDeclNode {
+    fn new(
+        token: OkTokenNode,
+        generic_ty_decls: Option<(
+            TokenNode,
+            SymbolSeparatedSequenceNode<GenericTypeDeclNode>,
+            TokenNode,
+        )>,
+    ) -> Self {
+        let node = Arc::new(CoreOkIdentifierInDeclNode {
+            name: token,
+            generic_ty_decls,
+        });
+        OkIdentifierInDeclNode(node)
+    }
+
+    pub fn token_value(&self, code: &JarvilCodeHandler, interner: &Interner) -> IdentName {
+        self.0.as_ref().name.token_value(code, interner)
+    }
+
+    pub fn token_value_str(&self, code: &JarvilCodeHandler) -> String {
+        self.0.as_ref().name.token_value_str(code).to_owned()
+    }
+
+    impl_core_ref!(CoreOkIdentifierInDeclNode);
+}
+
+impl Node for OkIdentifierInDeclNode {
+    fn range(&self) -> TextRange {
+        match &self.core_ref().generic_ty_decls {
+            Some((_, _, rangle)) => impl_range!(self.core_ref().name, rangle),
+            None => self.core_ref().name.range(),
+        }
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().name.start_line_number()
+    }
+}
+
+impl PartialEq for OkIdentifierInDeclNode {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for OkIdentifierInDeclNode {}
+
+impl Hash for OkIdentifierInDeclNode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = Arc::as_ptr(&self.0);
+        ptr.hash(state);
+    }
+}
+
+impl GenericTypeDeclNode {
+    pub fn new(
+        generic_ty_name: IdentifierInDeclNode,
+        interface_bounds: Option<(TokenNode, SymbolSeparatedSequenceNode<IdentifierInUseNode>)>,
+    ) -> Self {
+        let node = Arc::new(CoreGenericTypeDeclNode {
+            generic_ty_name,
+            interface_bounds,
+        });
+        GenericTypeDeclNode(node)
+    }
+
+    impl_core_ref!(CoreGenericTypeDeclNode);
+}
+
+impl Node for GenericTypeDeclNode {
+    fn range(&self) -> TextRange {
+        match &self.core_ref().interface_bounds {
+            Some((_, interfaces)) => impl_range!(self.core_ref().generic_ty_name, interfaces),
+            None => self.core_ref().generic_ty_name.range(),
+        }
+    }
+
+    fn start_line_number(&self) -> usize {
+        self.core_ref().generic_ty_name.start_line_number()
+    }
+}
