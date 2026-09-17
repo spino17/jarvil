@@ -14,6 +14,6 @@ crate-type = ["cdylib"]
 jarvil-parser = { path = "../jarvil-parser" }
 jarvil-py = { path = "../jarvil-py" }
 wasm-bindgen = "0.2"
-miette = { version = "7.6", features = ["fancy"] }
-owo-colors = "4.4"
+serde = { version = "1.0", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
 console_error_panic_hook = "0.1.7"
