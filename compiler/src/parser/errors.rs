@@ -1,3 +1,5 @@
+//! Error types internal to parsing.
+
 use super::parser::JarvilParser;
 use crate::ast::ast::SkippedTokenNode;
 use crate::ast::traits::Node;

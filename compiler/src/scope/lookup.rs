@@ -1,3 +1,5 @@
+//! The result of resolving a name against the scope tree.
+
 use super::{
     symbol::core::SymbolIndex,
     symbol::function::{CallableData, FunctionSymbolData},

@@ -1,3 +1,8 @@
+//! Function types, both named and anonymous.
+//!
+//! Equality is *structural*: two lambda types match when their parameters and
+//! return types do, regardless of the name either was declared under.
+
 use super::core::TypeStringifyContext;
 use super::traits::OperatorCompatiblity;
 use super::traits::TypeLike;

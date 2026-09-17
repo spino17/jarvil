@@ -1,3 +1,5 @@
+//! Generic type parameters and the interfaces bounding them.
+
 use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::types::core::TypeStringifyContext;
 use crate::types::traits::TypeLike;

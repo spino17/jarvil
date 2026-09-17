@@ -1,3 +1,12 @@
+//! Built-in method dispatch for types that are not user-defined.
+//!
+//! `[T]`, `{K: V}` and `str` have methods, but no declaration site to hang them
+//! on, so their prototypes live here. Collection methods are generic over the
+//! receiver's element types and are concretized per call; `str` methods are not
+//! generic and are stored as finished prototypes.
+//!
+//! See [`crate::builtin`] for why these mirror Python's method names exactly.
+
 use super::traits::CollectionType;
 use crate::core::string_interner::Interner;
 use crate::scope::concrete::TypeGenericsInstantiationContext;

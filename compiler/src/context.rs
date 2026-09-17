@@ -1,12 +1,12 @@
-// Process-wide code generation settings.
-//
-// This was a `thread_local!`, which under threads is a silent correctness bug
-// rather than merely a `Sync` problem: `set_indent` on one thread is invisible
-// to code generation running on another, which would quietly fall back to the
-// default and emit Python indented differently from what was asked for.
-//
-// An atomic makes the setting genuinely global and costs a relaxed load per
-// indent, which is noise next to the string building around it.
+//! Process-wide code generation settings.
+//!
+//! This was a `thread_local!`, which under threads is a silent correctness bug
+//! rather than merely a `Sync` problem: `set_indent` on one thread is invisible
+//! to code generation running on another, which would quietly fall back to the
+//! default and emit Python indented differently from what was asked for.
+//!
+//! An atomic makes the setting genuinely global and costs a relaxed load per
+//! indent, which is noise next to the string building around it.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -15,10 +15,14 @@ const DEFAULT_INDENT_SPACES: usize = 4;
 
 static INDENT_SPACES: AtomicUsize = AtomicUsize::new(DEFAULT_INDENT_SPACES);
 
+/// Sets the indentation width used when emitting Python.
+///
+/// Process-wide, and takes effect for every subsequent compile.
 pub fn set_indent(indent_spaces: usize) {
     INDENT_SPACES.store(indent_spaces, Ordering::Relaxed);
 }
 
+/// The indentation width code generation will use. Defaults to four.
 pub fn indent_spaces() -> usize {
     INDENT_SPACES.load(Ordering::Relaxed)
 }

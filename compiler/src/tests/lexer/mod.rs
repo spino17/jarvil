@@ -1,3 +1,5 @@
+//! Keyword recognition tests for the lexer's trie.
+
 use crate::lexer::token::CoreToken;
 use std::vec;
 

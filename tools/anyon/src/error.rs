@@ -1,3 +1,8 @@
+//! The error type the CLI reports.
+//!
+//! Wraps the distinct ways a command can fail -- a compile error, a missing
+//! file, a bad invocation -- so `main` has one thing to render.
+
 use miette::Report;
 use std::{
     fmt::{Debug, Result},

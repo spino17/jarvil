@@ -1,13 +1,13 @@
-// Methods on `str`.
-//
-// Unlike `[T]` and `{K: V}` these involve no generics, so there is no
-// concretization step and the prototypes can be built once.
-//
-// Every method here maps to a Python `str` method of the same name, arity and
-// return type, because code generation emits the method name verbatim. Methods
-// whose Python counterpart returns something Jarvil's type system cannot
-// honestly describe are left out rather than mistyped -- see the note at the
-// bottom.
+//! Methods on `str`.
+//!
+//! Unlike `[T]` and `{K: V}` these involve no generics, so there is no
+//! concretization step and the prototypes can be built once.
+//!
+//! Every method here maps to a Python `str` method of the same name, arity and
+//! return type, because code generation emits the method name verbatim. Methods
+//! whose Python counterpart returns something Jarvil's type system cannot
+//! honestly describe are left out rather than mistyped -- see the note at the
+//! bottom.
 
 use crate::constants::common::{BOOL, INT, STRING};
 use crate::scope::symbol::function::CallablePrototypeData;

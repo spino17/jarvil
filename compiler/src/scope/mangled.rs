@@ -1,3 +1,9 @@
+//! Name mangling for generated Python.
+//!
+//! Jarvil allows shadowing that Python's function-level scoping does not, so
+//! each binding gets a unique id appended. Builtins have no id and so survive
+//! unmangled -- see [`crate::codegen::python`].
+
 use super::symbol::core::IdentDeclId;
 use crate::core::string_interner::{IdentName, Interner};
 use std::hash::{Hash, Hasher};

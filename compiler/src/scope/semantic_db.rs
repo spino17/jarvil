@@ -1,3 +1,10 @@
+//! Everything the analysis passes learned, in one place.
+//!
+//! Built by the resolver and refined by the type checker, then read by code
+//! generation and by editor queries. The binding tables are keyed by syntax
+//! node, which is what lets a tool go from a cursor position straight to the
+//! symbol under it -- see [`crate::queries`].
+
 use super::{
     concrete::ConcreteSymbolIndex,
     namespace::Namespace,

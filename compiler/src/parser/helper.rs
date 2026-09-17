@@ -1,3 +1,5 @@
+//! Helpers shared by the parser's components.
+
 use crate::ast::ast::SkippedTokenNode;
 use crate::constants::common::NEWLINE;
 use crate::error::diagnostics::{

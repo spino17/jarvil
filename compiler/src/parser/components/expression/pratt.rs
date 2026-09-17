@@ -1,10 +1,14 @@
-// This is alternate (and better) top-down approach for parsing expression called Pratt Parser.
-// Many famous production-grade parsers like microsoft's `tolerant-php-parser`, `Golang` and Douglas Crockford’s `JSLint` uses this technique
-// (among many others).
-// See following for more information:
-// 1. `http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/`
-// 2. `https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html`
-// NOTE: By default Jarvil uses this implementation
+//! Pratt parsing for expressions.
+//!
+//! A top-down operator-precedence parser, which keeps precedence and
+//! associativity in one table rather than encoding them in the shape of the
+//! grammar. The same technique is used by Microsoft's `tolerant-php-parser`,
+//! Go, and Douglas Crockford's `JSLint`, among others.
+//!
+//! Further reading:
+//!
+//! 1. <http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/>
+//! 2. <https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html>
 
 use crate::{
     ast::ast::{ExpressionNode, TokenNode},

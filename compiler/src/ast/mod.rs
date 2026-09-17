@@ -1,3 +1,5 @@
+//! The syntax tree, and the machinery for walking and printing it.
+
 #[macro_use]
 pub mod macros;
 pub mod ast;

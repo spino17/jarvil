@@ -1,3 +1,9 @@
+//! Callable symbols: functions, methods, constructors and lambdas.
+//!
+//! A callable's prototype -- parameter types and return type -- is stored
+//! uninstantiated. Calls concretize it against whatever type arguments were
+//! inferred or supplied at the call site.
+
 use super::core::{SymbolDataEntry, SymbolIndex};
 use crate::scope::concrete::{
     MethodGenericsInstantiationContext, TurbofishTypes, TypeGenericsInstantiationContext,

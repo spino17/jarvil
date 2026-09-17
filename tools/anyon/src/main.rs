@@ -1,3 +1,8 @@
+//! The `anyon` command line entry point.
+//!
+//! Parses arguments, configures how diagnostics are rendered, and exits
+//! non-zero when a command fails so the tool composes with scripts and CI.
+
 use anyon::{
     build::{BuildMode, execute_build_or_run},
     error::AnyonError,

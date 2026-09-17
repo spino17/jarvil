@@ -1,3 +1,6 @@
+//! Fragments shared by several constructs: parameter lists, generic type
+//! declarations, name-and-type pairs.
+
 use super::statement::{
     STATEMENT_WITHIN_FUNC_STARTING_SYMBOLS, is_statement_within_func_starting_with,
 };

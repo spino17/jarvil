@@ -1,3 +1,8 @@
+//! Enum types, with optionally-payloaded variants.
+//!
+//! Exhaustiveness of `match` is checked against the variant list here; a
+//! missing variant is a compile error rather than a runtime surprise.
+
 use super::{
     core::{CoreType, Type, TypeStringifyContext},
     helper::{try_infer_types_from_tuple, user_defined_ty_compare_fn},

@@ -1,3 +1,10 @@
+//! `anyon build` and `anyon run`.
+//!
+//! Compiles `main.jv` in the working directory, writes the Python beside it,
+//! and -- for `run` -- executes it with the system `python3`. The generated
+//! file is passed through `black` when that is available, purely so the output
+//! is pleasant to read.
+
 use super::error::AnyonError;
 use crate::helper::curr_dir_path;
 use compiler::build_code;

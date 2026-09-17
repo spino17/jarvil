@@ -1,3 +1,5 @@
+//! Symbol tables, scopes, and the semantic database built during resolution.
+
 pub mod concrete;
 pub mod errors;
 pub mod helper;

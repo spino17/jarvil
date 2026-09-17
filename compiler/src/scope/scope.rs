@@ -1,3 +1,9 @@
+//! The scope arena and the symbol tables within it.
+//!
+//! Scopes form a tree rooted at the global scope, each holding a map from name
+//! to symbol. A lookup walks up the parent chain, which is what gives inner
+//! declarations the ability to shadow outer ones.
+
 use super::{
     lookup::IntermediateLookupResult,
     symbol::core::{IdentDeclId, Symbol, SymbolIndex},

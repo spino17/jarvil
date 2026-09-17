@@ -1,12 +1,12 @@
-// Position-driven queries over a finished analysis: what is declared at this
-// offset, and what should be said about it.
-//
-// There is no general "find the node at this offset" tree walk here, and that
-// is deliberate. Name resolution already records every identifier it resolved
-// in `identifier_in_use_binding_table`, keyed by the very node the cursor would
-// land on, so the lookup is a scan of that table rather than a descent through
-// the AST. Fewer moving parts, and it cannot disagree with the resolver about
-// what counts as a reference.
+//! Position-driven queries over a finished analysis: what is declared at this
+//! offset, and what should be said about it.
+//!
+//! There is no general "find the node at this offset" tree walk here, and that
+//! is deliberate. Name resolution already records every identifier it resolved
+//! in `identifier_in_use_binding_table`, keyed by the very node the cursor would
+//! land on, so the lookup is a scan of that table rather than a descent through
+//! the AST. Fewer moving parts, and it cannot disagree with the resolver about
+//! what counts as a reference.
 
 use crate::analysis::AnalysisCtx;
 use crate::ast::ast::{OkIdentifierInDeclNode, OkIdentifierInUseNode};
@@ -16,19 +16,21 @@ use crate::types::core::TypeStringifyContext;
 use crate::types::traits::TypeLike;
 use text_size::TextRange;
 
-// Where a symbol was declared, and what to call it.
+/// The result of a go-to-definition query.
 #[derive(Debug, Clone)]
 pub struct Definition {
-    // the identifier's declaration site, to jump to
+    /// Where the symbol was declared -- the range to jump to.
     pub target_range: TextRange,
-    // the reference that was resolved, to highlight as the origin
+    /// The reference that was resolved, for the editor to highlight as origin.
     pub origin_range: TextRange,
 }
 
+/// The result of a hover query.
 #[derive(Debug, Clone)]
 pub struct Hover {
-    // markdown
+    /// Markdown: a fenced signature, optionally followed by a doc comment.
     pub contents: String,
+    /// The range the hover describes, so the editor can underline it.
     pub range: TextRange,
 }
 
@@ -101,6 +103,13 @@ fn decl_at<'ctx>(
         .min_by_key(|(_, range)| u32::from(range.end()) - u32::from(range.start()))
 }
 
+/// Finds what the symbol at `offset` was declared as.
+///
+/// Returns `None` when the offset is not on a resolved identifier -- whitespace,
+/// a keyword, or a name that failed to resolve.
+///
+/// A declaration resolves to itself, so invoking this on one is a no-op rather
+/// than a dead end.
 pub fn definition_at(ctx: &AnalysisCtx<'_>, offset: u32) -> Option<Definition> {
     // a reference jumps to its declaration
     if let Some((node, origin_range)) = use_at(ctx, offset) {
@@ -251,6 +260,11 @@ fn doc_comment(ctx: &AnalysisCtx<'_>, decl_range: TextRange) -> Option<String> {
     Some(lines.join("\n"))
 }
 
+/// Describes the symbol at `offset`.
+///
+/// Yields a signature for a callable, an inferred type for a variable, or the
+/// kind for a type or interface -- plus the doc comment above the declaration,
+/// when there is one. Returns `None` when the offset is not on an identifier.
 pub fn hover_at(ctx: &AnalysisCtx<'_>, offset: u32) -> Option<Hover> {
     let interner = ctx.semantic_db.interner();
 

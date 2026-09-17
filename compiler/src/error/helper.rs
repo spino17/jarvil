@@ -1,3 +1,9 @@
+//! Presentation helpers shared by the diagnostic types.
+//!
+//! Mostly the vocabulary used in messages -- whether an identifier is a
+//! variable, a field or a method -- so that wording stays consistent across
+//! roughly ninety diagnostics.
+
 use std::fmt::Display;
 use std::fmt::{self};
 use text_size::TextRange;

@@ -1,3 +1,5 @@
+//! `type` declarations: structs, enums and lambda type aliases.
+
 use crate::ast::ast::{
     IdentifierInUseNode, SymbolSeparatedSequenceNode, TokenNode, TypeExpressionNode,
 };

@@ -1,3 +1,5 @@
+//! Type expressions: `int`, `[T]`, `{K: V}`, `(A, B)`, and user-defined names.
+
 use crate::ast::ast::TypeExpressionNode;
 use crate::ast::traits::{ErrornousNode, Node};
 use crate::constants::common::{ATOMIC_TYPE, IDENTIFIER};

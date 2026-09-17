@@ -1,3 +1,15 @@
+//! Every keyword, operator and symbol the language recognises, in one place.
+//!
+//! This is the single source of truth for the language's spelling: the lexer's
+//! keyword trie, the parser's "expected token" diagnostics, and the VS Code
+//! grammar all derive from these. `compiler/tests/grammar.rs` asserts the
+//! editor grammar has not drifted from this list.
+//!
+//! The second block holds words reserved *only* because the generated Python
+//! must stay valid -- `import`, `class` and friends are not Jarvil keywords,
+//! but using one as an identifier would emit broken Python, so they are
+//! rejected up front.
+
 pub const PLUS: &str                                    = "+";
 pub const DASH: &str                                    = "-";
 pub const RIGHT_ARROW: &str                             = "->";

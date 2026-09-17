@@ -1,3 +1,5 @@
+//! What the compiler knows about each kind of declared thing.
+
 pub mod common;
 pub mod core;
 pub mod function;

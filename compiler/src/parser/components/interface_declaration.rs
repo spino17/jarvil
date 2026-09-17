@@ -1,3 +1,5 @@
+//! `interface` declarations and their method prototypes.
+
 use crate::{
     ast::ast::InterfaceDeclarationNode,
     constants::common::{DEF, IDENTIFIER},

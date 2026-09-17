@@ -1,3 +1,10 @@
+//! Atoms and the postfix chains applied to them.
+//!
+//! An atom is an identifier or `self` followed by any number of calls, index
+//! operations, property accesses and method calls. Note that a *literal* cannot
+//! start an atom, which is why `"a,b".split(",")` does not parse -- bind it to a
+//! name first.
+
 use crate::ast::ast::{
     AtomNode, AtomStartNode, CallExpressionNode, ExpressionNode, SymbolSeparatedSequenceNode,
     TokenNode,

@@ -1,3 +1,12 @@
+//! Browser bindings for the Jarvil compiler.
+//!
+//! Exposes a single [`compile`] function over `wasm-bindgen`, intended for a
+//! web playground: source text in, either generated Python or a rendered error
+//! out.
+//!
+//! Diagnostics come back as a string containing ANSI escape codes, because the
+//! expected consumer is a terminal emulator in the page. See [`compile`].
+
 use compiler::{build_code, code::JarvilCode};
 use miette::{GraphicalReportHandler, GraphicalTheme};
 use owo_colors::Style;
@@ -5,6 +14,13 @@ use std::fmt::Write;
 use std::str;
 use wasm_bindgen::prelude::*;
 
+/// Compiles Jarvil source, for calling from JavaScript.
+///
+/// # Errors
+///
+/// Returns the first diagnostic, rendered with ANSI escape codes and Unicode
+/// box drawing on the assumption that the page displays it in a terminal
+/// emulator. Plain text is not currently available through this entry point.
 #[wasm_bindgen]
 pub fn compile(code_str: &str) -> Result<String, String> {
     let _ = miette::set_hook(Box::new(|_err| {

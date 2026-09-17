@@ -1,9 +1,14 @@
-// This code is taken from the amazing blog on `Fast and Simple Rust Interner` by `matklad`:
-// `https://matklad.github.io/2020/03/22/fast-simple-rust-interner.html`
+//! This code is taken from the amazing blog on `Fast and Simple Rust Interner` by `matklad`:
+//! `https://matklad.github.io/2020/03/22/fast-simple-rust-interner.html`
 
 use rustc_hash::FxHashMap;
 use std::sync::Mutex;
 
+/// A handle to an interned string.
+///
+/// Four bytes and `Copy`, so identifiers can be compared and stored without
+/// touching the string itself. Resolve one with [`Interner::lookup`]; a handle
+/// is only meaningful to the interner that issued it.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct IdentName(u32);
 
@@ -23,6 +28,11 @@ struct CoreInterner {
 pub struct Interner(Mutex<CoreInterner>);
 
 impl Interner {
+    /// Returns the handle for `name`, allocating one if it is new.
+    ///
+    /// # Panics
+    ///
+    /// If the internal lock was poisoned by a panic in another thread.
     pub fn intern(&self, name: &str) -> IdentName {
         // One acquisition for the whole operation. The previous version took
         // the lock four separate times and then called `intern` again from a
@@ -45,6 +55,11 @@ impl Interner {
         IdentName(index)
     }
 
+    /// The string behind a handle.
+    ///
+    /// # Panics
+    ///
+    /// If `index` came from a different interner, or if the lock was poisoned.
     pub fn lookup(&self, index: IdentName) -> String {
         self.0.lock().expect("interner mutex poisoned").vec[index.0 as usize].to_string()
     }

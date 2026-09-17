@@ -1,3 +1,5 @@
+//! The user-defined type symbol, over its four kinds.
+
 use super::enum_ty::EnumTypeData;
 use crate::scope::concrete::TurbofishTypes;
 use crate::scope::errors::GenericTypeArgsCheckError;

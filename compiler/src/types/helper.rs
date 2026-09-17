@@ -1,3 +1,5 @@
+//! Inference helpers shared across the type implementations.
+
 use super::{core::Type, traits::UserDefinedType};
 use crate::{
     core::string_interner::Interner,

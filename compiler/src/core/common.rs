@@ -1,3 +1,5 @@
+//! Shared helper types used across passes.
+
 use std::ops::Deref;
 
 #[derive(Debug)]

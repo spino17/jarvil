@@ -1,3 +1,5 @@
+//! Struct declarations: fields, methods, constructor and implemented interfaces.
+
 use crate::core::string_interner::IdentName;
 use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;

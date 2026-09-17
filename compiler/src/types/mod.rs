@@ -1,3 +1,5 @@
+//! The type system: what types exist, and how they relate.
+
 #[macro_use]
 pub mod macros;
 pub mod array;

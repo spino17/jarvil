@@ -1,3 +1,5 @@
+//! The top level of a file: a sequence of statements.
+
 use crate::ast::ast::BlockNode;
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;

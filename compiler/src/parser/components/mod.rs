@@ -1,3 +1,8 @@
+//! The parser, split by the construct each file parses.
+//!
+//! Every function here takes the parser and consumes one construct, so the
+//! grammar can be read a piece at a time rather than as one large file.
+
 pub mod assignment;
 pub mod block;
 pub mod code;

@@ -1,8 +1,8 @@
-// Methods on `{K: V}`, each mapping to a Python `dict` method of the same name.
-//
-// `K` and `V` are the type-level generics at declaration indices 0 and 1; the
-// non-struct method handler concretizes them against the receiver before the
-// call is checked.
+//! Methods on `{K: V}`, each mapping to a Python `dict` method of the same name.
+//!
+//! `K` and `V` are the type-level generics at declaration indices 0 and 1; the
+//! non-struct method handler concretizes them against the receiver before the
+//! call is checked.
 
 use super::core::HashMap;
 use crate::core::string_interner::Interner;

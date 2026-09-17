@@ -1,3 +1,5 @@
+//! Enum declarations: variants and their optional payload types.
+
 use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::generic_ty::GenericTypeParams;

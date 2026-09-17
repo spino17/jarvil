@@ -1,3 +1,9 @@
+//! `{K: V}`, which becomes a Python `dict`.
+//!
+//! Keys must be hashable, checked at the point of indexing -- currently a
+//! property of the type rather than an interface bound, which is why the check
+//! is hard-coded rather than expressed in the language.
+
 use crate::{
     constants::common::BOOL,
     lexer::token::BinaryOperatorKind,

@@ -1,3 +1,22 @@
+//! The parser proper: token stream to syntax tree.
+//!
+//! A hand-written recursive descent parser, with [Pratt parsing] for
+//! expressions so that precedence and associativity stay in one table rather
+//! than being encoded in the shape of the grammar.
+//!
+//! # Error recovery
+//!
+//! The parser never stops at the first syntax error. When it cannot match what
+//! it expects it records a diagnostic, synthesises a placeholder node
+//! (`MissingToken`, `SkippedTokens`), and carries on. Two things depend on this:
+//! a single compile can report several syntax errors, and an editor can ask
+//! questions about a file that is mid-edit and therefore almost never valid.
+//!
+//! Block structure comes from indentation, which is recovered here rather than
+//! in the lexer -- see [`crate::lexer::lexer`].
+//!
+//! [Pratt parsing]: super::components::expression::pratt
+
 use super::resolver::BlockKind;
 use crate::ast::ast::{
     AssignmentNode, AtomNode, AtomStartNode, AtomicExpressionNode, BlockNode, CallableBodyNode,

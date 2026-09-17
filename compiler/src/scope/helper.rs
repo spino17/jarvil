@@ -1,3 +1,5 @@
+//! Helpers for building and querying scopes.
+
 use super::namespace::Namespace;
 use super::scope::ScopeIndex;
 use super::symbol::{

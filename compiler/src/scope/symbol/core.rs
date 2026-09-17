@@ -1,3 +1,9 @@
+//! Symbol identity: indices, declaration ranges and unique ids.
+//!
+//! A [`SymbolIndex`] is a typed handle into one namespace's scope tree. Symbols
+//! are referred to by index rather than by reference throughout, which keeps the
+//! tables free of borrows and lets them be mutated during resolution.
+
 use super::{
     function::CallableData, interfaces::InterfaceData, types::core::UserDefinedTypeData,
     variables::VariableData,

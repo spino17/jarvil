@@ -1,3 +1,5 @@
+//! The kinds of user-defined type.
+
 pub mod core;
 pub mod enum_ty;
 pub mod generic_ty;

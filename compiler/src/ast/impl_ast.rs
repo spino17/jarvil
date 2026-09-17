@@ -1,3 +1,12 @@
+//! Constructors and accessors for every syntax tree node.
+//!
+//! Split out from [`super::ast`], which holds only the shapes: this file has
+//! the `new_with_*` constructors that wrap each node in its `Arc`, the
+//! `core_ref` accessors that unwrap it, and the [`Node`] impls that compute a
+//! node's source range from its children.
+//!
+//! [`Node`]: super::traits::Node
+
 use super::ast::{
     ArrayExpressionNode, ArrayTypeNode, AssignmentNode, AtomNode, AtomStartNode,
     AtomicExpressionNode, AtomicTypeNode, BinaryExpressionNode, BlockNode,

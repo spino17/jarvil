@@ -1,3 +1,9 @@
+//! Concrete type arguments substituted into a generic.
+//!
+//! A generic symbol is stored once, uninstantiated; the arguments at a
+//! particular use site travel alongside the symbol index as a
+//! [`TurbofishTypes`], and are applied on demand by `concretize`.
+
 use super::symbol::core::SymbolIndex;
 use super::traits::InstantiationContext;
 use crate::types::core::{Type, TypeStringifyContext};

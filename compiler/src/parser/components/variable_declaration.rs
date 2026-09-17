@@ -1,3 +1,5 @@
+//! `let` bindings, with or without a type annotation.
+
 use crate::ast::ast::LambdaDeclarationNode;
 use crate::constants::common::LAMBDA_KEYWORD;
 use crate::parser::resolver::BlockKind;

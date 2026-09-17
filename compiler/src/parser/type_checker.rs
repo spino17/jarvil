@@ -1,5 +1,5 @@
-// See `https://www.csd.uwo.ca/~mmorenom/CS447/Lectures/TypeChecking.html/node1.html` for information about various cases that type-checker needs to
-// cover and the representation of type expressions in terms of type objects.
+//! See `https://www.csd.uwo.ca/~mmorenom/CS447/Lectures/TypeChecking.html/node1.html` for information about various cases that type-checker needs to
+//! cover and the representation of type expressions in terms of type objects.
 
 use super::components::assignment::R_ASSIGNMENT_STARTING_SYMBOLS;
 use super::helper::err_for_generic_ty_args;

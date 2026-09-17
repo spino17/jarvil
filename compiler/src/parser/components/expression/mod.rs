@@ -1,3 +1,5 @@
+//! Expression parsing.
+
 pub mod atom;
 pub mod common;
 pub mod core;

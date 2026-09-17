@@ -1,3 +1,9 @@
+//! Statement parsing, and the token sets that may begin one.
+//!
+//! Which statements are legal depends on where they appear -- `break` only
+//! inside a loop, only declarations at global scope -- so the "starts with"
+//! predicates here are what [`super::block`] uses to decide what a block admits.
+
 use crate::ast::ast::{
     BreakStatementNode, CallableKind, CaseBranchStatementNode, ContinueStatementNode,
     EnumVariantDeclarationNode, IdentifierInDeclNode, StatementNode, StructPropertyDeclarationNode,

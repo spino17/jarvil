@@ -1,3 +1,14 @@
+//! Every diagnostic the compiler can emit.
+//!
+//! Each variant of [`Diagnostics`] is a distinct struct deriving miette's
+//! `Diagnostic`, which is what gives it a code, a severity, and one or more
+//! labelled spans. Building them as types rather than formatted strings is what
+//! lets [`crate::analysis`] read spans back out generically -- an editor gets
+//! the ranges without anything having to match on ninety variants.
+//!
+//! Messages carry no colour. Styling is the renderer's job: miette applies a
+//! theme when printing to a terminal, and a language server needs plain text.
+
 use super::helper::{IdentifierKind, PropertyKind, range_to_span};
 use crate::types::core::TypeStringifyContext;
 use crate::types::traits::TypeLike;
@@ -16,6 +27,11 @@ use std::{
 use text_size::TextRange;
 use thiserror::Error;
 
+/// Every problem the compiler can report.
+///
+/// Each variant wraps a struct deriving miette's `Diagnostic`, which supplies
+/// the code, severity and labelled spans. See the module documentation for why
+/// these are types rather than formatted strings.
 #[derive(Clone, Debug)]
 pub enum Diagnostics {
     InvalidChar(InvalidCharError),
@@ -95,6 +111,11 @@ pub enum Diagnostics {
 }
 
 impl Diagnostics {
+    /// Wraps this diagnostic as a miette report, ready to render.
+    ///
+    /// The report carries no source text; attach it with
+    /// `Report::with_source_code` before printing, or read spans out through
+    /// [`crate::analysis`] instead.
     pub fn report(&self) -> Report {
         match self {
             Diagnostics::InvalidChar(diagnostic) => Report::new(diagnostic.clone()),

@@ -90,6 +90,46 @@ MyProject/
 └── __ast_main.json
 ```
 
+## 🛠 Working on the compiler
+
+The repository is a Cargo workspace:
+
+| Crate | What it is |
+|---|---|
+| `compiler` | the language itself — lexer, parser, resolver, type checker, Python emitter |
+| `tools/anyon` | the `anyon` CLI |
+| `tools/jarvil-lsp` | the language server |
+| `tools/jarvil-wasm` | browser bindings |
+| `compiler/jarvil-macros` | derive macros generating the syntax tree's boilerplate |
+| `extensions/jarvil-lang` | the VS Code extension ([setup](extensions/jarvil-lang/README.md)) |
+
+### API documentation
+
+```bash
+cargo doc --workspace --no-deps --open
+```
+
+Start at the `compiler` crate docs: the crate-level page describes the five-pass
+pipeline and both entry points, and each module explains its role in it.
+
+### Checks
+
+These four should all pass before a commit:
+
+```bash
+cargo fmt --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps   # catches broken doc links
+```
+
+### Tests
+
+Unit tests live beside the code; the substantial suites are in
+`compiler/tests/`, which runs a corpus of `.jv` files through each pass and
+snapshots the result. Adding a case usually means adding a file rather than
+writing Rust — see [`compiler/tests/README.md`](compiler/tests/README.md).
+
 ## 🤝 Contributions
 
 Pull requests and experiments welcome! Feel free to fork and play around with the language.

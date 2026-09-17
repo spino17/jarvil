@@ -1,17 +1,17 @@
-// A compact, human-readable rendering of the AST, meant for snapshot tests.
-//
-// The JSON produced by `serialize_ast` is faithful but unreadable as a test
-// artifact: a three-line program expands to several kilobytes, most of it
-// trivia and byte offsets. A snapshot is only useful if a reviewer can look at
-// its diff and say whether the change was intended, so this renderer drops
-// everything positional and collapses the deep single-field wrappers the AST
-// uses, leaving the shape of the tree and the source text of each token.
-//
-// Deliberately omitted:
-//   - `range` / `line_number`, which shift whenever anything above them is
-//     edited and would churn every snapshot in the corpus
-//   - `trivia`, i.e. whitespace and comments hanging off each token
-//   - `null` fields, which are the (many) unset `Option`s
+//! A compact, human-readable rendering of the AST, meant for snapshot tests.
+//!
+//! The JSON produced by `serialize_ast` is faithful but unreadable as a test
+//! artifact: a three-line program expands to several kilobytes, most of it
+//! trivia and byte offsets. A snapshot is only useful if a reviewer can look at
+//! its diff and say whether the change was intended, so this renderer drops
+//! everything positional and collapses the deep single-field wrappers the AST
+//! uses, leaving the shape of the tree and the source text of each token.
+//!
+//! Deliberately omitted:
+//!   - `range` / `line_number`, which shift whenever anything above them is
+//!     edited and would churn every snapshot in the corpus
+//!   - `trivia`, i.e. whitespace and comments hanging off each token
+//!   - `null` fields, which are the (many) unset `Option`s
 
 use super::ast::BlockNode;
 use crate::code::JarvilCodeHandler;
@@ -111,6 +111,12 @@ fn render(val: &Value, label: &str, depth: usize, out: &mut String) {
     }
 }
 
+/// Renders the tree as an indented outline for snapshot tests.
+///
+/// # Errors
+///
+/// Propagates a `serde_json` failure, which would indicate a bug in the AST's
+/// `Serialize` impls rather than anything about the program.
 pub fn dump_ast(ast: &BlockNode, code: &JarvilCodeHandler) -> Result<String> {
     let value = super::print::ast_to_value(ast, code)?;
     let mut out = String::new();

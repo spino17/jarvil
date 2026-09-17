@@ -1,3 +1,14 @@
+//! [`Type`], the representation every expression is checked against.
+//!
+//! A type is an `Arc` around [`CoreType`], so passing types around is a
+//! refcount bump rather than a deep copy -- they are cloned constantly during
+//! inference.
+//!
+//! `Unknown` and `Unset` are not language types. `Unknown` is what a failed
+//! check yields, so that checking continues instead of stopping at the first
+//! error; `Unset` marks an annotation not yet resolved. Both are deliberately
+//! permissive in comparisons, to avoid reporting the same mistake twice.
+
 use super::r#enum::Enum;
 use super::generic::Generic;
 use super::hashmap::core::HashMap;
@@ -22,6 +33,10 @@ use crate::types::{array::core::Array, atomic::core::Atomic};
 use std::fmt::Debug;
 use std::sync::Arc;
 
+/// Every kind of type the language has.
+///
+/// `Unknown`, `Void` and `Unset` are internal rather than writable: see the
+/// module documentation.
 #[derive(Debug)]
 pub enum CoreType {
     Atomic(Atomic),
@@ -37,6 +52,11 @@ pub enum CoreType {
     Unset,
 }
 
+/// A type, cheap to clone.
+///
+/// An `Arc` around [`CoreType`], because inference clones types constantly and
+/// the tree of a nested type can be large. The `Arc` is also what makes types
+/// shareable across threads.
 #[derive(Debug, Clone)]
 pub struct Type(Arc<CoreType>);
 
@@ -199,7 +219,10 @@ impl Type {
         }
     }
 
-    // This function returns Some if operation is possible and None otherwise
+    /// The result type of applying `op_kind` to `self` and `other`.
+    ///
+    /// `None` when the operation is not defined for that pair, which the type
+    /// checker turns into a diagnostic naming both operands.
     pub fn check_operator(
         &self,
         other: &Type,

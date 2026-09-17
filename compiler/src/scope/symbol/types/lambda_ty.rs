@@ -1,3 +1,5 @@
+//! Named lambda types declared with `type X = lambda(..)`.
+
 use crate::scope::concrete::TypeGenericsInstantiationContext;
 use crate::scope::namespace::Namespace;
 use crate::scope::symbol::types::generic_ty::GenericTypeParams;

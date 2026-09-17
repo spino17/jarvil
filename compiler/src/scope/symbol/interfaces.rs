@@ -1,3 +1,8 @@
+//! Interface symbols and the bounds placed on generic parameters.
+//!
+//! An [`InterfaceBounds`] is the set of interfaces a generic type must satisfy;
+//! checking a call means checking the inferred type against it.
+
 use super::core::SymbolDataEntry;
 use super::core::SymbolIndex;
 use super::function::CallableData;

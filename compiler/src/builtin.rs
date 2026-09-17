@@ -1,13 +1,13 @@
-// Free functions available to every Jarvil program without an import.
-//
-// Each one is a thin front for a Python builtin of the same name. That is not a
-// coincidence and it is worth stating plainly: code generation emits these
-// verbatim, because builtins are registered with no unique id and so skip name
-// mangling. A builtin declared here as `len` becomes a literal `len(..)` in the
-// generated Python. The consequence is that a builtin may only be added when a
-// Python function of the same name has the same arity, semantics and return
-// type -- otherwise the program type-checks and then fails at runtime, which is
-// the opposite of the point of the language.
+//! Free functions available to every Jarvil program without an import.
+//!
+//! Each one is a thin front for a Python builtin of the same name. That is not a
+//! coincidence and it is worth stating plainly: code generation emits these
+//! verbatim, because builtins are registered with no unique id and so skip name
+//! mangling. A builtin declared here as `len` becomes a literal `len(..)` in the
+//! generated Python. The consequence is that a builtin may only be added when a
+//! Python function of the same name has the same arity, semantics and return
+//! type -- otherwise the program type-checks and then fails at runtime, which is
+//! the opposite of the point of the language.
 
 use crate::{
     constants::common::{FLOAT, INT, STRING},
@@ -46,6 +46,13 @@ fn generic_func(interner: &Interner, params: Vec<Type>, return_ty: Type) -> Call
     )
 }
 
+/// Every free function available without an import.
+///
+/// Registered into the global scope when a [`SemanticStateDatabase`] is
+/// created. See the module documentation for why these names must match
+/// Python's exactly.
+///
+/// [`SemanticStateDatabase`]: crate::scope::semantic_db::SemanticStateDatabase
 pub fn builtin_funcs(interner: &Interner) -> FxHashMap<&'static str, CallableData> {
     let mut funcs = FxHashMap::default();
 

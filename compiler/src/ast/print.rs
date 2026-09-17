@@ -1,3 +1,9 @@
+//! Serialises the syntax tree to JSON.
+//!
+//! `anyon build` writes this next to the source as `__ast_<name>.json`, as a
+//! debugging aid. Each token is annotated with the source text it covers, which
+//! the tree itself does not store -- nodes hold ranges, not strings.
+
 use super::ast::BlockNode;
 use crate::code::JarvilCodeHandler;
 use serde_json::Result;
@@ -35,6 +41,13 @@ fn process_value(val: &mut Value, code: &JarvilCodeHandler) {
 // Serializes the AST into a `serde_json::Value` with each token's source text
 // attached under a `value` key. Both the on-disk `__ast_<name>.json` dump and
 // the compact tree used by snapshot tests are rendered from this.
+/// Serialises the tree to a `serde_json::Value`.
+///
+/// Shared by [`serialize_ast`] and by the compact dump used in tests.
+///
+/// # Errors
+///
+/// Propagates a `serde_json` failure.
 pub fn ast_to_value(ast: &BlockNode, code: &JarvilCodeHandler) -> Result<Value> {
     let serialized_ast = serde_json::to_string(ast)?;
     let mut deserialized: Value = serde_json::from_str(&serialized_ast)?;
@@ -44,6 +57,11 @@ pub fn ast_to_value(ast: &BlockNode, code: &JarvilCodeHandler) -> Result<Value> 
     Ok(deserialized)
 }
 
+/// Serialises the tree to JSON, annotating each token with its source text.
+///
+/// # Errors
+///
+/// Propagates a `serde_json` failure.
 pub fn serialize_ast(ast: &BlockNode, code: &JarvilCodeHandler) -> Result<String> {
     serde_json::to_string(&ast_to_value(ast, code)?)
 }

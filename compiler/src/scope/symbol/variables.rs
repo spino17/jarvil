@@ -1,3 +1,5 @@
+//! Variable symbols, and whether they have been initialised yet.
+
 use super::core::{SymbolDataEntry, SymbolIndex};
 use crate::scope::concrete::TurbofishTypes;
 use crate::scope::errors::GenericTypeArgsCheckError;

@@ -1,3 +1,8 @@
+//! Generic type parameters as they appear in a type position.
+//!
+//! What a `T` supports is determined by the interfaces bounding it, so field
+//! and method lookups here consult those bounds rather than any concrete type.
+
 use super::core::{CoreType, Type, TypeStringifyContext};
 use super::traits::{OperatorCompatiblity, TypeLike};
 use crate::scope::concrete::TypeGenericsInstantiationContext;

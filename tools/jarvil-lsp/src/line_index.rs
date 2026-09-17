@@ -1,13 +1,15 @@
-// Translation between the compiler's byte offsets and LSP positions.
-//
-// This is fiddlier than it looks. LSP positions are (line, character) pairs
-// where `character` counts UTF-16 code units by default, not bytes and not
-// characters. For pure-ASCII source all three coincide, which is exactly why
-// getting it wrong stays invisible until someone puts a non-ASCII character in
-// a string literal or a comment and every range on that line shifts.
+//! Translation between the compiler's byte offsets and LSP positions.
+//!
+//! This is fiddlier than it looks. LSP positions are `(line, character)` pairs
+//! where `character` counts **UTF-16 code units** by default -- not bytes and
+//! not characters. For pure-ASCII source all three coincide, which is exactly
+//! why getting it wrong stays invisible until someone puts a non-ASCII
+//! character in a string literal or a comment, at which point every range on
+//! that line shifts.
 
 use tower_lsp::lsp_types::{Position, Range};
 
+/// Maps between byte offsets and `(line, character)` positions for one document.
 pub struct LineIndex {
     // byte offset at which each line starts
     line_starts: Vec<u32>,
@@ -15,6 +17,7 @@ pub struct LineIndex {
 }
 
 impl LineIndex {
+    /// Indexes `text`, recording where each line starts.
     pub fn new(text: &str) -> Self {
         let mut line_starts = vec![0];
 
@@ -30,13 +33,16 @@ impl LineIndex {
         }
     }
 
+    /// The indexed text.
     pub fn text(&self) -> &str {
         &self.text
     }
 
-    // Byte offset of an LSP position. Clamped rather than failing: an editor can
-    // legitimately ask about a position one past the end of a line, and a
-    // slightly-off answer beats refusing to respond.
+    /// Byte offset of an LSP position.
+    ///
+    /// Clamps rather than failing: an editor can legitimately ask about a
+    /// position past the end of a line, and a slightly-off answer beats
+    /// refusing to respond.
     pub fn offset(&self, position: Position) -> u32 {
         let line = position.line as usize;
 
@@ -66,7 +72,7 @@ impl LineIndex {
         line_end
     }
 
-    // LSP position of a byte offset.
+    /// LSP position of a byte offset, counting UTF-16 units on the line.
     pub fn position(&self, offset: u32) -> Position {
         let offset = offset.min(self.text.len() as u32);
 
@@ -89,6 +95,7 @@ impl LineIndex {
         }
     }
 
+    /// Converts a byte range into an LSP [`Range`].
     pub fn range(&self, start: u32, end: u32) -> Range {
         Range {
             start: self.position(start),

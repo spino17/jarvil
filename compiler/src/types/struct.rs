@@ -1,3 +1,9 @@
+//! Struct types.
+//!
+//! Operators on structs are currently rejected outright. The intention is for
+//! them to be driven by interfaces (`Add`, `Subtract`, ..) once the interface
+//! system can express operator overloading.
+
 use super::core::{CoreType, Type, TypeStringifyContext};
 use super::helper::{try_infer_types_from_tuple, user_defined_ty_compare_fn};
 use super::traits::{OperatorCompatiblity, TypeLike, UserDefinedType};

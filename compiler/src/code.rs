@@ -1,3 +1,9 @@
+//! The source text being compiled, and the line table built alongside it.
+//!
+//! Source is held as a `Vec<char>` rather than a `String` so the lexer can
+//! index by character position without repeatedly decoding UTF-8. Every span in
+//! the compiler is a [`text_size::TextRange`] into this buffer.
+
 use std::fmt;
 use text_size::TextRange;
 

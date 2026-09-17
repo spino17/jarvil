@@ -1,3 +1,5 @@
+//! `[T]`, which becomes a Python `list`.
+
 use crate::lexer::token::BinaryOperatorKind;
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};

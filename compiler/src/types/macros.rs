@@ -1,3 +1,5 @@
+//! Macros reducing repetition in the operator-compatibility impls.
+
 macro_rules! impl_op_compatiblity {
     ($n: ident, $t: ident, $v: expr, $u: expr) => {
         match $v.0.as_ref() {

@@ -1,11 +1,12 @@
-// `CoreToken`'s variants are named after the tokens they stand for, in the
-// SCREAMING_CASE that is conventional for token enums, and the `tokenify` derive
-// generates one predicate method per variant with a matching name. Both
-// deliberately depart from Rust's casing rules, so the lints are off for the
-// whole module.
-//
-// Note these must be inner attributes: as outer ones they would apply only to
-// the item that follows, which is why the warnings kept firing.
+//! `CoreToken`'s variants are named after the tokens they stand for, in the
+//! SCREAMING_CASE that is conventional for token enums, and the `tokenify` derive
+//! generates one predicate method per variant with a matching name. Both
+//! deliberately depart from Rust's casing rules, so the lints are off for the
+//! whole module.
+//!
+//! Note these must be inner attributes: as outer ones they would apply only to
+//! the item that follows, which is why the warnings kept firing.
+
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 

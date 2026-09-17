@@ -1,3 +1,9 @@
+//! The four namespaces a name can live in.
+//!
+//! Variables, functions, types and interfaces each have their own scope tree,
+//! so the same identifier can name a type and a variable at once. Resolution
+//! tries functions, then types, then variables.
+
 use super::{
     helper::fill_side_scope_with_generic_types,
     scope::{ScopeArena, ScopeIndex},

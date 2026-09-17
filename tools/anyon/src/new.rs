@@ -1,3 +1,5 @@
+//! `anyon new`: scaffolds a project directory with a starter `main.jv`.
+
 use super::error::AnyonError;
 use crate::helper::curr_dir_path;
 use compiler::codegen::python::whitespaces_from_indent_level;

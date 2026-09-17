@@ -1,3 +1,9 @@
+//! Tuple types, `(A, B, ..)`.
+//!
+//! Indexing a tuple needs a literal index, because the element type depends on
+//! which element is being read -- unlike an array, where every element shares
+//! one type.
+
 use super::{
     core::TypeStringifyContext,
     helper::try_infer_types_from_tuple,

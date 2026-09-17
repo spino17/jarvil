@@ -1,3 +1,28 @@
+//! Emits Python from a type-checked syntax tree.
+//!
+//! This is a direct translation, not a lowering: the generator walks the tree
+//! and prints source, carrying the original comments and blank lines along so
+//! the output stays readable next to the input.
+//!
+//! # Name mangling
+//!
+//! User identifiers are rewritten to `<name>_<id>_<kind>` -- `x_0_var`,
+//! `main_2_func` -- because Jarvil scoping allows shadowing that Python's
+//! function-level scoping does not. The unique id comes from the symbol table,
+//! so two distinct bindings can never collide.
+//!
+//! Builtins are the deliberate exception. They are registered without a unique
+//! id, so they pass through unmangled and `len(x)` in Jarvil becomes `len(x)`
+//! in Python. The whole standard library depends on this; see
+//! [`crate::builtin`].
+//!
+//! # Lowering that is not one-to-one
+//!
+//! Enums have no Python equivalent, so a variant becomes a class holding a
+//! discriminant and a payload, and `match` becomes an `if`/`elif` chain over
+//! the discriminant. Generics are erased -- Python is dynamically typed, so one
+//! function body serves every instantiation.
+
 use crate::scope::lookup::LookupResult;
 use crate::scope::mangled::MangledIdentifierName;
 use crate::scope::scope::ScopeIndex;

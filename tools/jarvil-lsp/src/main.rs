@@ -1,14 +1,28 @@
-// Language server for Jarvil.
-//
-// Scope is deliberately small. Jarvil has no module system, so a document is
-// the whole compilation unit: there is no workspace graph, no cross-file
-// resolution, and no reason for an incremental front end. Every request
-// re-analyses the buffer it concerns, which at the size of programs this
-// compiler handles is fast and, more usefully, means the server can never serve
-// an answer that disagrees with the source.
-//
-// The one piece of state is the document store, because LSP delivers edits
-// incrementally-or-not and the server has to remember the current text.
+//! Language server for Jarvil, speaking LSP over stdio.
+//!
+//! # Capabilities
+//!
+//! - **Diagnostics**, republished on every change, including the empty list
+//!   that clears them once the last error is fixed
+//! - **Go to definition**, for variables, functions, types and interfaces
+//! - **Hover**, showing a signature or inferred type plus any doc comment
+//!
+//! # Design
+//!
+//! Scope is deliberately small. Jarvil has no module system, so a document is
+//! the whole compilation unit: there is no workspace graph, no cross-file
+//! resolution, and no reason for an incremental front end. Every request
+//! re-analyses the buffer it concerns, which at the size of programs this
+//! compiler handles is fast and, more usefully, means the server can never
+//! serve an answer that disagrees with the source.
+//!
+//! The one piece of state is the document store, because the protocol expects
+//! the server to remember the current text of each open file.
+//!
+//! Analysis runs through [`compiler::analysis::with_analysis`], which reports
+//! every diagnostic rather than only the first, and answers position queries
+//! even for a program that does not compile -- which is the normal case while
+//! someone is typing.
 
 mod line_index;
 

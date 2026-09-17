@@ -1,3 +1,16 @@
+//! Turns source text into a token stream.
+//!
+//! Two things distinguish this from a textbook lexer:
+//!
+//! **Trivia is preserved.** Whitespace and comments are not discarded; they are
+//! attached to the following token. Code generation needs them to carry
+//! comments into the emitted Python, and hover needs them to find doc comments.
+//!
+//! **Indentation is not handled here.** Unlike Python's lexer, this one emits
+//! no INDENT/DEDENT tokens -- block structure is recovered by the parser from
+//! the column of each statement, which is what lets it report a badly indented
+//! line as one error and carry on.
+
 use crate::code::JarvilCode;
 use crate::error::diagnostics::{Diagnostics, InvalidCharError, NoClosingSymbolError};
 use crate::error::error::JarvilProgramAnalysisErrors;

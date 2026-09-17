@@ -1,3 +1,5 @@
+//! Formatting helpers for the Python emitter.
+
 use super::python::PythonCodeGenerator;
 use crate::ast::ast::{
     AtomNode, CoreAtomNode, CoreAtomStartNode, CoreAtomicExpressionNode, CoreExpressionNode,

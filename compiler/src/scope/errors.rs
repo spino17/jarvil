@@ -1,3 +1,5 @@
+//! Errors arising from generic type arguments.
+
 use text_size::TextRange;
 
 #[derive(Debug)]

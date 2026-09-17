@@ -1,3 +1,17 @@
+//! Name resolution: binding every identifier to the thing it names.
+//!
+//! Walks the syntax tree building a [`SemanticStateDatabase`], which records
+//! for each identifier *use* the symbol it resolves to, and for each
+//! *declaration* the symbol it creates. Everything later -- type checking,
+//! name mangling, go-to-definition -- is a lookup in those tables.
+//!
+//! Identifiers resolve across three namespaces, tried in order: functions, then
+//! types, then variables. A name may therefore exist in more than one namespace
+//! at once, which is why the diagnostic for an unresolved name mentions all
+//! three.
+//!
+//! [`SemanticStateDatabase`]: crate::scope::semantic_db::SemanticStateDatabase
+
 use super::helper::err_for_generic_ty_args;
 use crate::ast::ast::{
     AtomStartNode, BoundedMethodKind, CallExpressionNode, CallableBodyNode, CallablePrototypeNode,

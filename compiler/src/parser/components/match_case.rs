@@ -1,3 +1,5 @@
+//! `match` statements and their `case` branches.
+
 use crate::{
     ast::ast::MatchCaseStatementNode,
     constants::common::CASE,

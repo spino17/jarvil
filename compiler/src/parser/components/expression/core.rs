@@ -1,3 +1,5 @@
+//! Expressions, from unary through to atoms.
+
 use crate::ast::{
     ast::{KeyValuePairNode, SymbolSeparatedSequenceNode},
     traits::ErrornousNode,

@@ -1,3 +1,5 @@
+//! Assignment, and the check that the left side is assignable.
+
 use super::expression::core::is_expr_starting_with;
 use crate::{
     ast::{

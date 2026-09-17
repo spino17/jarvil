@@ -1,3 +1,8 @@
+//! The four primitive types, and the arithmetic they permit.
+//!
+//! Also where numeric promotion lives: `int + float` yields `float`, matching
+//! Python, so the generated code means the same thing as the source.
+
 use crate::constants::common::{BOOL, FLOAT, INT, STRING};
 use crate::parser::type_checker::InferredConcreteTypesEntry;
 use crate::scope::concrete::{TurbofishTypes, TypeGenericsInstantiationContext};

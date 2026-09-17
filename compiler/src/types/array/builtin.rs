@@ -1,8 +1,8 @@
-// Methods on `[T]`, each mapping to a Python `list` method of the same name.
-//
-// `T` is written as the type-level generic at declaration index 0; the
-// non-struct method handler concretizes it against the receiver's element type
-// before the call is checked.
+//! Methods on `[T]`, each mapping to a Python `list` method of the same name.
+//!
+//! `T` is written as the type-level generic at declaration index 0; the
+//! non-struct method handler concretizes it against the receiver's element type
+//! before the call is checked.
 
 use crate::core::string_interner::Interner;
 use crate::types::array::core::Array;

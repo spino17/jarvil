@@ -1,3 +1,5 @@
+//! `for` and `while` loops.
+
 use crate::{
     ast::ast::{ForLoopStatementNode, WhileLoopStatementNode},
     parser::{

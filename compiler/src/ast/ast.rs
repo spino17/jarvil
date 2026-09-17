@@ -1,7 +1,7 @@
-// This module contains green tree nodes. Green Tree is top to down immutable typed structure with no parent information.
-// See the following for more information on green and red tree, immutability and cheap mutations.
-// 1. `https://github.com/apple/swift/tree/5e2c815edfd758f9b1309ce07bfc01c4bc20ec23/lib/Syntax`
-// 2. `https://github.com/rust-analyzer/rowan`
+//! This module contains green tree nodes. Green Tree is top to down immutable typed structure with no parent information.
+//! See the following for more information on green and red tree, immutability and cheap mutations.
+//! 1. `https://github.com/apple/swift/tree/5e2c815edfd758f9b1309ce07bfc01c4bc20ec23/lib/Syntax`
+//! 2. `https://github.com/rust-analyzer/rowan`
 
 // NOTE: This file only contains structure of the AST nodes and not their bounded methods. The methods for respective `ASTNode::<...>`
 // is declared in the file `impl_ast.rs`

@@ -1,3 +1,5 @@
+//! Path and filename helpers for the CLI.
+
 use super::error::AnyonError;
 use std::env;
 use std::path::Path;

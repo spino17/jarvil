@@ -1,3 +1,5 @@
+//! Macros that cut repetition out of the syntax tree's impls.
+
 macro_rules! default_errornous_node_impl {
     ($t: ident, $u: ident) => {
         impl ErrornousNode for $t {

@@ -1,3 +1,5 @@
+//! Field and method tables shared by structs and interfaces.
+
 use super::core::IdentDeclId;
 use super::function::{CallableData, PartialConcreteCallableDataRef};
 use super::interfaces::InterfaceData;

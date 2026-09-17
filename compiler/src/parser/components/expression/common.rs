@@ -1,3 +1,5 @@
+//! Helpers shared across expression parsing.
+
 use crate::ast::ast::{ExpressionNode, SymbolSeparatedSequenceNode};
 use crate::parser::parser::JarvilParser;
 
