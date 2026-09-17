@@ -284,3 +284,7 @@ Adding a case usually means adding a file, not writing Rust. See
 Pull requests and experiments welcome. The [gaps above](#project-status) are the
 most useful places to start; `crates/jarvil-parser/tests/` is where you prove a
 fix works.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

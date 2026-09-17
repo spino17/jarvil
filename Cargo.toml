@@ -18,3 +18,5 @@ edition = "2024"
 # checker were stabilised in 1.88.
 rust-version = "1.88"
 authors = ["Bhavya Bhatt bhavyabhatt17@gmail.com"]
+license = "MIT"
+repository = "https://github.com/spino17/jarvil"
