@@ -19,28 +19,49 @@ one as an identifier really is a syntax error in Jarvil.
 - **Hover** — signature or inferred type, plus the `//` doc comment above a
   declaration.
 
-## Setup
+## Install
 
 ```bash
-# from the repository root
-cargo build --release -p jarvil-lsp
+# 1. the language server, into ~/.cargo/bin so it is found from any project
+cargo install --path tools/jarvil-lsp
 
+# 2. the extension
 cd extensions/jarvil-lang
 npm install
-npm run compile
+npm run install-extension
 ```
 
-Then press <kbd>F5</kbd> in VS Code with this folder open to launch an Extension
-Development Host, and open any `.jv` file.
+`npm run install-extension` compiles the client, builds a `.vsix`, and installs
+it. To only build the package, use `npm run package` and install it yourself:
 
-The extension finds the server by checking, in order:
+```bash
+code --install-extension jarvil-lang-0.1.0.vsix
+```
+
+Reload the window afterwards, then open any `.jv` file.
+
+### Finding the server
+
+The extension checks, in order:
 
 1. the `jarvil.server.path` setting
 2. `jarvil-lsp` on `PATH`
 3. `target/release/jarvil-lsp`, then `target/debug/jarvil-lsp`, in the workspace
 
-Step 3 means a plain `cargo build` in this repository is enough — no
-configuration.
+Step 3 means a plain `cargo build` inside this repository needs no
+configuration. Outside it, install the server (step 1 above) — but note that
+**GUI applications on macOS do not always inherit your shell's `PATH`**, so if
+VS Code was launched from the Dock it may not see `~/.cargo/bin`. If the server
+will not start, set the path explicitly:
+
+```json
+{ "jarvil.server.path": "/Users/you/.cargo/bin/jarvil-lsp" }
+```
+
+### Developing the extension
+
+Press <kbd>F5</kbd> with this folder open to launch an Extension Development
+Host — no packaging needed, and it picks up changes on reload.
 
 ## Limitations
 

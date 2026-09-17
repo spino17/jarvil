@@ -65,7 +65,9 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./client",
-    "watch": "tsc -watch -p ./client"
+    "watch": "tsc -watch -p ./client",
+    "package": "npm run compile && npx @vscode/vsce package",
+    "install-extension": "npm run package && code --install-extension jarvil-lang-$npm_package_version.vsix"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1"
