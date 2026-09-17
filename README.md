@@ -185,19 +185,33 @@ stays `len(x)`.
 
 ## Editor support
 
-A VS Code extension provides syntax highlighting plus a language server with
-live diagnostics, go-to-definition and hover.
+Both editor integrations are thin clients over the same language server, so a
+change to diagnostics, go-to-definition or hover lands in both at once.
 
 ```bash
 cargo install --path crates/jarvil-lsp
-
-cd extensions/jarvil-vscode
-npm install
-npm run install-extension
 ```
 
-Full setup and troubleshooting:
-[`extensions/jarvil-vscode/README.md`](extensions/jarvil-vscode/README.md).
+| Editor | Highlighting | Language server | Setup |
+|---|---|---|---|
+| **VS Code** | yes (TextMate) | yes | [`extensions/jarvil-vscode`](extensions/jarvil-vscode/README.md) |
+| **Zed** | not yet | yes | [`extensions/jarvil-zed`](extensions/jarvil-zed/README.md) |
+
+Zed highlights exclusively through tree-sitter, and Jarvil has no grammar yet —
+so `.jv` files render as plain text there, with working LSP features on top. A
+`tree-sitter-jarvil` grammar would fix that and light up Neovim and Helix too.
+
+### On GitHub
+
+GitHub highlights code with [Linguist](https://github.com/github/linguist),
+which has no entry for Jarvil — so `.jv` files would render as plain text.
+[`.gitattributes`](.gitattributes) borrows Python's grammar instead, which
+covers roughly 85% of Jarvil's keyword tokens. `//` comments and the
+declaration keywords (`let`, `type`, `interface`, `struct`, `enum`) are the
+notable misses.
+
+A proper entry in Linguist requires the language to be in use across a few
+hundred public repositories, so that comes later, if at all.
 
 ## Project status
 
@@ -220,6 +234,7 @@ language server · syntax highlighting
 | **No methods on literals** | `"a,b".split(",")` is a parse error; bind it to a name first. |
 | **Comments are stripped** | The generated Python keeps the source's vertical spacing but loses the prose. |
 | **One error at a time** | The CLI reports only the first diagnostic. The language server reports all of them. |
+| **No tree-sitter grammar** | So no highlighting in Zed, Neovim or Helix. Jarvil is indentation-sensitive, which needs an external scanner. |
 
 Contributions toward any of these are welcome; modules would unblock the most.
 
@@ -236,6 +251,7 @@ A Cargo workspace:
 | `crates/jarvil-wasm` | browser bindings |
 | `crates/jarvil-macros` | derive macros generating the syntax tree's boilerplate |
 | `extensions/jarvil-vscode` | the VS Code extension |
+| `extensions/jarvil-zed` | the Zed extension |
 
 The front end knows nothing about Python: `jarvil-py` depends on
 `jarvil-parser`, never the reverse. That is what lets `jarvil-lsp` depend on the

@@ -83,3 +83,26 @@ output channel to see the JSON-RPC traffic.
 If highlighting works but nothing else does, the server is not being found —
 check the output channel for a start-up error, and confirm the binary exists at
 one of the three locations above.
+
+### Everything appears twice
+
+Two hover panels, or duplicated diagnostics, means two extensions are both
+registering providers for the `jarvil` language. Count the running servers:
+
+```bash
+ps aux | grep jarvil-lsp | grep -v grep
+```
+
+More than one, with the same parent process, confirms it. The usual cause is a
+previous install of this extension under a different id — `code
+--uninstall-extension` deregisters it but cannot delete the directory while VS
+Code is running, and the extension host keeps it loaded until the window
+reloads.
+
+```bash
+ls ~/.vscode/extensions | grep jarvil      # expect exactly one
+rm -rf ~/.vscode/extensions/<the stale one>
+```
+
+Then **Developer: Reload Window**. Killing the server processes does not help on
+its own: the language client restarts them immediately.

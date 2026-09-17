@@ -32,3 +32,7 @@ __*
 extensions/jarvil-vscode/node_modules/
 extensions/jarvil-vscode/client/out/
 extensions/jarvil-vscode/*.vsix
+
+# Zed extension build output (its own cargo workspace, so `**/target/` above
+# already covers it -- listed for clarity)
+extensions/jarvil-zed/target/

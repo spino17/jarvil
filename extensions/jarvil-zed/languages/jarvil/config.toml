@@ -1,0 +1,6 @@
+name = "Jarvil"
+path_suffixes = ["jv"]
+line_comments = ["// "]
+block_comment = ["/* ", " */"]
+tab_size = 4
+hard_tabs = false
