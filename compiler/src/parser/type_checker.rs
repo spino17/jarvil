@@ -880,7 +880,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                         }
                         None => {
                             let err = UnexpectedValueProvidedToEnumVariantError::new(
-                                self.semantic_db.interner().lookup(variant_name).to_string(),
+                                self.semantic_db.interner().lookup(variant_name),
                                 params.range(),
                             );
 
@@ -922,7 +922,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
             },
             None => {
                 let err = EnumVariantDoesNotExistError::new(
-                    self.semantic_db.interner().lookup(ty_name).to_string(),
+                    self.semantic_db.interner().lookup(ty_name),
                     property_name.range(),
                 );
 

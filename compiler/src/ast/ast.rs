@@ -14,7 +14,7 @@ use crate::{lexer::token::Token, types::core::Type};
 use jarvil_macros::Node;
 use jarvil_macros::Nodify;
 use serde::Serialize;
-use std::rc::Rc;
+use std::sync::Arc;
 use text_size::TextRange;
 use text_size::TextSize;
 
@@ -661,154 +661,154 @@ pub struct CoreGenericTypeDeclNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct BlockNode(pub Rc<CoreBlockNode>);
+pub struct BlockNode(pub Arc<CoreBlockNode>);
 #[derive(Debug, Clone)]
-pub struct StatementIndentWrapperNode(pub Rc<CoreStatementIndentWrapperNode>);
+pub struct StatementIndentWrapperNode(pub Arc<CoreStatementIndentWrapperNode>);
 #[derive(Debug, Clone)]
-pub struct SkippedTokensNode(pub Rc<CoreSkippedTokensNode>);
+pub struct SkippedTokensNode(pub Arc<CoreSkippedTokensNode>);
 #[derive(Debug, Clone)]
-pub struct IncorrectlyIndentedStatementNode(pub Rc<CoreIncorrectlyIndentedStatementNode>);
+pub struct IncorrectlyIndentedStatementNode(pub Arc<CoreIncorrectlyIndentedStatementNode>);
 #[derive(Debug, Clone)]
-pub struct StatementNode(pub Rc<CoreStatementNode>);
+pub struct StatementNode(pub Arc<CoreStatementNode>);
 #[derive(Debug, Clone)]
-pub struct InterfaceDeclarationNode(pub Rc<CoreInterfaceDeclarationNode>);
+pub struct InterfaceDeclarationNode(pub Arc<CoreInterfaceDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct DeclareFunctionPrototypeNode(pub Rc<CoreDeclareFunctionPrototypeNode>);
+pub struct DeclareFunctionPrototypeNode(pub Arc<CoreDeclareFunctionPrototypeNode>);
 #[derive(Debug, Clone)]
-pub struct DeclareCallablePrototypeNode(pub Rc<CoreDeclareCallablePrototypeNode>);
+pub struct DeclareCallablePrototypeNode(pub Arc<CoreDeclareCallablePrototypeNode>);
 #[derive(Debug, Clone)]
-pub struct ReturnStatementNode(pub Rc<CoreReturnStatementNode>);
+pub struct ReturnStatementNode(pub Arc<CoreReturnStatementNode>);
 #[derive(Debug, Clone)]
-pub struct VariableDeclarationNode(pub Rc<CoreVariableDeclarationNode>);
+pub struct VariableDeclarationNode(pub Arc<CoreVariableDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct AssignmentNode(pub Rc<CoreAssignmentNode>);
+pub struct AssignmentNode(pub Arc<CoreAssignmentNode>);
 #[derive(Debug, Clone)]
-pub struct OkAssignmentNode(pub Rc<CoreOkAssignmentNode>);
+pub struct OkAssignmentNode(pub Arc<CoreOkAssignmentNode>);
 #[derive(Debug, Clone)]
-pub struct InvalidLValueNode(pub Rc<CoreInvalidLValueNode>);
+pub struct InvalidLValueNode(pub Arc<CoreInvalidLValueNode>);
 #[derive(Debug, Clone)]
-pub struct RAssignmentNode(pub Rc<CoreRAssignmentNode>);
+pub struct RAssignmentNode(pub Arc<CoreRAssignmentNode>);
 #[derive(Debug, Clone)]
-pub struct RVariableDeclarationNode(pub Rc<CoreRVariableDeclarationNode>);
+pub struct RVariableDeclarationNode(pub Arc<CoreRVariableDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct TypeDeclarationNode(pub Rc<CoreTypeDeclarationNode>);
+pub struct TypeDeclarationNode(pub Arc<CoreTypeDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct StructDeclarationNode(pub Rc<CoreStructDeclarationNode>);
+pub struct StructDeclarationNode(pub Arc<CoreStructDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct StructPropertyDeclarationNode(pub Rc<CoreStructPropertyDeclarationNode>);
+pub struct StructPropertyDeclarationNode(pub Arc<CoreStructPropertyDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct LambdaTypeDeclarationNode(pub Rc<CoreLambdaTypeDeclarationNode>);
+pub struct LambdaTypeDeclarationNode(pub Arc<CoreLambdaTypeDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct TypeExpressionNode(pub Rc<CoreTypeExpressionNode>);
+pub struct TypeExpressionNode(pub Arc<CoreTypeExpressionNode>);
 #[derive(Debug, Clone)]
-pub struct AtomicTypeNode(pub Rc<CoreAtomicTypeNode>);
+pub struct AtomicTypeNode(pub Arc<CoreAtomicTypeNode>);
 #[derive(Debug, Clone)]
-pub struct ArrayTypeNode(pub Rc<CoreArrayTypeNode>);
+pub struct ArrayTypeNode(pub Arc<CoreArrayTypeNode>);
 #[derive(Debug, Clone)]
-pub struct TupleTypeNode(pub Rc<CoreTupleTypeNode>);
+pub struct TupleTypeNode(pub Arc<CoreTupleTypeNode>);
 #[derive(Debug, Clone)]
-pub struct HashMapTypeNode(pub Rc<CoreHashMapTypeNode>);
+pub struct HashMapTypeNode(pub Arc<CoreHashMapTypeNode>);
 #[derive(Debug, Clone)]
-pub struct UserDefinedTypeNode(pub Rc<CoreUserDefinedTypeNode>);
+pub struct UserDefinedTypeNode(pub Arc<CoreUserDefinedTypeNode>);
 #[derive(Debug, Clone)]
-pub struct CallablePrototypeNode(pub Rc<CoreCallablePrototypeNode>);
+pub struct CallablePrototypeNode(pub Arc<CoreCallablePrototypeNode>);
 #[derive(Debug, Clone)]
-pub struct CallableBodyNode(pub Rc<CoreCallableBodyNode>);
+pub struct CallableBodyNode(pub Arc<CoreCallableBodyNode>);
 #[derive(Debug, Clone)]
-pub struct FunctionDeclarationNode(pub Rc<CoreFunctionDeclarationNode>);
+pub struct FunctionDeclarationNode(pub Arc<CoreFunctionDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct FunctionWrapperNode(pub Rc<CoreFunctionWrapperNode>);
+pub struct FunctionWrapperNode(pub Arc<CoreFunctionWrapperNode>);
 #[derive(Debug, Clone)]
-pub struct BoundedMethodWrapperNode(pub Rc<CoreBoundedMethodWrapperNode>);
+pub struct BoundedMethodWrapperNode(pub Arc<CoreBoundedMethodWrapperNode>);
 #[derive(Debug, Clone)]
-pub struct LambdaDeclarationNode(pub Rc<CoreLambdaDeclarationNode>);
+pub struct LambdaDeclarationNode(pub Arc<CoreLambdaDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct ExpressionStatementNode(pub Rc<CoreExpressionStatementNode>);
+pub struct ExpressionStatementNode(pub Arc<CoreExpressionStatementNode>);
 #[derive(Debug, Clone)]
-pub struct ExpressionNode(pub Rc<CoreExpressionNode>);
+pub struct ExpressionNode(pub Arc<CoreExpressionNode>);
 #[derive(Debug, Clone)]
-pub struct AtomicExpressionNode(pub Rc<CoreAtomicExpressionNode>);
+pub struct AtomicExpressionNode(pub Arc<CoreAtomicExpressionNode>);
 #[derive(Debug, Clone)]
-pub struct ParenthesisedExpressionNode(pub Rc<CoreParenthesisedExpressionNode>);
+pub struct ParenthesisedExpressionNode(pub Arc<CoreParenthesisedExpressionNode>);
 #[derive(Debug, Clone)]
-pub struct UnaryExpressionNode(pub Rc<CoreUnaryExpressionNode>);
+pub struct UnaryExpressionNode(pub Arc<CoreUnaryExpressionNode>);
 #[derive(Debug, Clone)]
-pub struct OnlyUnaryExpressionNode(pub Rc<CoreOnlyUnaryExpressionNode>);
+pub struct OnlyUnaryExpressionNode(pub Arc<CoreOnlyUnaryExpressionNode>);
 #[derive(Debug, Clone)]
-pub struct BinaryExpressionNode(pub Rc<CoreBinaryExpressionNode>);
+pub struct BinaryExpressionNode(pub Arc<CoreBinaryExpressionNode>);
 #[derive(Debug, Clone)]
-pub struct ComparisonNode(pub Rc<CoreComparisonNode>);
+pub struct ComparisonNode(pub Arc<CoreComparisonNode>);
 #[derive(Debug, Clone)]
-pub struct CallExpressionNode(pub Rc<CoreCallExpressionNode>);
+pub struct CallExpressionNode(pub Arc<CoreCallExpressionNode>);
 #[derive(Debug, Clone)]
-pub struct AtomNode(pub Rc<CoreAtomNode>);
+pub struct AtomNode(pub Arc<CoreAtomNode>);
 #[derive(Debug, Clone)]
-pub struct AtomStartNode(pub Rc<CoreAtomStartNode>);
+pub struct AtomStartNode(pub Arc<CoreAtomStartNode>);
 #[derive(Debug, Clone)]
-pub struct PropertyAccessNode(pub Rc<CorePropertyAccessNode>);
+pub struct PropertyAccessNode(pub Arc<CorePropertyAccessNode>);
 #[derive(Debug, Clone)]
-pub struct MethodAccessNode(pub Rc<CoreMethodAccessNode>);
+pub struct MethodAccessNode(pub Arc<CoreMethodAccessNode>);
 #[derive(Debug, Clone)]
-pub struct IndexAccessNode(pub Rc<CoreIndexAccessNode>);
+pub struct IndexAccessNode(pub Arc<CoreIndexAccessNode>);
 #[derive(Debug, Clone)]
-pub struct CallNode(pub Rc<CoreCallNode>);
+pub struct CallNode(pub Arc<CoreCallNode>);
 #[derive(Debug, Clone)]
-pub struct EnumVariantExprOrClassMethodCallNode(pub Rc<CoreEnumVariantExprOrClassMethodCallNode>);
+pub struct EnumVariantExprOrClassMethodCallNode(pub Arc<CoreEnumVariantExprOrClassMethodCallNode>);
 #[derive(Debug, Clone)]
-pub struct NameTypeSpecNode(pub Rc<CoreNameTypeSpecNode>);
+pub struct NameTypeSpecNode(pub Arc<CoreNameTypeSpecNode>);
 #[derive(Debug, Clone)]
-pub struct SelfKeywordNode(pub Rc<CoreSelfKeywordNode>);
+pub struct SelfKeywordNode(pub Arc<CoreSelfKeywordNode>);
 #[derive(Debug, Clone)]
-pub struct OkSelfKeywordNode(pub Rc<CoreOkSelfKeywordNode>);
+pub struct OkSelfKeywordNode(pub Arc<CoreOkSelfKeywordNode>);
 #[derive(Debug, Clone)]
-pub struct TokenNode(pub Rc<CoreTokenNode>);
+pub struct TokenNode(pub Arc<CoreTokenNode>);
 #[derive(Debug, Clone)]
-pub struct OkTokenNode(pub Rc<CoreOkTokenNode>);
+pub struct OkTokenNode(pub Arc<CoreOkTokenNode>);
 #[derive(Debug, Clone)]
-pub struct MissingTokenNode(pub Rc<CoreMissingTokenNode>);
+pub struct MissingTokenNode(pub Arc<CoreMissingTokenNode>);
 #[derive(Debug, Clone)]
-pub struct SkippedTokenNode(pub Rc<CoreSkippedTokenNode>);
+pub struct SkippedTokenNode(pub Arc<CoreSkippedTokenNode>);
 #[derive(Debug, Clone)]
-pub struct GenericTypeDeclNode(pub Rc<CoreGenericTypeDeclNode>);
+pub struct GenericTypeDeclNode(pub Arc<CoreGenericTypeDeclNode>);
 #[derive(Debug, Clone)]
-pub struct IdentifierInUseNode(pub Rc<CoreIdentifierInUseNode>);
+pub struct IdentifierInUseNode(pub Arc<CoreIdentifierInUseNode>);
 #[derive(Debug, Clone)]
-pub struct IdentifierInDeclNode(pub Rc<CoreIdentifierInDeclNode>);
+pub struct IdentifierInDeclNode(pub Arc<CoreIdentifierInDeclNode>);
 #[derive(Debug, Clone)]
-pub struct OkIdentifierInUseNode(pub Rc<CoreOkIdentifierInUseNode>);
+pub struct OkIdentifierInUseNode(pub Arc<CoreOkIdentifierInUseNode>);
 #[derive(Debug, Clone)]
-pub struct OkIdentifierInDeclNode(pub Rc<CoreOkIdentifierInDeclNode>);
+pub struct OkIdentifierInDeclNode(pub Arc<CoreOkIdentifierInDeclNode>);
 #[derive(Debug, Clone)]
-pub struct ArrayExpressionNode(pub Rc<CoreArrayExpressionNode>);
+pub struct ArrayExpressionNode(pub Arc<CoreArrayExpressionNode>);
 #[derive(Debug, Clone)]
-pub struct KeyValuePairNode(pub Rc<CoreKeyValuePairNode>);
+pub struct KeyValuePairNode(pub Arc<CoreKeyValuePairNode>);
 #[derive(Debug, Clone)]
-pub struct HashMapExpressionNode(pub Rc<CoreHashMapExpressionNode>);
+pub struct HashMapExpressionNode(pub Arc<CoreHashMapExpressionNode>);
 #[derive(Debug, Clone)]
-pub struct TupleExpressionNode(pub Rc<CoreTupleExpressionNode>);
+pub struct TupleExpressionNode(pub Arc<CoreTupleExpressionNode>);
 #[derive(Debug, Clone)]
-pub struct ConditionalStatementNode(pub Rc<CoreConditionalStatementNode>);
+pub struct ConditionalStatementNode(pub Arc<CoreConditionalStatementNode>);
 #[derive(Debug, Clone)]
-pub struct ConditionalBlockNode(pub Rc<CoreConditionalBlockNode>);
+pub struct ConditionalBlockNode(pub Arc<CoreConditionalBlockNode>);
 #[derive(Debug, Clone)]
-pub struct BreakStatementNode(pub Rc<CoreBreakStatementNode>);
+pub struct BreakStatementNode(pub Arc<CoreBreakStatementNode>);
 #[derive(Debug, Clone)]
-pub struct ContinueStatementNode(pub Rc<CoreContinueStatementNode>);
+pub struct ContinueStatementNode(pub Arc<CoreContinueStatementNode>);
 #[derive(Debug, Clone)]
-pub struct EnumDeclarationNode(pub Rc<CoreEnumDeclarationNode>);
+pub struct EnumDeclarationNode(pub Arc<CoreEnumDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct EnumVariantDeclarationNode(pub Rc<CoreEnumVariantDeclarationNode>);
+pub struct EnumVariantDeclarationNode(pub Arc<CoreEnumVariantDeclarationNode>);
 #[derive(Debug, Clone)]
-pub struct MatchCaseStatementNode(pub Rc<CoreMatchCaseStatementNode>);
+pub struct MatchCaseStatementNode(pub Arc<CoreMatchCaseStatementNode>);
 #[derive(Debug, Clone)]
-pub struct CaseBranchStatementNode(pub Rc<CoreCaseBranchStatementNode>);
+pub struct CaseBranchStatementNode(pub Arc<CoreCaseBranchStatementNode>);
 #[derive(Debug, Clone)]
-pub struct WhileLoopStatementNode(pub Rc<CoreWhileLoopStatementNode>);
+pub struct WhileLoopStatementNode(pub Arc<CoreWhileLoopStatementNode>);
 #[derive(Debug, Clone)]
-pub struct ForLoopStatementNode(pub Rc<CoreForLoopStatementNode>);
+pub struct ForLoopStatementNode(pub Arc<CoreForLoopStatementNode>);
 #[derive(Debug, Clone)]
 pub struct SymbolSeparatedSequenceNode<T: Node + Serialize + Clone>(
-    pub Rc<CoreSymbolSeparatedSequenceNode<T>>,
+    pub Arc<CoreSymbolSeparatedSequenceNode<T>>,
 );
 
 pub enum UnresolvedIdentifier<'a> {

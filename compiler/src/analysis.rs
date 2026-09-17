@@ -133,7 +133,11 @@ pub fn with_analysis<R>(source: &str, query: impl FnOnce(AnalysisCtx<'_>) -> R) 
     let type_checker = JarvilTypeChecker::new(&code_handler, &errors, semantic_db);
     let semantic_db = type_checker.check_ast(&ast);
 
-    let diagnostics = errors.iter().map(to_plain_diagnostic).collect();
+    let diagnostics = errors
+        .diagnostics()
+        .iter()
+        .map(to_plain_diagnostic)
+        .collect();
 
     query(AnalysisCtx {
         ast: &ast,

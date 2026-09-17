@@ -1,40 +1,42 @@
-use std::cell::RefCell;
+// Process-wide code generation settings.
+//
+// This was a `thread_local!`, which under threads is a silent correctness bug
+// rather than merely a `Sync` problem: `set_indent` on one thread is invisible
+// to code generation running on another, which would quietly fall back to the
+// default and emit Python indented differently from what was asked for.
+//
+// An atomic makes the setting genuinely global and costs a relaxed load per
+// indent, which is noise next to the string building around it.
 
-thread_local! {
-    static CONTEXT: RefCell<Context> = RefCell::new(Context::new())
-}
+use std::sync::atomic::{AtomicUsize, Ordering};
 
-struct Context {
-    indent_spaces: usize,
-}
+// default indentation is 4 spaces
+const DEFAULT_INDENT_SPACES: usize = 4;
 
-impl Context {
-    fn new() -> Self {
-        Context {
-            indent_spaces: 4, // default indentation is 4 spaces
-        }
-    }
-
-    fn set_indent(&mut self, indent_spaces: usize) {
-        self.indent_spaces = indent_spaces;
-    }
-
-    fn indent_spaces(&self) -> usize {
-        self.indent_spaces
-    }
-}
+static INDENT_SPACES: AtomicUsize = AtomicUsize::new(DEFAULT_INDENT_SPACES);
 
 pub fn set_indent(indent_spaces: usize) {
-    if let Err(err) = CONTEXT.try_with(|ctx| ctx.borrow_mut().set_indent(indent_spaces)) {
-        panic!("{}", err)
-    }
+    INDENT_SPACES.store(indent_spaces, Ordering::Relaxed);
 }
 
 pub fn indent_spaces() -> usize {
-    match CONTEXT.try_with(|ctx| ctx.borrow().indent_spaces()) {
-        Ok(val) => val,
-        Err(err) => {
-            panic!("{}", err)
-        }
+    INDENT_SPACES.load(Ordering::Relaxed)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn indent_is_visible_across_threads() {
+        // The point of the change: a setting made on one thread has to be seen
+        // by another. The old thread-local would have returned the default here.
+        set_indent(2);
+
+        let observed = std::thread::spawn(indent_spaces).join().unwrap();
+
+        assert_eq!(observed, 2);
+
+        set_indent(DEFAULT_INDENT_SPACES);
     }
 }

@@ -1,3 +1,8 @@
+// The last `unsafe` block went when the diagnostic collector stopped being an
+// `UnsafeCell`. Nothing in a compiler of this shape needs it, and forbidding it
+// outright is what keeps a future "just for performance" hand-written safety
+// argument from reappearing.
+#![forbid(unsafe_code)]
 // `foo/foo.rs` holding the substance of module `foo`, with `foo/mod.rs` as the
 // re-export surface, is the layout this crate is built around: `ast::ast`,
 // `lexer::lexer`, `parser::parser`, `scope::scope`, `error::error`. Renaming

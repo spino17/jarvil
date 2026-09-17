@@ -5,7 +5,7 @@ macro_rules! default_errornous_node_impl {
                 expected_symbols: Vec<&'static str>,
                 received_token: Token,
             ) -> Self {
-                $t(Rc::new($u::MissingTokens(MissingTokenNode::new(
+                $t(Arc::new($u::MissingTokens(MissingTokenNode::new(
                     expected_symbols,
                     received_token,
                 ))))

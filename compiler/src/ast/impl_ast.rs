@@ -54,7 +54,7 @@ use crate::scope::scope::ScopeIndex;
 use crate::types::core::Type;
 use serde::Serialize;
 use std::hash::{Hash, Hasher};
-use std::rc::Rc;
+use std::sync::Arc;
 use text_size::TextRange;
 use text_size::TextSize;
 
@@ -64,7 +64,7 @@ impl BlockNode {
         newline: TokenNode,
         kind: BlockKind,
     ) -> Self {
-        let node = Rc::new(CoreBlockNode {
+        let node = Arc::new(CoreBlockNode {
             newline,
             stmts,
             kind,
@@ -118,7 +118,7 @@ impl Node for BlockNode {
 
 impl PartialEq for BlockNode {
     fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
+        Arc::ptr_eq(&self.0, &other.0)
     }
 }
 
@@ -126,14 +126,14 @@ impl Eq for BlockNode {}
 
 impl Hash for BlockNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let ptr = Rc::as_ptr(&self.0);
+        let ptr = Arc::as_ptr(&self.0);
         ptr.hash(state);
     }
 }
 
 impl StatementIndentWrapperNode {
     pub fn new_with_correctly_indented(stmt: StatementNode) -> Self {
-        let node = Rc::new(CoreStatementIndentWrapperNode::CorrectlyIndented(stmt));
+        let node = Arc::new(CoreStatementIndentWrapperNode::CorrectlyIndented(stmt));
         StatementIndentWrapperNode(node)
     }
 
@@ -142,28 +142,28 @@ impl StatementIndentWrapperNode {
         expected_indent: i64,
         received_indent: i64,
     ) -> Self {
-        let node = Rc::new(CoreStatementIndentWrapperNode::IncorrectlyIndented(
+        let node = Arc::new(CoreStatementIndentWrapperNode::IncorrectlyIndented(
             IncorrectlyIndentedStatementNode::new(stmt, expected_indent, received_indent),
         ));
         StatementIndentWrapperNode(node)
     }
 
     pub fn new_with_leading_skipped_tokens(skipped_tokens: SkippedTokensNode) -> Self {
-        let node = Rc::new(CoreStatementIndentWrapperNode::LeadingSkippedTokens(
+        let node = Arc::new(CoreStatementIndentWrapperNode::LeadingSkippedTokens(
             skipped_tokens,
         ));
         StatementIndentWrapperNode(node)
     }
 
     pub fn new_with_trailing_skipped_tokens(skipped_tokens: SkippedTokensNode) -> Self {
-        let node = Rc::new(CoreStatementIndentWrapperNode::TrailingSkippedTokens(
+        let node = Arc::new(CoreStatementIndentWrapperNode::TrailingSkippedTokens(
             skipped_tokens,
         ));
         StatementIndentWrapperNode(node)
     }
 
     pub fn new_with_extra_newlines(skipped_tokens: SkippedTokensNode) -> Self {
-        let node = Rc::new(CoreStatementIndentWrapperNode::ExtraNewlines(
+        let node = Arc::new(CoreStatementIndentWrapperNode::ExtraNewlines(
             skipped_tokens,
         ));
         StatementIndentWrapperNode(node)
@@ -174,17 +174,17 @@ impl StatementIndentWrapperNode {
 
 impl SkippedTokensNode {
     pub fn new_with_leading_skipped_tokens(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
-        let node = Rc::new(CoreSkippedTokensNode { skipped_tokens });
+        let node = Arc::new(CoreSkippedTokensNode { skipped_tokens });
         SkippedTokensNode(node)
     }
 
     pub fn new_with_trailing_skipped_tokens(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
-        let node = Rc::new(CoreSkippedTokensNode { skipped_tokens });
+        let node = Arc::new(CoreSkippedTokensNode { skipped_tokens });
         SkippedTokensNode(node)
     }
 
     pub fn new_with_extra_newlines(skipped_tokens: Vec<SkippedTokenNode>) -> Self {
-        let node = Rc::new(CoreSkippedTokensNode { skipped_tokens });
+        let node = Arc::new(CoreSkippedTokensNode { skipped_tokens });
         SkippedTokensNode(node)
     }
 
@@ -207,95 +207,95 @@ impl Node for SkippedTokensNode {
 
 impl StatementNode {
     pub fn new_with_expr(expr: ExpressionNode, newline: TokenNode) -> Self {
-        let node = Rc::new(CoreStatementNode::Expression(ExpressionStatementNode::new(
+        let node = Arc::new(CoreStatementNode::Expression(ExpressionStatementNode::new(
             expr, newline,
         )));
         StatementNode(node)
     }
 
     pub fn new_with_break_statment(break_stmt: BreakStatementNode) -> Self {
-        let node = Rc::new(CoreStatementNode::Break(break_stmt));
+        let node = Arc::new(CoreStatementNode::Break(break_stmt));
         StatementNode(node)
     }
 
     pub fn new_with_continue_statment(continue_stmt: ContinueStatementNode) -> Self {
-        let node = Rc::new(CoreStatementNode::Continue(continue_stmt));
+        let node = Arc::new(CoreStatementNode::Continue(continue_stmt));
         StatementNode(node)
     }
 
     pub fn new_with_match_case_statement(match_case_stmt: MatchCaseStatementNode) -> Self {
-        let node = Rc::new(CoreStatementNode::MatchCase(match_case_stmt));
+        let node = Arc::new(CoreStatementNode::MatchCase(match_case_stmt));
         StatementNode(node)
     }
 
     pub fn new_with_case_branch_statement(case_branch_stmt: CaseBranchStatementNode) -> Self {
-        let node = Rc::new(CoreStatementNode::CaseBranch(case_branch_stmt));
+        let node = Arc::new(CoreStatementNode::CaseBranch(case_branch_stmt));
         StatementNode(node)
     }
 
     pub fn new_with_assignment(assignment: AssignmentNode) -> Self {
-        let node = Rc::new(CoreStatementNode::Assignment(assignment));
+        let node = Arc::new(CoreStatementNode::Assignment(assignment));
         StatementNode(node)
     }
 
     pub fn new_with_variable_decl(variable_decl: VariableDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::VariableDeclaration(variable_decl));
+        let node = Arc::new(CoreStatementNode::VariableDeclaration(variable_decl));
         StatementNode(node)
     }
 
     pub fn new_with_conditional(conditional: ConditionalStatementNode) -> Self {
-        let node = Rc::new(CoreStatementNode::Conditional(conditional));
+        let node = Arc::new(CoreStatementNode::Conditional(conditional));
         StatementNode(node)
     }
 
     pub fn new_with_while_loop(while_loop: WhileLoopStatementNode) -> Self {
-        let node = Rc::new(CoreStatementNode::WhileLoop(while_loop));
+        let node = Arc::new(CoreStatementNode::WhileLoop(while_loop));
         StatementNode(node)
     }
 
     pub fn new_with_for_loop(for_loop: ForLoopStatementNode) -> Self {
-        let node = Rc::new(CoreStatementNode::ForLoop(for_loop));
+        let node = Arc::new(CoreStatementNode::ForLoop(for_loop));
         StatementNode(node)
     }
 
     pub fn new_with_func_wrapper(func_wrapper: FunctionWrapperNode) -> Self {
-        let node = Rc::new(CoreStatementNode::FunctionWrapper(func_wrapper));
+        let node = Arc::new(CoreStatementNode::FunctionWrapper(func_wrapper));
         StatementNode(node)
     }
 
     pub fn new_with_bounded_method_wrapper(
         bounded_method_wrapper: BoundedMethodWrapperNode,
     ) -> Self {
-        let node = Rc::new(CoreStatementNode::BoundedMethodWrapper(
+        let node = Arc::new(CoreStatementNode::BoundedMethodWrapper(
             bounded_method_wrapper,
         ));
         StatementNode(node)
     }
 
     pub fn new_with_ty_decl(ty_decl: TypeDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::TypeDeclaration(ty_decl));
+        let node = Arc::new(CoreStatementNode::TypeDeclaration(ty_decl));
         StatementNode(node)
     }
 
     pub fn new_with_struct_stmt(struct_stmt: StructPropertyDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::StructPropertyDeclaration(struct_stmt));
+        let node = Arc::new(CoreStatementNode::StructPropertyDeclaration(struct_stmt));
         StatementNode(node)
     }
 
     pub fn new_with_enum_stmt(enum_stmt: EnumVariantDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::EnumVariantDeclaration(enum_stmt));
+        let node = Arc::new(CoreStatementNode::EnumVariantDeclaration(enum_stmt));
         StatementNode(node)
     }
 
     pub fn new_with_interface_decl(interface_decl: InterfaceDeclarationNode) -> Self {
-        let node = Rc::new(CoreStatementNode::InterfaceDeclaration(interface_decl));
+        let node = Arc::new(CoreStatementNode::InterfaceDeclaration(interface_decl));
         StatementNode(node)
     }
 
     pub fn new_with_declare_func_prototype(
         decl_func_prototype: DeclareFunctionPrototypeNode,
     ) -> Self {
-        let node = Rc::new(CoreStatementNode::DeclareFunctionPrototype(
+        let node = Arc::new(CoreStatementNode::DeclareFunctionPrototype(
             decl_func_prototype,
         ));
         StatementNode(node)
@@ -304,7 +304,7 @@ impl StatementNode {
     pub fn new_with_interface_method_prototype_wrapper(
         decl_callable_prototype: DeclareCallablePrototypeNode,
     ) -> Self {
-        let node = Rc::new(CoreStatementNode::InterfaceMethodPrototypeWrapper(
+        let node = Arc::new(CoreStatementNode::InterfaceMethodPrototypeWrapper(
             decl_callable_prototype,
         ));
         StatementNode(node)
@@ -315,7 +315,7 @@ impl StatementNode {
         expr: Option<ExpressionNode>,
         newline: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreStatementNode::Return(ReturnStatementNode::new(
+        let node = Arc::new(CoreStatementNode::Return(ReturnStatementNode::new(
             return_keyword,
             expr,
             newline,
@@ -328,7 +328,7 @@ impl StatementNode {
 
 impl IncorrectlyIndentedStatementNode {
     pub fn new(stmt: StatementNode, expected_indent: i64, received_indent: i64) -> Self {
-        let node = Rc::new(CoreIncorrectlyIndentedStatementNode {
+        let node = Arc::new(CoreIncorrectlyIndentedStatementNode {
             stmt,
             expected_indent,
             received_indent,
@@ -351,7 +351,7 @@ impl Node for IncorrectlyIndentedStatementNode {
 
 impl BreakStatementNode {
     pub fn new(break_keyword: TokenNode, newline: TokenNode) -> Self {
-        let node = Rc::new(CoreBreakStatementNode {
+        let node = Arc::new(CoreBreakStatementNode {
             break_keyword,
             newline,
         });
@@ -373,7 +373,7 @@ impl Node for BreakStatementNode {
 
 impl ContinueStatementNode {
     pub fn new(continue_keyword: TokenNode, newline: TokenNode) -> Self {
-        let node = Rc::new(CoreContinueStatementNode {
+        let node = Arc::new(CoreContinueStatementNode {
             continue_keyword,
             newline,
         });
@@ -390,7 +390,7 @@ impl MatchCaseStatementNode {
         colon: TokenNode,
         block: BlockNode,
     ) -> Self {
-        let node = Rc::new(CoreMatchCaseStatementNode {
+        let node = Arc::new(CoreMatchCaseStatementNode {
             match_keyword,
             expr,
             colon,
@@ -422,7 +422,7 @@ impl CaseBranchStatementNode {
         colon: TokenNode,
         block: BlockNode,
     ) -> Self {
-        let node = Rc::new(CoreCaseBranchStatementNode {
+        let node = Arc::new(CoreCaseBranchStatementNode {
             case_keyword,
             enum_name,
             double_colon_node,
@@ -464,7 +464,7 @@ impl WhileLoopStatementNode {
         colon: TokenNode,
         block: BlockNode,
     ) -> Self {
-        let node = Rc::new(CoreWhileLoopStatementNode {
+        let node = Arc::new(CoreWhileLoopStatementNode {
             while_keyword,
             condition_expr,
             colon,
@@ -495,7 +495,7 @@ impl ForLoopStatementNode {
         colon: TokenNode,
         block: BlockNode,
     ) -> Self {
-        let node = Rc::new(CoreForLoopStatementNode {
+        let node = Arc::new(CoreForLoopStatementNode {
             for_keyword,
             loop_variable,
             in_keyword,
@@ -521,7 +521,7 @@ impl Node for ForLoopStatementNode {
 
 impl ExpressionStatementNode {
     pub fn new(expr: ExpressionNode, newline: TokenNode) -> Self {
-        let node = Rc::new(CoreExpressionStatementNode { expr, newline });
+        let node = Arc::new(CoreExpressionStatementNode { expr, newline });
         ExpressionStatementNode(node)
     }
 
@@ -540,7 +540,7 @@ impl Node for ExpressionStatementNode {
 
 impl AssignmentNode {
     pub fn new(l_atom: AtomNode, r_assign: RAssignmentNode, equal: TokenNode) -> Self {
-        let node = Rc::new(CoreAssignmentNode::Ok(OkAssignmentNode::new(
+        let node = Arc::new(CoreAssignmentNode::Ok(OkAssignmentNode::new(
             l_atom, r_assign, equal,
         )));
         AssignmentNode(node)
@@ -551,7 +551,7 @@ impl AssignmentNode {
         r_assign: RAssignmentNode,
         equal: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAssignmentNode::InvalidLValue(InvalidLValueNode::new(
+        let node = Arc::new(CoreAssignmentNode::InvalidLValue(InvalidLValueNode::new(
             l_expr, r_assign, equal,
         )));
         AssignmentNode(node)
@@ -562,7 +562,7 @@ impl AssignmentNode {
 
 impl OkAssignmentNode {
     pub fn new(l_atom: AtomNode, r_assign: RAssignmentNode, equal: TokenNode) -> Self {
-        let node = Rc::new(CoreOkAssignmentNode {
+        let node = Arc::new(CoreOkAssignmentNode {
             equal,
             l_atom,
             r_assign,
@@ -585,7 +585,7 @@ impl Node for OkAssignmentNode {
 
 impl InvalidLValueNode {
     pub fn new(l_expr: ExpressionNode, r_assign: RAssignmentNode, equal: TokenNode) -> Self {
-        let node = Rc::new(CoreInvalidLValueNode {
+        let node = Arc::new(CoreInvalidLValueNode {
             l_expr,
             equal,
             r_assign,
@@ -608,7 +608,7 @@ impl Node for InvalidLValueNode {
 
 impl StructPropertyDeclarationNode {
     pub fn new(name_ty_spec: NameTypeSpecNode, newline: TokenNode) -> Self {
-        let node = Rc::new(CoreStructPropertyDeclarationNode {
+        let node = Arc::new(CoreStructPropertyDeclarationNode {
             newline,
             name_ty_spec,
         });
@@ -634,7 +634,7 @@ impl EnumVariantDeclarationNode {
         ty: Option<(TokenNode, TypeExpressionNode, TokenNode)>,
         newline: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreEnumVariantDeclarationNode {
+        let node = Arc::new(CoreEnumVariantDeclarationNode {
             variant,
             ty,
             newline,
@@ -670,7 +670,7 @@ impl TypeDeclarationNode {
         )>,
         colon: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreTypeDeclarationNode::Struct(StructDeclarationNode::new(
+        let node = Arc::new(CoreTypeDeclarationNode::Struct(StructDeclarationNode::new(
             name,
             block,
             type_keyword,
@@ -688,7 +688,7 @@ impl TypeDeclarationNode {
         colon: TokenNode,
         block: BlockNode,
     ) -> Self {
-        let node = Rc::new(CoreTypeDeclarationNode::Enum(EnumDeclarationNode::new(
+        let node = Arc::new(CoreTypeDeclarationNode::Enum(EnumDeclarationNode::new(
             type_keyword,
             name,
             enum_keyword,
@@ -699,7 +699,7 @@ impl TypeDeclarationNode {
     }
 
     pub fn new_with_lambda(lambda: LambdaTypeDeclarationNode) -> Self {
-        let node = Rc::new(CoreTypeDeclarationNode::Lambda(lambda));
+        let node = Arc::new(CoreTypeDeclarationNode::Lambda(lambda));
         TypeDeclarationNode(node)
     }
 
@@ -719,7 +719,7 @@ impl StructDeclarationNode {
         )>,
         colon: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreStructDeclarationNode {
+        let node = Arc::new(CoreStructDeclarationNode {
             type_keyword,
             colon,
             struct_keyword,
@@ -751,7 +751,7 @@ impl EnumDeclarationNode {
         colon: TokenNode,
         block: BlockNode,
     ) -> Self {
-        let node = Rc::new(CoreEnumDeclarationNode {
+        let node = Arc::new(CoreEnumDeclarationNode {
             type_keyword,
             name,
             enum_keyword,
@@ -786,7 +786,7 @@ impl LambdaTypeDeclarationNode {
         return_ty: Option<(TokenNode, TypeExpressionNode)>,
         newline: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreLambdaTypeDeclarationNode {
+        let node = Arc::new(CoreLambdaTypeDeclarationNode {
             name,
             type_keyword,
             lambda_keyword,
@@ -820,7 +820,7 @@ impl CallablePrototypeNode {
         lparen: TokenNode,
         rparen: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreCallablePrototypeNode {
+        let node = Arc::new(CoreCallablePrototypeNode {
             lparen,
             rparen,
             params,
@@ -847,7 +847,7 @@ impl Node for CallablePrototypeNode {
 
 impl CallableBodyNode {
     pub fn new(block: BlockNode, colon: TokenNode, prototype: CallablePrototypeNode) -> Self {
-        let node = Rc::new(CoreCallableBodyNode {
+        let node = Arc::new(CoreCallableBodyNode {
             block,
             colon,
             prototype,
@@ -870,7 +870,7 @@ impl Node for CallableBodyNode {
 
 impl FunctionDeclarationNode {
     pub fn new(name: IdentifierInDeclNode, def_keyword: TokenNode, body: CallableBodyNode) -> Self {
-        let node = Rc::new(CoreFunctionDeclarationNode {
+        let node = Arc::new(CoreFunctionDeclarationNode {
             name,
             def_keyword,
             body,
@@ -893,7 +893,7 @@ impl Node for FunctionDeclarationNode {
 
 impl FunctionWrapperNode {
     pub fn new(func_decl: FunctionDeclarationNode) -> Self {
-        let node = Rc::new(CoreFunctionWrapperNode { func_decl });
+        let node = Arc::new(CoreFunctionWrapperNode { func_decl });
         FunctionWrapperNode(node)
     }
 
@@ -912,7 +912,7 @@ impl Node for FunctionWrapperNode {
 
 impl BoundedMethodWrapperNode {
     pub fn new(func_decl: FunctionDeclarationNode) -> Self {
-        let node = Rc::new(CoreBoundedMethodWrapperNode { func_decl });
+        let node = Arc::new(CoreBoundedMethodWrapperNode { func_decl });
         BoundedMethodWrapperNode(node)
     }
 
@@ -931,7 +931,7 @@ impl Node for BoundedMethodWrapperNode {
 
 impl PartialEq for BoundedMethodWrapperNode {
     fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
+        Arc::ptr_eq(&self.0, &other.0)
     }
 }
 
@@ -939,14 +939,14 @@ impl Eq for BoundedMethodWrapperNode {}
 
 impl Hash for BoundedMethodWrapperNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let ptr = Rc::as_ptr(&self.0);
+        let ptr = Arc::as_ptr(&self.0);
         ptr.hash(state);
     }
 }
 
 impl LambdaDeclarationNode {
     pub fn new(lambda_keyword: TokenNode, body: CallableBodyNode) -> Self {
-        let node = Rc::new(CoreLambdaDeclarationNode {
+        let node = Arc::new(CoreLambdaDeclarationNode {
             lambda_keyword,
             body,
         });
@@ -974,7 +974,7 @@ impl VariableDeclarationNode {
         equal: TokenNode,
         optional_ty_annotation: Option<(TokenNode, TypeExpressionNode)>,
     ) -> Self {
-        let node = Rc::new(CoreVariableDeclarationNode {
+        let node = Arc::new(CoreVariableDeclarationNode {
             let_keyword,
             equal,
             name,
@@ -1004,7 +1004,7 @@ impl InterfaceDeclarationNode {
         colon: TokenNode,
         block: BlockNode,
     ) -> Self {
-        let node = Rc::new(CoreInterfaceDeclarationNode {
+        let node = Arc::new(CoreInterfaceDeclarationNode {
             interface_keyword,
             name,
             colon,
@@ -1028,7 +1028,7 @@ impl Node for InterfaceDeclarationNode {
 
 impl DeclareFunctionPrototypeNode {
     pub fn new(decl_keyword: TokenNode, decl: DeclareCallablePrototypeNode) -> Self {
-        let node = Rc::new(CoreDeclareFunctionPrototypeNode {
+        let node = Arc::new(CoreDeclareFunctionPrototypeNode {
             declare_keyword: decl_keyword,
             decl,
         });
@@ -1055,7 +1055,7 @@ impl DeclareCallablePrototypeNode {
         prototype: CallablePrototypeNode,
         newline: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreDeclareCallablePrototypeNode {
+        let node = Arc::new(CoreDeclareCallablePrototypeNode {
             def_keyword,
             name,
             prototype,
@@ -1084,7 +1084,7 @@ impl ConditionalBlockNode {
         colon: TokenNode,
         block: BlockNode,
     ) -> Self {
-        let node = Rc::new(CoreConditionalBlockNode {
+        let node = Arc::new(CoreConditionalBlockNode {
             condition_keyword,
             condition_expr,
             colon,
@@ -1112,7 +1112,7 @@ impl ConditionalStatementNode {
         elifs: Vec<ConditionalBlockNode>,
         else_block: Option<(TokenNode, TokenNode, BlockNode)>,
     ) -> Self {
-        let node = Rc::new(CoreConditionalStatementNode {
+        let node = Arc::new(CoreConditionalStatementNode {
             if_block,
             elifs,
             else_block,
@@ -1151,7 +1151,7 @@ impl ReturnStatementNode {
         expr: Option<ExpressionNode>,
         newline: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreReturnStatementNode {
+        let node = Arc::new(CoreReturnStatementNode {
             return_keyword,
             expr,
             newline,
@@ -1174,7 +1174,7 @@ impl Node for ReturnStatementNode {
 
 impl NameTypeSpecNode {
     pub fn new(name: IdentifierInDeclNode, data_ty: TypeExpressionNode, colon: TokenNode) -> Self {
-        let node = Rc::new(CoreNameTypeSpecNode {
+        let node = Arc::new(CoreNameTypeSpecNode {
             colon,
             name,
             data_ty,
@@ -1197,14 +1197,14 @@ impl Node for NameTypeSpecNode {
 
 impl TypeExpressionNode {
     pub fn new_with_atomic_ty(atomic_ty: TokenNode) -> Self {
-        let node = Rc::new(CoreTypeExpressionNode::Atomic(AtomicTypeNode::new(
+        let node = Arc::new(CoreTypeExpressionNode::Atomic(AtomicTypeNode::new(
             atomic_ty,
         )));
         TypeExpressionNode(node)
     }
 
     pub fn new_with_user_defined_ty(identifier: IdentifierInUseNode) -> Self {
-        let node = Rc::new(CoreTypeExpressionNode::UserDefined(
+        let node = Arc::new(CoreTypeExpressionNode::UserDefined(
             UserDefinedTypeNode::new(identifier),
         ));
         TypeExpressionNode(node)
@@ -1215,7 +1215,7 @@ impl TypeExpressionNode {
         lsquare: TokenNode,
         rsquare: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreTypeExpressionNode::Array(ArrayTypeNode::new(
+        let node = Arc::new(CoreTypeExpressionNode::Array(ArrayTypeNode::new(
             sub_ty, lsquare, rsquare,
         )));
         TypeExpressionNode(node)
@@ -1226,7 +1226,7 @@ impl TypeExpressionNode {
         rparen: TokenNode,
         types: SymbolSeparatedSequenceNode<TypeExpressionNode>,
     ) -> Self {
-        let node = Rc::new(CoreTypeExpressionNode::Tuple(TupleTypeNode::new(
+        let node = Arc::new(CoreTypeExpressionNode::Tuple(TupleTypeNode::new(
             lparen, rparen, types,
         )));
         TypeExpressionNode(node)
@@ -1239,7 +1239,7 @@ impl TypeExpressionNode {
         key_ty: TypeExpressionNode,
         value_ty: TypeExpressionNode,
     ) -> Self {
-        let node = Rc::new(CoreTypeExpressionNode::HashMap(HashMapTypeNode::new(
+        let node = Arc::new(CoreTypeExpressionNode::HashMap(HashMapTypeNode::new(
             lcurly, rcurly, colon, key_ty, value_ty,
         )));
         TypeExpressionNode(node)
@@ -1272,7 +1272,7 @@ default_errornous_node_impl!(TypeExpressionNode, CoreTypeExpressionNode);
 
 impl PartialEq for TypeExpressionNode {
     fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
+        Arc::ptr_eq(&self.0, &other.0)
     }
 }
 
@@ -1280,14 +1280,14 @@ impl Eq for TypeExpressionNode {}
 
 impl Hash for TypeExpressionNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let ptr = Rc::as_ptr(&self.0);
+        let ptr = Arc::as_ptr(&self.0);
         ptr.hash(state);
     }
 }
 
 impl AtomicTypeNode {
     pub fn new(token: TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicTypeNode { kind: token });
+        let node = Arc::new(CoreAtomicTypeNode { kind: token });
         AtomicTypeNode(node)
     }
 
@@ -1326,7 +1326,7 @@ impl Node for AtomicTypeNode {
 
 impl ArrayTypeNode {
     pub fn new(sub_ty: TypeExpressionNode, lsquare: TokenNode, rsquare: TokenNode) -> Self {
-        let node = Rc::new(CoreArrayTypeNode {
+        let node = Arc::new(CoreArrayTypeNode {
             lsquare,
             rsquare,
             sub_ty,
@@ -1373,7 +1373,7 @@ impl TupleTypeNode {
         rparen: TokenNode,
         types: SymbolSeparatedSequenceNode<TypeExpressionNode>,
     ) -> Self {
-        let node = Rc::new(CoreTupleTypeNode {
+        let node = Arc::new(CoreTupleTypeNode {
             lparen,
             rparen,
             types,
@@ -1429,7 +1429,7 @@ impl HashMapTypeNode {
         key_ty: TypeExpressionNode,
         value_ty: TypeExpressionNode,
     ) -> Self {
-        let node = Rc::new(CoreHashMapTypeNode {
+        let node = Arc::new(CoreHashMapTypeNode {
             lcurly,
             rcurly,
             colon,
@@ -1508,7 +1508,7 @@ impl Node for HashMapTypeNode {
 
 impl UserDefinedTypeNode {
     pub fn new(identifier: IdentifierInUseNode) -> Self {
-        let node = Rc::new(CoreUserDefinedTypeNode { name: identifier });
+        let node = Arc::new(CoreUserDefinedTypeNode { name: identifier });
         UserDefinedTypeNode(node)
     }
 
@@ -1535,7 +1535,7 @@ impl Node for UserDefinedTypeNode {
 
 impl RAssignmentNode {
     pub fn new_with_expr(expr: ExpressionNode, newline: TokenNode) -> Self {
-        let node = Rc::new(CoreRAssignmentNode {
+        let node = Arc::new(CoreRAssignmentNode {
             expr: ExpressionStatementNode::new(expr, newline),
         });
         RAssignmentNode(node)
@@ -1556,12 +1556,12 @@ impl Node for RAssignmentNode {
 
 impl RVariableDeclarationNode {
     pub fn new_with_lambda(lambda_decl: LambdaDeclarationNode) -> Self {
-        let node = Rc::new(CoreRVariableDeclarationNode::Lambda(lambda_decl));
+        let node = Arc::new(CoreRVariableDeclarationNode::Lambda(lambda_decl));
         RVariableDeclarationNode(node)
     }
 
     pub fn new_with_expr(expr: ExpressionNode, newline: TokenNode) -> Self {
-        let node = Rc::new(CoreRVariableDeclarationNode::Expression(
+        let node = Arc::new(CoreRVariableDeclarationNode::Expression(
             ExpressionStatementNode::new(expr, newline),
         ));
         RVariableDeclarationNode(node)
@@ -1572,7 +1572,7 @@ impl RVariableDeclarationNode {
 
 impl ExpressionNode {
     pub fn new_with_unary(unary_expr: UnaryExpressionNode) -> Self {
-        let node = Rc::new(CoreExpressionNode::Unary(unary_expr));
+        let node = Arc::new(CoreExpressionNode::Unary(unary_expr));
         ExpressionNode(node)
     }
 
@@ -1587,7 +1587,7 @@ impl ExpressionNode {
                 "any node passed in this method as operator should be a valid operator"
             ),
         };
-        let node = Rc::new(CoreExpressionNode::Binary(BinaryExpressionNode::new(
+        let node = Arc::new(CoreExpressionNode::Binary(BinaryExpressionNode::new(
             operator_kind,
             operator,
             left_expr,
@@ -1597,7 +1597,7 @@ impl ExpressionNode {
     }
 
     pub fn new_with_comparison(operands: Vec<ExpressionNode>, operators: Vec<TokenNode>) -> Self {
-        let node = Rc::new(CoreExpressionNode::Comparison(ComparisonNode::new(
+        let node = Arc::new(CoreExpressionNode::Comparison(ComparisonNode::new(
             operands, operators,
         )));
         ExpressionNode(node)
@@ -1626,24 +1626,24 @@ impl ExpressionNode {
 
 impl AtomicExpressionNode {
     pub fn new_with_bool(bool_value: TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::Bool(bool_value));
+        let node = Arc::new(CoreAtomicExpressionNode::Bool(bool_value));
         AtomicExpressionNode(node)
     }
 
     pub fn new_with_integer(integer_value: TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::Integer(integer_value));
+        let node = Arc::new(CoreAtomicExpressionNode::Integer(integer_value));
         AtomicExpressionNode(node)
     }
 
     pub fn new_with_floating_point_number(floating_point_value: TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::FloatingPointNumber(
+        let node = Arc::new(CoreAtomicExpressionNode::FloatingPointNumber(
             floating_point_value,
         ));
         AtomicExpressionNode(node)
     }
 
     pub fn new_with_literal(literal_value: TokenNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::Literal(literal_value));
+        let node = Arc::new(CoreAtomicExpressionNode::Literal(literal_value));
         AtomicExpressionNode(node)
     }
 
@@ -1652,14 +1652,14 @@ impl AtomicExpressionNode {
         lparen: TokenNode,
         rparen: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::ParenthesisedExpression(
+        let node = Arc::new(CoreAtomicExpressionNode::ParenthesisedExpression(
             ParenthesisedExpressionNode::new(expr, lparen, rparen),
         ));
         AtomicExpressionNode(node)
     }
 
     pub fn new_with_atom(atom: AtomNode) -> Self {
-        let node = Rc::new(CoreAtomicExpressionNode::Atom(atom));
+        let node = Arc::new(CoreAtomicExpressionNode::Atom(atom));
         AtomicExpressionNode(node)
     }
 
@@ -1668,7 +1668,7 @@ impl AtomicExpressionNode {
         rsquare: TokenNode,
         initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> AtomicExpressionNode {
-        let node = Rc::new(CoreAtomicExpressionNode::ArrayExpression(
+        let node = Arc::new(CoreAtomicExpressionNode::ArrayExpression(
             ArrayExpressionNode::new(lsquare, rsquare, initials),
         ));
         AtomicExpressionNode(node)
@@ -1679,7 +1679,7 @@ impl AtomicExpressionNode {
         rcurly: TokenNode,
         initials: Option<SymbolSeparatedSequenceNode<KeyValuePairNode>>,
     ) -> AtomicExpressionNode {
-        let node = Rc::new(CoreAtomicExpressionNode::HashMapExpression(
+        let node = Arc::new(CoreAtomicExpressionNode::HashMapExpression(
             HashMapExpressionNode::new(lcurly, rcurly, initials),
         ));
         AtomicExpressionNode(node)
@@ -1690,7 +1690,7 @@ impl AtomicExpressionNode {
         rround: TokenNode,
         initials: SymbolSeparatedSequenceNode<ExpressionNode>,
     ) -> AtomicExpressionNode {
-        let node = Rc::new(CoreAtomicExpressionNode::TupleExpression(
+        let node = Arc::new(CoreAtomicExpressionNode::TupleExpression(
             TupleExpressionNode::new(lround, rround, initials),
         ));
         AtomicExpressionNode(node)
@@ -1702,7 +1702,7 @@ default_errornous_node_impl!(AtomicExpressionNode, CoreAtomicExpressionNode);
 
 impl ParenthesisedExpressionNode {
     pub fn new(expr: ExpressionNode, lparen: TokenNode, rparen: TokenNode) -> Self {
-        let node = Rc::new(CoreParenthesisedExpressionNode {
+        let node = Arc::new(CoreParenthesisedExpressionNode {
             lparen,
             rparen,
             expr,
@@ -1725,7 +1725,7 @@ impl Node for ParenthesisedExpressionNode {
 
 impl UnaryExpressionNode {
     pub fn new_with_atomic(atomic_expr: AtomicExpressionNode) -> Self {
-        let node = Rc::new(CoreUnaryExpressionNode::Atomic(atomic_expr));
+        let node = Arc::new(CoreUnaryExpressionNode::Atomic(atomic_expr));
         UnaryExpressionNode(node)
     }
 
@@ -1734,7 +1734,7 @@ impl UnaryExpressionNode {
         operator: TokenNode,
         operator_kind: UnaryOperatorKind,
     ) -> Self {
-        let node = Rc::new(CoreUnaryExpressionNode::Unary(
+        let node = Arc::new(CoreUnaryExpressionNode::Unary(
             OnlyUnaryExpressionNode::new(operator, unary_expr, operator_kind),
         ));
         UnaryExpressionNode(node)
@@ -1749,7 +1749,7 @@ impl OnlyUnaryExpressionNode {
         unary_expr: UnaryExpressionNode,
         operator_kind: UnaryOperatorKind,
     ) -> Self {
-        let node = Rc::new(CoreOnlyUnaryExpressionNode {
+        let node = Arc::new(CoreOnlyUnaryExpressionNode {
             operator,
             unary_expr,
             operator_kind,
@@ -1777,7 +1777,7 @@ impl BinaryExpressionNode {
         left_expr: ExpressionNode,
         right_expr: ExpressionNode,
     ) -> Self {
-        let node = Rc::new(CoreBinaryExpressionNode {
+        let node = Arc::new(CoreBinaryExpressionNode {
             operator_kind,
             operator,
             left_expr,
@@ -1801,7 +1801,7 @@ impl Node for BinaryExpressionNode {
 
 impl ComparisonNode {
     pub fn new(operands: Vec<ExpressionNode>, operators: Vec<TokenNode>) -> Self {
-        let node = Rc::new(CoreComparisonNode {
+        let node = Arc::new(CoreComparisonNode {
             operands,
             operators,
         });
@@ -1827,7 +1827,7 @@ impl Node for ComparisonNode {
 
 impl<T: Node + Serialize + Clone> SymbolSeparatedSequenceNode<T> {
     pub fn new_with_single_entity(entity: T) -> Self {
-        let node = Rc::new(CoreSymbolSeparatedSequenceNode {
+        let node = Arc::new(CoreSymbolSeparatedSequenceNode {
             entity,
             remaining_entities: None,
         });
@@ -1839,7 +1839,7 @@ impl<T: Node + Serialize + Clone> SymbolSeparatedSequenceNode<T> {
         remaining_entities: SymbolSeparatedSequenceNode<T>,
         comma: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreSymbolSeparatedSequenceNode {
+        let node = Arc::new(CoreSymbolSeparatedSequenceNode {
             entity,
             remaining_entities: Some((comma, remaining_entities)),
         });
@@ -1886,7 +1886,7 @@ impl CallExpressionNode {
         lparen: TokenNode,
         rparen: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreCallExpressionNode {
+        let node = Arc::new(CoreCallExpressionNode {
             lparen,
             rparen,
             func_name,
@@ -1919,7 +1919,7 @@ impl EnumVariantExprOrClassMethodCallNode {
         )>,
         double_colon: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreEnumVariantExprOrClassMethodCallNode {
+        let node = Arc::new(CoreEnumVariantExprOrClassMethodCallNode {
             double_colon,
             ty_name,
             property_name,
@@ -1950,7 +1950,7 @@ impl ArrayExpressionNode {
         rsquare: TokenNode,
         initials: Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Self {
-        let node = Rc::new(CoreArrayExpressionNode {
+        let node = Arc::new(CoreArrayExpressionNode {
             lsquare,
             rsquare,
             initials,
@@ -1973,7 +1973,7 @@ impl Node for ArrayExpressionNode {
 
 impl KeyValuePairNode {
     pub fn new(key_expr: ExpressionNode, value_expr: ExpressionNode, colon: TokenNode) -> Self {
-        let node = Rc::new(CoreKeyValuePairNode {
+        let node = Arc::new(CoreKeyValuePairNode {
             key_expr,
             value_expr,
             colon,
@@ -2000,7 +2000,7 @@ impl HashMapExpressionNode {
         rcurly: TokenNode,
         initials: Option<SymbolSeparatedSequenceNode<KeyValuePairNode>>,
     ) -> Self {
-        let node = Rc::new(CoreHashMapExpressionNode {
+        let node = Arc::new(CoreHashMapExpressionNode {
             lcurly,
             rcurly,
             initials,
@@ -2027,7 +2027,7 @@ impl TupleExpressionNode {
         rround: TokenNode,
         initials: SymbolSeparatedSequenceNode<ExpressionNode>,
     ) -> Self {
-        let node = Rc::new(CoreTupleExpressionNode {
+        let node = Arc::new(CoreTupleExpressionNode {
             lround,
             rround,
             initials,
@@ -2050,7 +2050,7 @@ impl Node for TupleExpressionNode {
 
 impl AtomNode {
     pub fn new_with_atom_start(atom_start: AtomStartNode) -> Self {
-        let node = Rc::new(CoreAtomNode::AtomStart(atom_start));
+        let node = Arc::new(CoreAtomNode::AtomStart(atom_start));
         AtomNode(node)
     }
 
@@ -2060,7 +2060,7 @@ impl AtomNode {
         lparen: TokenNode,
         rparen: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomNode::Call(CallNode::new(
+        let node = Arc::new(CoreAtomNode::Call(CallNode::new(
             atom, params, lparen, rparen,
         )));
         AtomNode(node)
@@ -2071,7 +2071,7 @@ impl AtomNode {
         propertry: IdentifierInUseNode,
         dot: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomNode::PropertyAccess(PropertyAccessNode::new(
+        let node = Arc::new(CoreAtomNode::PropertyAccess(PropertyAccessNode::new(
             atom, propertry, dot,
         )));
         AtomNode(node)
@@ -2085,7 +2085,7 @@ impl AtomNode {
         rparen: TokenNode,
         dot: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomNode::MethodAccess(MethodAccessNode::new(
+        let node = Arc::new(CoreAtomNode::MethodAccess(MethodAccessNode::new(
             atom,
             method_name,
             params,
@@ -2102,7 +2102,7 @@ impl AtomNode {
         lsquare: TokenNode,
         rsquare: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomNode::IndexAccess(IndexAccessNode::new(
+        let node = Arc::new(CoreAtomNode::IndexAccess(IndexAccessNode::new(
             atom, index, lsquare, rsquare,
         )));
         AtomNode(node)
@@ -2129,17 +2129,17 @@ impl AtomNode {
 
 impl AtomStartNode {
     pub fn new_with_identifier(token: IdentifierInUseNode) -> Self {
-        let node = Rc::new(CoreAtomStartNode::Identifier(token));
+        let node = Arc::new(CoreAtomStartNode::Identifier(token));
         AtomStartNode(node)
     }
 
     pub fn new_with_self_keyword(self_keyword: SelfKeywordNode) -> Self {
-        let node = Rc::new(CoreAtomStartNode::SelfKeyword(self_keyword));
+        let node = Arc::new(CoreAtomStartNode::SelfKeyword(self_keyword));
         AtomStartNode(node)
     }
 
     pub fn new_with_func_call(call_expr: CallExpressionNode) -> Self {
-        let node = Rc::new(CoreAtomStartNode::Call(call_expr));
+        let node = Arc::new(CoreAtomStartNode::Call(call_expr));
         AtomStartNode(node)
     }
 
@@ -2153,7 +2153,7 @@ impl AtomStartNode {
         )>,
         double_colon: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreAtomStartNode::EnumVariantExprOrClassMethodCall(
+        let node = Arc::new(CoreAtomStartNode::EnumVariantExprOrClassMethodCall(
             EnumVariantExprOrClassMethodCallNode::new(ty_name, property_name, params, double_colon),
         ));
         AtomStartNode(node)
@@ -2176,7 +2176,7 @@ impl CallNode {
         lparen: TokenNode,
         rparen: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreCallNode {
+        let node = Arc::new(CoreCallNode {
             atom,
             lparen,
             rparen,
@@ -2200,7 +2200,7 @@ impl Node for CallNode {
 
 impl PropertyAccessNode {
     pub fn new(atom: AtomNode, propertry: IdentifierInUseNode, dot: TokenNode) -> Self {
-        let node = Rc::new(CorePropertyAccessNode {
+        let node = Arc::new(CorePropertyAccessNode {
             dot,
             atom,
             propertry,
@@ -2230,7 +2230,7 @@ impl MethodAccessNode {
         rparen: TokenNode,
         dot: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreMethodAccessNode {
+        let node = Arc::new(CoreMethodAccessNode {
             lparen,
             rparen,
             dot,
@@ -2261,7 +2261,7 @@ impl IndexAccessNode {
         lsquare: TokenNode,
         rsquare: TokenNode,
     ) -> Self {
-        let node = Rc::new(CoreIndexAccessNode {
+        let node = Arc::new(CoreIndexAccessNode {
             lsquare,
             rsquare,
             atom,
@@ -2285,7 +2285,7 @@ impl Node for IndexAccessNode {
 
 impl SelfKeywordNode {
     pub fn new_with_ok(token: OkTokenNode) -> Self {
-        let node = Rc::new(CoreSelfKeywordNode::Ok(OkSelfKeywordNode::new(token)));
+        let node = Arc::new(CoreSelfKeywordNode::Ok(OkSelfKeywordNode::new(token)));
         SelfKeywordNode(node)
     }
 
@@ -2295,7 +2295,7 @@ default_errornous_node_impl!(SelfKeywordNode, CoreSelfKeywordNode);
 
 impl OkSelfKeywordNode {
     pub fn new(token: OkTokenNode) -> Self {
-        let node = Rc::new(CoreOkSelfKeywordNode { token });
+        let node = Arc::new(CoreOkSelfKeywordNode { token });
         OkSelfKeywordNode(node)
     }
 
@@ -2316,7 +2316,7 @@ impl Node for OkSelfKeywordNode {
 
 impl PartialEq for OkSelfKeywordNode {
     fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
+        Arc::ptr_eq(&self.0, &other.0)
     }
 }
 
@@ -2324,14 +2324,14 @@ impl Eq for OkSelfKeywordNode {}
 
 impl Hash for OkSelfKeywordNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let ptr = Rc::as_ptr(&self.0);
+        let ptr = Arc::as_ptr(&self.0);
         ptr.hash(state);
     }
 }
 
 impl TokenNode {
     pub fn new_with_ok(token: Token) -> Self {
-        let node = Rc::new(CoreTokenNode::Ok(OkTokenNode::new(token)));
+        let node = Arc::new(CoreTokenNode::Ok(OkTokenNode::new(token)));
         TokenNode(node)
     }
 
@@ -2348,7 +2348,7 @@ default_errornous_node_impl!(TokenNode, CoreTokenNode);
 
 impl OkTokenNode {
     pub fn new(token: Token) -> Self {
-        OkTokenNode(Rc::new(CoreOkTokenNode { token }))
+        OkTokenNode(Arc::new(CoreOkTokenNode { token }))
     }
 
     pub fn is_binary_operator(&self) -> Option<BinaryOperatorKind> {
@@ -2378,7 +2378,7 @@ impl Node for OkTokenNode {
 
 impl PartialEq for OkTokenNode {
     fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
+        Arc::ptr_eq(&self.0, &other.0)
     }
 }
 
@@ -2386,16 +2386,16 @@ impl Eq for OkTokenNode {}
 
 impl Hash for OkTokenNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let ptr = Rc::as_ptr(&self.0);
+        let ptr = Arc::as_ptr(&self.0);
         ptr.hash(state);
     }
 }
 
 impl MissingTokenNode {
     pub fn new(expected_symbols: Vec<&'static str>, received_token: Token) -> Self {
-        let node = Rc::new(CoreMissingTokenNode {
+        let node = Arc::new(CoreMissingTokenNode {
             // NOTE: Below is traditionally an expensive clone but in our case,
-            // mostly `expected_symbols.len()` is less so we avoid runtime overhead of using `Rc`
+            // mostly `expected_symbols.len()` is less so we avoid runtime overhead of using `Arc`
             // which ideally should be used if length is large for example: in `BlockNode`, see `stmts` field.
             expected_symbols,
             received_token,
@@ -2422,7 +2422,7 @@ impl Node for MissingTokenNode {
 
 impl SkippedTokenNode {
     pub fn new(skipped_token: Token) -> Self {
-        let node = Rc::new(CoreSkippedTokenNode { skipped_token });
+        let node = Arc::new(CoreSkippedTokenNode { skipped_token });
         SkippedTokenNode(node)
     }
 
@@ -2448,7 +2448,7 @@ impl IdentifierInUseNode {
             TokenNode,
         )>,
     ) -> Self {
-        let node = Rc::new(CoreIdentifierInUseNode::Ok(OkIdentifierInUseNode::new(
+        let node = Arc::new(CoreIdentifierInUseNode::Ok(OkIdentifierInUseNode::new(
             token,
             generic_ty_args,
         )));
@@ -2468,7 +2468,7 @@ impl IdentifierInDeclNode {
             TokenNode,
         )>,
     ) -> Self {
-        let node = Rc::new(CoreIdentifierInDeclNode::Ok(OkIdentifierInDeclNode::new(
+        let node = Arc::new(CoreIdentifierInDeclNode::Ok(OkIdentifierInDeclNode::new(
             token,
             generic_ty_decls,
         )));
@@ -2488,7 +2488,7 @@ impl OkIdentifierInUseNode {
             TokenNode,
         )>,
     ) -> Self {
-        let node = Rc::new(CoreOkIdentifierInUseNode {
+        let node = Arc::new(CoreOkIdentifierInUseNode {
             name: token,
             generic_ty_args,
         });
@@ -2521,7 +2521,7 @@ impl Node for OkIdentifierInUseNode {
 
 impl PartialEq for OkIdentifierInUseNode {
     fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
+        Arc::ptr_eq(&self.0, &other.0)
     }
 }
 
@@ -2529,7 +2529,7 @@ impl Eq for OkIdentifierInUseNode {}
 
 impl Hash for OkIdentifierInUseNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let ptr = Rc::as_ptr(&self.0);
+        let ptr = Arc::as_ptr(&self.0);
         ptr.hash(state);
     }
 }
@@ -2543,7 +2543,7 @@ impl OkIdentifierInDeclNode {
             TokenNode,
         )>,
     ) -> Self {
-        let node = Rc::new(CoreOkIdentifierInDeclNode {
+        let node = Arc::new(CoreOkIdentifierInDeclNode {
             name: token,
             generic_ty_decls,
         });
@@ -2576,7 +2576,7 @@ impl Node for OkIdentifierInDeclNode {
 
 impl PartialEq for OkIdentifierInDeclNode {
     fn eq(&self, other: &Self) -> bool {
-        Rc::ptr_eq(&self.0, &other.0)
+        Arc::ptr_eq(&self.0, &other.0)
     }
 }
 
@@ -2584,7 +2584,7 @@ impl Eq for OkIdentifierInDeclNode {}
 
 impl Hash for OkIdentifierInDeclNode {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let ptr = Rc::as_ptr(&self.0);
+        let ptr = Arc::as_ptr(&self.0);
         ptr.hash(state);
     }
 }
@@ -2594,7 +2594,7 @@ impl GenericTypeDeclNode {
         generic_ty_name: IdentifierInDeclNode,
         interface_bounds: Option<(TokenNode, SymbolSeparatedSequenceNode<IdentifierInUseNode>)>,
     ) -> Self {
-        let node = Rc::new(CoreGenericTypeDeclNode {
+        let node = Arc::new(CoreGenericTypeDeclNode {
             generic_ty_name,
             interface_bounds,
         });

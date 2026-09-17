@@ -20,7 +20,7 @@ use crate::scope::traits::InstantiationContext;
 use crate::types::traits::OperatorCompatiblity;
 use crate::types::{array::core::Array, atomic::Atomic};
 use std::fmt::Debug;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub enum CoreType {
@@ -38,7 +38,7 @@ pub enum CoreType {
 }
 
 #[derive(Debug, Clone)]
-pub struct Type(Rc<CoreType>);
+pub struct Type(Arc<CoreType>);
 
 impl Type {
     pub fn core_ty(&self) -> &CoreType {
@@ -46,19 +46,19 @@ impl Type {
     }
 
     pub fn new_with_atomic(name: &str) -> Type {
-        Type(Rc::new(CoreType::Atomic(Atomic::new(name))))
+        Type(Arc::new(CoreType::Atomic(Atomic::new(name))))
     }
 
     pub fn new_with_array(element_ty: Type) -> Type {
-        Type(Rc::new(CoreType::Array(Array::new(element_ty))))
+        Type(Arc::new(CoreType::Array(Array::new(element_ty))))
     }
 
     pub fn new_with_tuple(types: Vec<Type>) -> Type {
-        Type(Rc::new(CoreType::Tuple(Tuple::new(types))))
+        Type(Arc::new(CoreType::Tuple(Tuple::new(types))))
     }
 
     pub fn new_with_hashmap(key_ty: Type, value_ty: Type) -> Type {
-        Type(Rc::new(CoreType::HashMap(HashMap::new(key_ty, value_ty))))
+        Type(Arc::new(CoreType::HashMap(HashMap::new(key_ty, value_ty))))
     }
 
     // user-defined-types
@@ -66,7 +66,7 @@ impl Type {
         symbol_index: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<TurbofishTypes>,
     ) -> Type {
-        Type(Rc::new(CoreType::Struct(Struct::new(
+        Type(Arc::new(CoreType::Struct(Struct::new(
             symbol_index,
             concrete_types,
         ))))
@@ -76,7 +76,7 @@ impl Type {
         symbol_index: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<TurbofishTypes>,
     ) -> Type {
-        Type(Rc::new(CoreType::Enum(Enum::new(
+        Type(Arc::new(CoreType::Enum(Enum::new(
             symbol_index,
             concrete_types,
         ))))
@@ -86,32 +86,32 @@ impl Type {
         symbol_index: SymbolIndex<UserDefinedTypeData>,
         concrete_types: Option<TurbofishTypes>,
     ) -> Type {
-        Type(Rc::new(CoreType::Lambda(Lambda::new_with_named(
+        Type(Arc::new(CoreType::Lambda(Lambda::new_with_named(
             symbol_index,
             concrete_types,
         ))))
     }
 
     pub fn new_with_lambda_unnamed(func_prototype: CallablePrototypeData) -> Type {
-        Type(Rc::new(CoreType::Lambda(Lambda::new_with_unnamed(
+        Type(Arc::new(CoreType::Lambda(Lambda::new_with_unnamed(
             func_prototype,
         ))))
     }
 
     pub fn new_with_generic(symbol_index: SymbolIndex<UserDefinedTypeData>) -> Type {
-        Type(Rc::new(CoreType::Generic(Generic::new(symbol_index))))
+        Type(Arc::new(CoreType::Generic(Generic::new(symbol_index))))
     }
 
     pub fn new_with_unknown() -> Type {
-        Type(Rc::new(CoreType::Unknown))
+        Type(Arc::new(CoreType::Unknown))
     }
 
     pub fn new_with_unset() -> Type {
-        Type(Rc::new(CoreType::Unset))
+        Type(Arc::new(CoreType::Unset))
     }
 
     pub fn new_with_void() -> Type {
-        Type(Rc::new(CoreType::Void))
+        Type(Arc::new(CoreType::Void))
     }
 
     pub fn is_int(&self) -> bool {
