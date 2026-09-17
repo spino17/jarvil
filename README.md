@@ -40,6 +40,10 @@ does not type-check does not produce output.
 What you get back is plain Python. There is no Jarvil runtime to install and
 nothing for your deployment target to know about.
 
+Try it without installing anything: the **[playground](site/README.md)** runs
+the compiler as WebAssembly in the browser, with live diagnostics, hover and
+go-to-definition.
+
 ## Install
 
 Requires [Rust](https://rustup.rs) 1.88+ and `python3` on your `PATH`.
@@ -252,6 +256,7 @@ A Cargo workspace:
 | `crates/jarvil-macros` | derive macros generating the syntax tree's boilerplate |
 | `extensions/jarvil-vscode` | the VS Code extension |
 | `extensions/jarvil-zed` | the Zed extension |
+| `site` | documentation and the in-browser playground |
 
 The front end knows nothing about Python: `jarvil-py` depends on
 `jarvil-parser`, never the reverse. That is what lets `jarvil-lsp` depend on the
