@@ -37,6 +37,22 @@ Python *source*; running it needs a Python interpreter, which in a browser means
 CPython-compiled-to-wasm. It loads lazily on the first ▶ Run, so browsing the
 docs never pays for it.
 
+## Deployment
+
+Pushing to `main` builds and publishes to GitHub Pages via
+[`.github/workflows/deploy-site.yml`](../.github/workflows/deploy-site.yml).
+
+The job needs a Rust toolchain and `wasm-pack` as well as Node, because the
+playground ships the real compiler — `npm run build` compiles the wasm before
+building the site.
+
+**One-time setup:** in the repository's *Settings → Pages*, set **Source** to
+**GitHub Actions**. Without it the workflow runs and the deploy step fails.
+
+The site is served from a subpath, so `.vitepress/config.mts` sets
+`base: "/jarvil/"`. If it ever moves to a custom domain at the root, change that
+to `"/"` — otherwise the page loads and every asset 404s.
+
 ## Layout
 
 ```

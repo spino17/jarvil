@@ -1,0 +1,82 @@
+# Builds the documentation site and publishes it to GitHub Pages.
+#
+# The unusual step here is the WebAssembly build: the playground runs the real
+# compiler in the browser, so the job needs a Rust toolchain and `wasm-pack`
+# before it can build the site. `npm run build` runs both in order.
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+    # Only rebuild when something the site depends on changes. The compiler is
+    # included because the playground ships it as wasm.
+    paths:
+      - "site/**"
+      - "crates/**"
+      - "extensions/jarvil-vscode/syntaxes/**"
+      - ".github/workflows/deploy-site.yml"
+  # so it can be published without waiting for a push
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish rather than cancelling it half-published.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: site
+
+      # Cheap, and a broken conversion silently misplaces every diagnostic
+      # range in the playground.
+      - name: Test offset conversions
+        run: npm test
+        working-directory: site
+
+      - name: Build site
+        run: npm run build
+        working-directory: site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/.vitepress/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

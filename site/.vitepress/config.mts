@@ -23,6 +23,11 @@ export default defineConfig({
   description: "A statically typed language that compiles to Python",
   cleanUrls: true,
 
+  // Served from `spino17.github.io/jarvil/`, so every asset URL needs that
+  // prefix. Change to "/" if this ever moves to a custom domain at the root --
+  // without it the page loads and every script and stylesheet 404s.
+  base: "/jarvil/",
+
   // The compiler ships as a WebAssembly module the playground loads at runtime.
   // Vite must not try to inline or pre-bundle it.
   vite: {
