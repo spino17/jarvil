@@ -26,11 +26,16 @@
 //!
 //! # What the translation preserves
 //!
-//! Output is a direct translation rather than a lowering: comments and blank
-//! lines are carried across, so the generated file reads like the source it
-//! came from. Constructs with no Python equivalent -- enums, `match` -- become
-//! the obvious encoding, and generics are erased, since one Python function
-//! body serves every instantiation.
+//! Output is a direct translation rather than a lowering: statements map to
+//! statements, and the generated file has the same shape as the source.
+//! Constructs with no Python equivalent -- enums, `match` -- become the obvious
+//! encoding, and generics are erased, since one Python function body serves
+//! every instantiation.
+//!
+//! Comments do **not** survive. They reach code generation as trivia, but each
+//! is replaced by a newline, so the generated file keeps the source's vertical
+//! spacing while losing the prose. Carrying them across would be a worthwhile
+//! improvement, since the output is meant to be read.
 //!
 //! [`PythonCodeGenerator`]: python::PythonCodeGenerator
 
