@@ -1,0 +1,28 @@
+---
+source: compiler/tests/type_checker.rs
+assertion_line: 17
+expression: type_check_to_diagnostics(&source)
+input_file: compiler/tests/corpus/type_checker/err/annotation_mismatch.jv
+---
+--- diagnostic 1 ---
+right side expression type does not match the type annotated on the variable
+    Diagnostic severity: error
+Begin snippet starting at line 1, column 1
+
+snippet line 1: def main():
+snippet line 2:     let x: int = "hello"
+    label at line 2, column 9: variable has type `int`
+    label at line 2, columns 18 to 24: expression has type `str`
+snippet line 3:     let y: str = 42
+diagnostic code: TypeCheckError
+
+--- diagnostic 2 ---
+right side expression type does not match the type annotated on the variable
+    Diagnostic severity: error
+Begin snippet starting at line 2, column 1
+
+snippet line 2:     let x: int = "hello"
+snippet line 3:     let y: str = 42
+    label at line 3, column 9: variable has type `str`
+    label at line 3, columns 18 to 19: expression has type `int`
+diagnostic code: TypeCheckError

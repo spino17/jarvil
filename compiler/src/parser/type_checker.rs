@@ -17,10 +17,10 @@ use crate::core::string_interner::IdentName;
 use crate::error::diagnostics::{
     ClassMethodExpectedParenthesisError, EnumVariantDoesNotExistError,
     EnumVariantsMissingFromMatchCaseStatementError, ExpectedValueForEnumVariantError,
-    GenericTypeArgsNotExpectedError, IncorrectEnumNameError, IncorrectExpressionTypeError,
-    InferredTypesNotBoundedByInterfacesError, InterfaceObjsInStructCheckError, MissingTokenError,
-    NonIterableExpressionError, NotAllConcreteTypesInferredError,
-    PropertyResolvedToMultipleInterfaceObjectsError,
+    ExpressionTypeCannotBeInferredError, GenericTypeArgsNotExpectedError, IncorrectEnumNameError,
+    IncorrectExpressionTypeError, InferredTypesNotBoundedByInterfacesError,
+    InterfaceObjsInStructCheckError, MissingTokenError, NonIterableExpressionError,
+    NotAllConcreteTypesInferredError, PropertyResolvedToMultipleInterfaceObjectsError,
     RightSideExpressionTypeMismatchedWithTypeFromAnnotationError, TypeInferenceFailedError,
     UnexpectedValueProvidedToEnumVariantError,
 };
@@ -1636,10 +1636,12 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let core_array_expr = array_expr.core_ref();
 
         let Some(initials) = &core_array_expr.initials else {
-            //let err = ExpressionTypeCannotBeInferredError::new(array_expr.range());
-            //self.log_error(Diagnostics::ExpressionTypeCannotBeInferred(err));
-            //Type::new_with_array(Type::new_with_unknown())
-            todo!()
+            let err = ExpressionTypeCannotBeInferredError::new(array_expr.range());
+
+            self.errors
+                .log_error(Diagnostics::ExpressionTypeCannotBeInferred(err));
+
+            return Type::new_with_array(Type::new_with_unknown());
         };
 
         let mut initials_iter = initials.iter();
@@ -1671,10 +1673,12 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let core_hashmap_expr = hashmap_expr.core_ref();
 
         let Some(initials) = &core_hashmap_expr.initials else {
-            //let err = ExpressionTypeCannotBeInferredError::new(hashmap_expr.range());
-            //self.log_error(Diagnostics::ExpressionTypeCannotBeInferred(err));
-            //Type::new_with_array(Type::new_with_unknown())
-            todo!()
+            let err = ExpressionTypeCannotBeInferredError::new(hashmap_expr.range());
+
+            self.errors
+                .log_error(Diagnostics::ExpressionTypeCannotBeInferred(err));
+
+            return Type::new_with_hashmap(Type::new_with_unknown(), Type::new_with_unknown());
         };
 
         let mut initials_iter = initials.iter();

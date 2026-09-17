@@ -13,4 +13,9 @@ miette = { version = "5.3.0", features = ["fancy"] }
 thiserror = "1.0.34"
 owo-colors = "3.5.0"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+# `preserve_order` keeps serialized fields in declaration order rather than
+# sorting them, so the AST dumps read top-down like the source they came from
+serde_json = { version = "1.0", features = ["preserve_order"] }
+
+[dev-dependencies]
+insta = { version = "1", features = ["glob"] }

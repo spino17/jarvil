@@ -27,6 +27,19 @@ impl JarvilProgramAnalysisErrors {
         }
     }
 
+    // Every diagnostic logged during the run, in the order they were found.
+    //
+    // `build_code` still surfaces only the first one; this exists so that tests
+    // can assert on the full set, and is the accessor the driver should move to
+    // when multi-error reporting lands.
+    pub fn reports(&self) -> Vec<Report> {
+        unsafe {
+            let errors_ref = &*self.core.get();
+
+            errors_ref.iter().map(|err| err.report()).collect()
+        }
+    }
+
     pub fn first_error_report(&self) -> Option<Report> {
         unsafe {
             let errors_ref = &*self.core.get();

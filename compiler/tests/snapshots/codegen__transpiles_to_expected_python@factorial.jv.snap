@@ -1,0 +1,16 @@
+---
+source: compiler/tests/codegen.rs
+assertion_line: 24
+expression: py_code
+input_file: compiler/tests/corpus/codegen/factorial.jv
+---
+def core_factorial_0_func(n_0_var):
+    if n_0_var == 0 or n_0_var == 1:
+        return 1
+    return n_0_var * core_factorial_0_func(n_0_var - 1)
+
+def main_1_func():
+    print(core_factorial_0_func(10))
+
+
+main_1_func()

@@ -1,0 +1,8 @@
+---
+source: compiler/tests/codegen.rs
+assertion_line: 54
+expression: run_python(&py_code)
+input_file: compiler/tests/corpus/codegen/generic_interface_dispatch.jv
+---
+1
+2

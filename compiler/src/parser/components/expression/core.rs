@@ -188,7 +188,7 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
                 }, ",");
 
                 let exprs_node = SymbolSeparatedSequenceNode::new_with_entities(expr_node, remaining_tuple_exprs_node, comma_node);
-                
+
                 let rparen_node = parser.expect(")");
 
                 AtomicExpressionNode::new_with_tuple_expr(lparen_node, rparen_node, exprs_node)

@@ -32,7 +32,7 @@ fn execute_cmd(commands: &Commands) -> Result<(), AnyonError> {
 
 fn main() {
     // hook for styling of the error messages
-    miette::set_hook(Box::new(|_err| {
+    let _ = miette::set_hook(Box::new(|_err| {
         let mut my_theme = GraphicalTheme::default();
         my_theme.styles.linum = Style::new().bright_blue();
         my_theme.styles.error = Style::new().red();
@@ -45,7 +45,11 @@ fn main() {
     let cli = Cli::parse();
     let Some(commands) = &cli.command else { return };
 
+    // errors go to `stderr` so that they stay separate from the output of the
+    // program being run, and a non-zero exit code lets CI and the test harness
+    // tell a failed build from a successful one
     if let Err(err) = execute_cmd(commands) {
-        println!("{:?}", err);
+        eprintln!("{:?}", err);
+        std::process::exit(1);
     }
 }

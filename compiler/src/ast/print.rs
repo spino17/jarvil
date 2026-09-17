@@ -1,15 +1,14 @@
 use super::ast::BlockNode;
 use crate::code::JarvilCodeHandler;
-use crate::core::string_interner::Interner;
 use serde_json::Result;
 use serde_json::Value;
 use text_size::TextRange;
 
-fn process_value(val: &mut Value, code: &JarvilCodeHandler, interner: &Interner) {
+fn process_value(val: &mut Value, code: &JarvilCodeHandler) {
     match val {
         Value::Array(array) => {
             for element in array {
-                process_value(element, code, interner);
+                process_value(element, code);
             }
         }
         Value::Object(map) => {
@@ -26,22 +25,25 @@ fn process_value(val: &mut Value, code: &JarvilCodeHandler, interner: &Interner)
                 map.insert("value".to_string(), Value::String(token_value));
             }
             for (_, value) in map {
-                process_value(value, code, interner);
+                process_value(value, code);
             }
         }
         _ => (),
     }
 }
 
-pub fn serialize_ast(
-    ast: &BlockNode,
-    code: &JarvilCodeHandler,
-    interner: &Interner,
-) -> Result<String> {
+// Serializes the AST into a `serde_json::Value` with each token's source text
+// attached under a `value` key. Both the on-disk `__ast_<name>.json` dump and
+// the compact tree used by snapshot tests are rendered from this.
+pub fn ast_to_value(ast: &BlockNode, code: &JarvilCodeHandler) -> Result<Value> {
     let serialized_ast = serde_json::to_string(ast)?;
     let mut deserialized: Value = serde_json::from_str(&serialized_ast)?;
 
-    process_value(&mut deserialized, code, interner);
+    process_value(&mut deserialized, code);
 
-    serde_json::to_string(&deserialized)
+    Ok(deserialized)
+}
+
+pub fn serialize_ast(ast: &BlockNode, code: &JarvilCodeHandler) -> Result<String> {
+    serde_json::to_string(&ast_to_value(ast, code)?)
 }

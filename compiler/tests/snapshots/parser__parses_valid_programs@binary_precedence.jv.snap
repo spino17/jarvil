@@ -1,0 +1,42 @@
+---
+source: compiler/tests/parser.rs
+assertion_line: 20
+expression: parse_to_ast(&source)
+input_file: compiler/tests/corpus/parser/ok/binary_precedence.jv
+---
+=== ast ===
+  stmts
+    -.CorrectlyIndented.FunctionWrapper.func_decl
+      def_keyword.Ok.token: DEF "def"
+      name.Ok.name.token: IDENTIFIER "main"
+      body
+        prototype
+          lparen.Ok.token: LPAREN "("
+          rparen.Ok.token: RPAREN ")"
+        colon.Ok.token: COLON ":"
+        block
+          stmts
+            -.CorrectlyIndented.VariableDeclaration
+              let_keyword.Ok.token: LET "let"
+              name.Ok.name.token: IDENTIFIER "x"
+              equal.Ok.token: EQUAL "="
+              r_node.Expression
+                expr.Binary
+                  left_expr.Binary
+                    left_expr.Unary.Atomic.Integer.Ok.token: INTEGER "1"
+                    operator.Ok.token: PLUS "+"
+                    right_expr.Binary
+                      left_expr.Unary.Atomic.Integer.Ok.token: INTEGER "2"
+                      operator.Ok.token: STAR "*"
+                      right_expr.Unary.Atomic.Integer.Ok.token: INTEGER "3"
+                  operator.Ok.token: DASH "-"
+                  right_expr.Binary
+                    left_expr.Unary.Atomic.Integer.Ok.token: INTEGER "4"
+                    operator.Ok.token: SLASH "/"
+                    right_expr.Unary.Atomic.Integer.Ok.token: INTEGER "2"
+                newline.Ok.token: NEWLINE
+          newline.Ok.token: NEWLINE
+  newline.Ok.token: NEWLINE
+
+=== diagnostics ===
+(no diagnostics)

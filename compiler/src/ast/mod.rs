@@ -1,6 +1,7 @@
 #[macro_use]
 pub mod macros;
 pub mod ast;
+pub mod dump;
 pub mod impl_ast;
 pub mod iterators;
 pub mod print;

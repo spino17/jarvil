@@ -60,7 +60,7 @@ pub fn build_code(code: JarvilCode) -> (Result<String, Report>, String) {
     let modified_semantic_db = type_checker.check_ast(&ast);
 
     // ast json serialization
-    let ast_str = serialize_ast(&ast, &code_handler, modified_semantic_db.interner()).unwrap();
+    let ast_str = serialize_ast(&ast, &code_handler).unwrap();
 
     if let Some(report) = errors.first_error_report() {
         return (Err(attach_source_code(report, code.to_string())), ast_str);

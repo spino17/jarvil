@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub fn compile(code_str: &str) -> Result<String, String> {
-    miette::set_hook(Box::new(|_err| {
+    let _ = miette::set_hook(Box::new(|_err| {
         let mut my_theme = GraphicalTheme::default();
         my_theme.styles.linum = Style::new().bright_blue();
         my_theme.styles.error = Style::new().red();

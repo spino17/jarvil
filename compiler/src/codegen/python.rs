@@ -333,8 +333,8 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
             }
             UserDefinedTypeData::Enum(enum_data) => {
                 if let CoreIdentifierInUseNode::Ok(ok_variant_name) = property_name.core_ref() {
-                    let variant_name_str = ok_variant_name
-                        .token_value(self.code_handler, self.semantic_db.interner());
+                    let variant_name_str =
+                        ok_variant_name.token_value(self.code_handler, self.semantic_db.interner());
                     if let Some(index) = enum_data.try_index_for_variant(variant_name_str) {
                         self.print_identifier_in_use(ty_name, is_trivia);
                         self.add_str_to_python_code(&format!("(index={}", index));

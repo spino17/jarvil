@@ -1,0 +1,25 @@
+---
+source: compiler/tests/codegen.rs
+assertion_line: 24
+expression: py_code
+input_file: compiler/tests/corpus/codegen/generic_interface_dispatch.jv
+---
+
+def print_list_0_func(l_0_var):
+    for element_1_var in l_0_var:
+        element_1_var.print()
+
+class Int_1_ty:
+
+    def __init__(self, x_3_var):
+        self.val = x_3_var
+
+    def print(self):
+        print(self.val)
+
+def main_1_func():
+    x_4_var = [Int_1_ty(1), Int_1_ty(2)]
+    print_list_0_func(x_4_var)
+
+
+main_1_func()
