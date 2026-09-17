@@ -29,6 +29,6 @@ __*
 **/*.rs.bk
 
 # VS Code extension build output and dependencies
-extensions/jarvil-lang/node_modules/
-extensions/jarvil-lang/client/out/
-extensions/jarvil-lang/*.vsix
+extensions/jarvil-vscode/node_modules/
+extensions/jarvil-vscode/client/out/
+extensions/jarvil-vscode/*.vsix

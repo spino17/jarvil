@@ -96,12 +96,17 @@ The repository is a Cargo workspace:
 
 | Crate | What it is |
 |---|---|
-| `compiler` | the language itself — lexer, parser, resolver, type checker, Python emitter |
-| `tools/anyon` | the `anyon` CLI |
-| `tools/jarvil-lsp` | the language server |
-| `tools/jarvil-wasm` | browser bindings |
-| `compiler/jarvil-macros` | derive macros generating the syntax tree's boilerplate |
-| `extensions/jarvil-lang` | the VS Code extension ([setup](extensions/jarvil-lang/README.md)) |
+| `crates/jarvil-parser` | the front end — lexer, parser, name resolution, type checking |
+| `crates/jarvil-py` | the Python backend, and the `build_code` entry point |
+| `crates/jarvil-lsp` | the language server |
+| `crates/anyon` | the `anyon` CLI |
+| `crates/jarvil-wasm` | browser bindings |
+| `crates/jarvil-macros` | derive macros generating the syntax tree's boilerplate |
+| `extensions/jarvil-vscode` | the VS Code extension ([setup](extensions/jarvil-vscode/README.md)) |
+
+The front end knows nothing about Python: `jarvil-py` depends on
+`jarvil-parser`, never the reverse. That is what lets `jarvil-lsp` depend on the
+front end alone, without linking a code generator it never calls.
 
 ### API documentation
 
@@ -109,8 +114,9 @@ The repository is a Cargo workspace:
 cargo doc --workspace --no-deps --open
 ```
 
-Start at the `compiler` crate docs: the crate-level page describes the five-pass
-pipeline and both entry points, and each module explains its role in it.
+Start at the `jarvil-parser` crate docs: the crate-level page describes the
+four-pass pipeline and its entry points, and each module explains its role in
+it. `jarvil-py` documents the final pass.
 
 ### Checks
 
@@ -125,10 +131,11 @@ RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps   # catches broken do
 
 ### Tests
 
-Unit tests live beside the code; the substantial suites are in
-`compiler/tests/`, which runs a corpus of `.jv` files through each pass and
-snapshots the result. Adding a case usually means adding a file rather than
-writing Rust — see [`compiler/tests/README.md`](compiler/tests/README.md).
+Unit tests live beside the code; the substantial suites are the corpora in
+`crates/jarvil-parser/tests/` and `crates/jarvil-py/tests/`, which run `.jv`
+files through each pass and snapshot the result. Adding a case usually means
+adding a file rather than writing Rust — see
+[`crates/jarvil-parser/tests/README.md`](crates/jarvil-parser/tests/README.md).
 
 ## 🤝 Contributions
 

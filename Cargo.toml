@@ -1,10 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-    "compiler",
-    "tools/anyon",
-    "tools/jarvil-lsp",
-    "tools/jarvil-wasm",
+    "crates/jarvil-parser",
+    "crates/jarvil-py",
+    "crates/jarvil-macros",
+    "crates/jarvil-lsp",
+    "crates/anyon",
+    "crates/jarvil-wasm",
 ]
 
 # Shared package metadata, inherited by every member via `<key>.workspace = true`,
