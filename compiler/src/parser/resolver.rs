@@ -686,7 +686,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                 let resolved_scope_index = symbol_obj.0.scope_index();
                 let ty_kind = self.semantic_db.ty_symbol_ref(symbol_obj.0).kind();
 
-                let result = match ty_kind {
+                match ty_kind {
                     UserDefineTypeKind::Struct => {
                         match self.bind_decl_to_identifier_in_use(ok_identifier, &symbol_obj, false)
                         {
@@ -783,9 +783,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                             ]),
                         }
                     }
-                };
-
-                result
+                }
             }
             LookupResult::NotInitialized(decl_range) => {
                 TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::NotInitialized(
@@ -882,26 +880,25 @@ impl<'ctx> JarvilResolver<'ctx> {
         let mut interface_bounds = InterfaceBounds::default();
 
         for interface_expr in iter {
-            if let CoreIdentifierInUseNode::Ok(interface_expr) = interface_expr.core_ref() {
-                if let Some(interface_obj) = self.interface_obj_from_expr(interface_expr) {
-                    if let Some(previous_decl_range) = interface_bounds.insert(
-                        interface_obj,
-                        interface_expr.range(),
-                        self.semantic_db.namespace_ref(),
-                    ) {
-                        let name = interface_expr
-                            .token_value(self.code_handler, self.semantic_db.interner());
+            if let CoreIdentifierInUseNode::Ok(interface_expr) = interface_expr.core_ref()
+                && let Some(interface_obj) = self.interface_obj_from_expr(interface_expr)
+                && let Some(previous_decl_range) = interface_bounds.insert(
+                    interface_obj,
+                    interface_expr.range(),
+                    self.semantic_db.namespace_ref(),
+                )
+            {
+                let name =
+                    interface_expr.token_value(self.code_handler, self.semantic_db.interner());
 
-                        let err = InterfaceAlreadyExistInBoundsDeclarationError::new(
-                            self.semantic_db.interner().lookup(name),
-                            previous_decl_range,
-                            interface_expr.range(),
-                        );
+                let err = InterfaceAlreadyExistInBoundsDeclarationError::new(
+                    self.semantic_db.interner().lookup(name),
+                    previous_decl_range,
+                    interface_expr.range(),
+                );
 
-                        self.errors
-                            .log_error(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
-                    }
-                }
+                self.errors
+                    .log_error(Diagnostics::InterfaceAlreadyExistInBoundsDeclaration(err));
             }
         }
 
@@ -1208,28 +1205,19 @@ impl<'ctx> JarvilResolver<'ctx> {
 
             // collect for all the assignment statements with format: `self.<PROPERTY_NAME>`
             // in order to check which all fields are not initialized inside the constructor
-            if let CoreStatementNode::Assignment(assignment) = stmt.core_ref() {
-                if let CoreAssignmentNode::Ok(ok_assignment) = assignment.core_ref() {
-                    if let CoreAtomNode::PropertyAccess(property_access) =
-                        ok_assignment.core_ref().l_atom.core_ref()
-                    {
-                        if let CoreIdentifierInUseNode::Ok(property_name) =
-                            property_access.core_ref().propertry.core_ref()
-                        {
-                            if let CoreAtomNode::AtomStart(atom_start) =
-                                property_access.core_ref().atom.core_ref()
-                            {
-                                if let CoreAtomStartNode::SelfKeyword(_) = atom_start.core_ref() {
-                                    let property_name_str = property_name.token_value(
-                                        self.code_handler,
-                                        self.semantic_db.interner(),
-                                    );
-                                    initialized_fields.insert(property_name_str);
-                                }
-                            }
-                        }
-                    }
-                }
+            if let CoreStatementNode::Assignment(assignment) = stmt.core_ref()
+                && let CoreAssignmentNode::Ok(ok_assignment) = assignment.core_ref()
+                && let CoreAtomNode::PropertyAccess(property_access) =
+                    ok_assignment.core_ref().l_atom.core_ref()
+                && let CoreIdentifierInUseNode::Ok(property_name) =
+                    property_access.core_ref().propertry.core_ref()
+                && let CoreAtomNode::AtomStart(atom_start) =
+                    property_access.core_ref().atom.core_ref()
+                && let CoreAtomStartNode::SelfKeyword(_) = atom_start.core_ref()
+            {
+                let property_name_str =
+                    property_name.token_value(self.code_handler, self.semantic_db.interner());
+                initialized_fields.insert(property_name_str);
             }
         }
 
@@ -2059,16 +2047,16 @@ impl<'ctx> JarvilResolver<'ctx> {
 
             self.open_block(case_block.core_ref().kind);
 
-            if let Some((_, variable_name, _)) = &core_case_branch.variable_name {
-                if let CoreIdentifierInDeclNode::Ok(ok_identifier) = variable_name.core_ref() {
-                    match self.try_declare_and_bind_variable(ok_identifier) {
-                        Ok(symbol_obj) => {
-                            self.semantic_db
-                                .variable_symbol_mut_ref(symbol_obj.symbol_index())
-                                .set_is_init(true);
-                        }
-                        Err(_) => unreachable!(),
+            if let Some((_, variable_name, _)) = &core_case_branch.variable_name
+                && let CoreIdentifierInDeclNode::Ok(ok_identifier) = variable_name.core_ref()
+            {
+                match self.try_declare_and_bind_variable(ok_identifier) {
+                    Ok(symbol_obj) => {
+                        self.semantic_db
+                            .variable_symbol_mut_ref(symbol_obj.symbol_index())
+                            .set_is_init(true);
                     }
+                    Err(_) => unreachable!(),
                 }
             }
 
@@ -2116,15 +2104,14 @@ impl<'ctx> JarvilResolver<'ctx> {
         };
 
         if let ResolveResult::Ok(lookup_data, _) = self.try_resolving_variable(ok_identifier, true)
+            && lookup_data.depth > 0
         {
-            if lookup_data.depth > 0 {
-                self.set_to_variable_non_locals(
-                    lookup_data
-                        .symbol_obj
-                        .mangled_name(self.semantic_db.namespace_ref()),
-                    lookup_data.enclosing_func_scope_depth,
-                );
-            }
+            self.set_to_variable_non_locals(
+                lookup_data
+                    .symbol_obj
+                    .mangled_name(self.semantic_db.namespace_ref()),
+                lookup_data.enclosing_func_scope_depth,
+            );
         }
     }
 

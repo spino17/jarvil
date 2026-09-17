@@ -13,15 +13,13 @@ fn variant_field_name(variant: &Variant) -> &proc_macro2::Ident {
         None => panic!("each variant of `ASTNode` enum should have respective node"),
     };
 
-    let variant_field_name = match field_ty {
+    (match field_ty {
         syn::Type::Path(field_ty) => match field_ty.path.segments.iter().next() {
             Some(field_ty_name) => &field_ty_name.ident,
             _ => panic!("each variant of `ASTNode` enum always have a node"),
         },
         _ => panic!("type of the data in the variant of `ASTNode` should be a node"),
-    };
-
-    variant_field_name
+    }) as _
 }
 
 pub fn impl_nodify_macro(ast: &syn::DeriveInput) -> TokenStream {
@@ -66,7 +64,7 @@ pub fn impl_nodify_macro(ast: &syn::DeriveInput) -> TokenStream {
         }
     });
 
-    let gen = quote! {
+    let expanded = quote! {
         use crate::ast::traits::Node;
 
         impl ASTNode {
@@ -75,7 +73,7 @@ pub fn impl_nodify_macro(ast: &syn::DeriveInput) -> TokenStream {
         #(#serialize_impl_node_methods)*
     };
 
-    gen.into()
+    expanded.into()
 }
 
 pub fn impl_node_macro(ast: &syn::DeriveInput) -> TokenStream {
@@ -109,7 +107,7 @@ pub fn impl_node_macro(ast: &syn::DeriveInput) -> TokenStream {
         }
     });
 
-    let gen = quote! {
+    let expanded = quote! {
         impl Node for #node_ty {
             fn range(&self) -> TextRange {
                 match &self.0.as_ref() {
@@ -124,5 +122,5 @@ pub fn impl_node_macro(ast: &syn::DeriveInput) -> TokenStream {
             }
         }
     };
-    gen.into()
+    expanded.into()
 }

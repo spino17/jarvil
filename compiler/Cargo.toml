@@ -1,17 +1,17 @@
 [package]
 name = "compiler"
-version = "0.1.0"
-edition = "2018"
-authors = ["Bhavya Bhatt bhavyabhatt17@gmail.com"]
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
 
 [dependencies]
-rustc-hash = { version = "1.1" }
-colored = "2.0.0"
+rustc-hash = { version = "2.1" }
 jarvil-macros = { path = "jarvil-macros" }
-text-size = "1.1.0"
-miette = { version = "5.3.0", features = ["fancy"] }
-thiserror = "1.0.34"
-owo-colors = "3.5.0"
+text-size = "1.1.1"
+miette = { version = "7.6", features = ["fancy"] }
+thiserror = "2.0"
+owo-colors = "4.4"
 serde = { version = "1.0", features = ["derive"] }
 # `preserve_order` keeps serialized fields in declaration order rather than
 # sorting them, so the AST dumps read top-down like the source they came from

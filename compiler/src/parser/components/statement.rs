@@ -87,7 +87,8 @@ pub fn is_statement_within_control_flow_starting_with(token: &Token) -> bool {
 // no other statement is allowed except ones starting with `<identifier>` and `def`.
 pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
     let token = parser.curr_token();
-    let statement_node = match token.core_token() {
+
+    match token.core_token() {
         CoreToken::LET => {
             let variable_decl_node = parser.variable_decl();
 
@@ -186,8 +187,7 @@ pub fn stmt(parser: &mut JarvilParser) -> StatementNode {
                 }
             }
         }
-    };
-    statement_node
+    }
 }
 
 pub fn struct_stmt(parser: &mut JarvilParser) -> StatementNode {

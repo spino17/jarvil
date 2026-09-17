@@ -1,5 +1,5 @@
 use super::statement::{
-    is_statement_within_func_starting_with, STATEMENT_WITHIN_FUNC_STARTING_SYMBOLS,
+    STATEMENT_WITHIN_FUNC_STARTING_SYMBOLS, is_statement_within_func_starting_with,
 };
 use crate::ast::ast::{
     BoundedMethodWrapperNode, CallableBodyNode, CallableKind, CallablePrototypeNode,

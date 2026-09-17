@@ -2,8 +2,8 @@ use crate::{
     ast::ast::{ForLoopStatementNode, WhileLoopStatementNode},
     parser::{
         components::statement::{
-            is_statement_within_control_flow_starting_with,
             STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS,
+            is_statement_within_control_flow_starting_with,
         },
         parser::JarvilParser,
         resolver::BlockKind,

@@ -1540,7 +1540,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                 return (
                     self.check_index_access_for_tuple_ty(tuple_data, index_expr),
                     Some(atom_ty),
-                )
+                );
             }
             CoreType::Array(array_data) => {
                 if index_ty.is_int() {
@@ -1923,18 +1923,17 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
                 let (l_ty, interior_atom_ty) = self.check_atom(l_expr);
 
-                if let CoreAtomNode::IndexAccess(l_index_expr) = l_expr.core_ref() {
-                    if let Some(interior_atom_ty) = interior_atom_ty {
-                        if interior_atom_ty.is_immutable() {
-                            let err = ImmutableTypeNotAssignableError::new(
-                                interior_atom_ty.to_string(self.err_logging_context()),
-                                l_index_expr.core_ref().atom.range(),
-                            );
+                if let CoreAtomNode::IndexAccess(l_index_expr) = l_expr.core_ref()
+                    && let Some(interior_atom_ty) = interior_atom_ty
+                    && interior_atom_ty.is_immutable()
+                {
+                    let err = ImmutableTypeNotAssignableError::new(
+                        interior_atom_ty.to_string(self.err_logging_context()),
+                        l_index_expr.core_ref().atom.range(),
+                    );
 
-                            self.errors
-                                .log_error(Diagnostics::ImmutableTypeNotAssignable(err));
-                        }
-                    }
+                    self.errors
+                        .log_error(Diagnostics::ImmutableTypeNotAssignable(err));
                 }
 
                 let r_assign = &core_ok_assignment.r_assign;
@@ -2304,16 +2303,14 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                                             Some(expected_ty) => {
                                                 if let CoreIdentifierInDeclNode::Ok(variable_name) =
                                                     variable_name.core_ref()
-                                                {
-                                                    if let Some(symbol_index) = self
+                                                    && let Some(symbol_index) = self
                                                         .semantic_db
                                                         .variable_symbol_for_identifier_in_decl(
                                                             variable_name,
                                                         )
-                                                    {
-                                                        symbol_index_ty_vec
-                                                            .push((symbol_index, expected_ty));
-                                                    }
+                                                {
+                                                    symbol_index_ty_vec
+                                                        .push((symbol_index, expected_ty));
                                                 };
                                             }
                                             None => {
@@ -2461,15 +2458,14 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         let loop_variable = &core_for_loop.loop_variable;
 
         if let Some(element_ty) = element_ty {
-            if let CoreIdentifierInDeclNode::Ok(ok_loop_variable) = loop_variable.core_ref() {
-                if let Some(symbol_index) = self
+            if let CoreIdentifierInDeclNode::Ok(ok_loop_variable) = loop_variable.core_ref()
+                && let Some(symbol_index) = self
                     .semantic_db
                     .variable_symbol_for_identifier_in_decl(ok_loop_variable)
-                {
-                    self.semantic_db
-                        .variable_symbol_mut_ref(symbol_index)
-                        .set_data_ty(&element_ty);
-                }
+            {
+                self.semantic_db
+                    .variable_symbol_mut_ref(symbol_index)
+                    .set_data_ty(&element_ty);
             };
         } else {
             let err = NonIterableExpressionError::new(

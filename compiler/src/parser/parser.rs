@@ -384,7 +384,7 @@ impl<'ctx> JarvilParser<'ctx> {
                         kind: IndentResultKind::BlockOver,
                         skipped_tokens,
                         extra_newlines,
-                    }
+                    };
                 }
                 _ => {
                     // At this point we are sure that the token index is set to the first token on a newline

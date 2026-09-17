@@ -1,7 +1,7 @@
+use super::r#enum::Enum;
 use super::generic::Generic;
 use super::hashmap::core::HashMap;
 use super::lambda::Lambda;
-use super::r#enum::Enum;
 use super::r#struct::Struct;
 use super::traits::TypeLike;
 use super::tuple::Tuple;

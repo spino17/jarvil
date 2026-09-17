@@ -8,7 +8,12 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn compile(code_str: &str) -> Result<String, String> {
     let _ = miette::set_hook(Box::new(|_err| {
-        let mut my_theme = GraphicalTheme::default();
+        // Explicitly `unicode()` rather than `default()`: the default probes for
+        // a terminal, which under wasm is never there, so it would downgrade to
+        // an uncoloured ASCII theme. The caller here is a web front-end that
+        // renders the escape codes, so ask for the styled theme directly.
+        let mut my_theme = GraphicalTheme::unicode();
+
         my_theme.styles.linum = Style::new().bright_blue();
         my_theme.styles.error = Style::new().red();
         my_theme.styles.warning = Style::new().yellow();

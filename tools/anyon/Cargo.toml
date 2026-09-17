@@ -1,11 +1,12 @@
 [package]
 name = "anyon"
-version = "0.1.0"
-edition = "2018"
-authors = ["Bhavya Bhatt bhavyabhatt17@gmail.com"]
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
 
 [dependencies]
-clap = { version = "4.5.4", features = ["derive"] }
+clap = { version = "4.6.7", features = ["derive"] }
 compiler = { path = "../../compiler" }
-miette = { version = "5.3.0" }
-owo-colors = "3.5.0"
+miette = { version = "7.6", features = ["fancy"] }
+owo-colors = "4.4"

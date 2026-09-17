@@ -58,7 +58,7 @@ pub fn impl_tokenify_macro(ast: &syn::DeriveInput) -> TokenStream {
         }
     };
 
-    let gen = quote! {
+    let expanded = quote! {
         impl CoreToken {
             #(#token_eq_funcs)*
             #is_eq_func
@@ -66,5 +66,5 @@ pub fn impl_tokenify_macro(ast: &syn::DeriveInput) -> TokenStream {
         }
     };
 
-    gen.into()
+    expanded.into()
 }

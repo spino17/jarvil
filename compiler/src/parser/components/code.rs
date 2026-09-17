@@ -2,7 +2,7 @@ use crate::ast::ast::BlockNode;
 use crate::constants::common::ENDMARKER;
 use crate::lexer::token::Token;
 use crate::parser::components::statement::{
-    is_statement_at_global_scope_starting_with, STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS,
+    STATEMENT_AT_GLOBAL_SCOPE_STARTING_SYMBOLS, is_statement_at_global_scope_starting_with,
 };
 use crate::parser::parser::JarvilParser;
 use crate::parser::resolver::BlockKind;

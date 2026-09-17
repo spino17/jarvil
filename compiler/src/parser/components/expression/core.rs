@@ -109,28 +109,29 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
             token.clone(),
         );
     }
-    let atomic_expr_node = match token.core_token() {
-        CoreToken::TRUE                         => {
+
+    match token.core_token() {
+        CoreToken::TRUE => {
             let true_node = parser.expect(TRUE);
 
             AtomicExpressionNode::new_with_bool(true_node)
         }
-        CoreToken::FALSE                        => {
+        CoreToken::FALSE => {
             let false_node = parser.expect(FALSE);
 
             AtomicExpressionNode::new_with_bool(false_node)
         }
-        CoreToken::INTEGER                      => {
+        CoreToken::INTEGER => {
             let integer_node = parser.expect(INTEGER);
 
             AtomicExpressionNode::new_with_integer(integer_node)
         }
-        CoreToken::FLOATING_POINT_NUMBER        => {
+        CoreToken::FLOATING_POINT_NUMBER => {
             let floating_point_number_node = parser.expect(FLOATING_POINT_NUMBER);
 
             AtomicExpressionNode::new_with_floating_point_number(floating_point_number_node)
         }
-        CoreToken::LITERAL                      => {
+        CoreToken::LITERAL => {
             let literal_node = parser.expect(LITERAL);
 
             AtomicExpressionNode::new_with_literal(literal_node)
@@ -146,9 +147,10 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
             let curr_token = parser.curr_token();
 
             if !curr_token.is_eq("]") {
-                initials_node = Some(parser.expect_symbol_separated_sequence(|parser: &mut JarvilParser| {
-                    parser.expr()
-                }, ","));
+                initials_node = Some(parser.expect_symbol_separated_sequence(
+                    |parser: &mut JarvilParser| parser.expr(),
+                    ",",
+                ));
             }
 
             let rsquare_node = parser.expect("]");
@@ -162,20 +164,23 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
             let curr_token = parser.curr_token();
 
             if !curr_token.is_eq("}") {
-                initials_node = Some(parser.expect_symbol_separated_sequence(|parser: &mut JarvilParser| {
-                    let key_expr_node = parser.expr();
-                    let colon_node = parser.expect(":");
-                    let value_expr_node = parser.expr();
+                initials_node = Some(parser.expect_symbol_separated_sequence(
+                    |parser: &mut JarvilParser| {
+                        let key_expr_node = parser.expr();
+                        let colon_node = parser.expect(":");
+                        let value_expr_node = parser.expr();
 
-                    KeyValuePairNode::new(key_expr_node, value_expr_node, colon_node)
-                }, ","))
+                        KeyValuePairNode::new(key_expr_node, value_expr_node, colon_node)
+                    },
+                    ",",
+                ))
             }
 
             let rcurly_node = parser.expect("}");
 
             AtomicExpressionNode::new_with_hashmap_expr(lcurly_node, rcurly_node, initials_node)
         }
-        CoreToken::LPAREN                       => {
+        CoreToken::LPAREN => {
             let lparen_node = parser.expect("(");
             let expr_node = parser.expr();
             let curr_token = parser.curr_token();
@@ -183,11 +188,16 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
             if curr_token.is_eq(",") {
                 let comma_node = parser.expect(",");
 
-                let remaining_tuple_exprs_node = parser.expect_symbol_separated_sequence(|parser: &mut JarvilParser| {
-                    parser.expr()
-                }, ",");
+                let remaining_tuple_exprs_node = parser.expect_symbol_separated_sequence(
+                    |parser: &mut JarvilParser| parser.expr(),
+                    ",",
+                );
 
-                let exprs_node = SymbolSeparatedSequenceNode::new_with_entities(expr_node, remaining_tuple_exprs_node, comma_node);
+                let exprs_node = SymbolSeparatedSequenceNode::new_with_entities(
+                    expr_node,
+                    remaining_tuple_exprs_node,
+                    comma_node,
+                );
 
                 let rparen_node = parser.expect(")");
 
@@ -195,10 +205,15 @@ pub fn atomic_expr(parser: &mut JarvilParser) -> AtomicExpressionNode {
             } else {
                 let rparen_node = parser.expect(")");
 
-                AtomicExpressionNode::new_with_parenthesised_expr(expr_node, lparen_node, rparen_node)
+                AtomicExpressionNode::new_with_parenthesised_expr(
+                    expr_node,
+                    lparen_node,
+                    rparen_node,
+                )
             }
         }
-        _ => unreachable!("tokens not matching `starting_with_symbols` for atomic expression would already be eliminated")
-    };
-    atomic_expr_node
+        _ => unreachable!(
+            "tokens not matching `starting_with_symbols` for atomic expression would already be eliminated"
+        ),
+    }
 }

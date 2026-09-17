@@ -377,13 +377,12 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
             let enum_name = &core_case_branch.enum_name;
             if symbol_index.is_none() {
                 // cache the symbol_data to be used for all case branches
-                if let CoreIdentifierInDeclNode::Ok(ok_enum_name) = enum_name.core_ref() {
-                    if let Some(sym_index) = self
+                if let CoreIdentifierInDeclNode::Ok(ok_enum_name) = enum_name.core_ref()
+                    && let Some(sym_index) = self
                         .semantic_db
                         .ty_symbol_for_identifier_in_decl(ok_enum_name)
-                    {
-                        symbol_index = Some(sym_index);
-                    }
+                {
+                    symbol_index = Some(sym_index);
                 }
             }
             let variant_name = &core_case_branch.variant_name;

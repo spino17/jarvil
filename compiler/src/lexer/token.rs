@@ -25,8 +25,8 @@ use crate::constants::common::{
 };
 use crate::core::string_interner::{IdentName, Interner};
 use jarvil_macros::Tokenify;
-use serde::ser::SerializeStruct;
 use serde::Serialize;
+use serde::ser::SerializeStruct;
 use std::fmt::Display;
 use text_size::TextRange;
 

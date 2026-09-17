@@ -1,4 +1,4 @@
-use super::helper::{range_to_span, IdentifierKind, PropertyKind};
+use super::helper::{IdentifierKind, PropertyKind, range_to_span};
 use crate::types::core::TypeStringifyContext;
 use crate::types::traits::TypeLike;
 use crate::{
@@ -791,10 +791,16 @@ impl IdentifierUsedBeforeInitializedError {
         usage_range: TextRange,
     ) -> Self {
         let help_str = match identifier_kind {
-            IdentifierKind::Variable => "variables are not allowed to be referenced inside their own declaration statement",
-            IdentifierKind::UserDefinedType => "struct types are not allowed to be referenced inside their own generic types declaration and implementing interfaces",
-            IdentifierKind::Interface => "interfaces are not allowed to be referenced inside their own generic types declaration",
-            _ => unreachable!()
+            IdentifierKind::Variable => {
+                "variables are not allowed to be referenced inside their own declaration statement"
+            }
+            IdentifierKind::UserDefinedType => {
+                "struct types are not allowed to be referenced inside their own generic types declaration and implementing interfaces"
+            }
+            IdentifierKind::Interface => {
+                "interfaces are not allowed to be referenced inside their own generic types declaration"
+            }
+            _ => unreachable!(),
         };
 
         IdentifierUsedBeforeInitializedError {
