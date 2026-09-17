@@ -101,10 +101,7 @@ impl BlockKind {
     }
 
     fn is_method(&self) -> bool {
-        match self {
-            BlockKind::Method => true,
-            _ => false,
-        }
+        matches!(self, BlockKind::Method)
     }
 
     pub fn has_callable_body(&self) -> bool {
@@ -168,7 +165,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         }
     }
 
-    pub fn code_handler(&self) -> &JarvilCodeHandler {
+    pub fn code_handler(&self) -> &JarvilCodeHandler<'_> {
         self.code_handler
     }
 
@@ -791,15 +788,13 @@ impl<'ctx> JarvilResolver<'ctx> {
                 result
             }
             LookupResult::NotInitialized(decl_range) => {
-                return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::NotInitialized(
+                TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::NotInitialized(
                     ok_identifier,
                     decl_range,
                 )])
             }
             LookupResult::Unresolved => {
-                return TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::Unresolved(
-                    ok_identifier,
-                )])
+                TypeResolveKind::Unresolved(vec![UnresolvedIdentifier::Unresolved(ok_identifier)])
             }
         }
     }
@@ -1466,7 +1461,7 @@ impl<'ctx> JarvilResolver<'ctx> {
         if let Some((_, interfaces_node)) = implementing_interfaces_node {
             let interface_bounds = self.interface_bounds_from_iter(interfaces_node.iter());
 
-            if interface_bounds.len() > 0 {
+            if !interface_bounds.is_empty() {
                 implementing_interfaces = Some(interface_bounds);
             }
         }
@@ -1678,7 +1673,7 @@ impl<'ctx> JarvilResolver<'ctx> {
                     let mut missing_fields_from_constructor: Vec<&IdentName> = vec![];
 
                     for (field_name, _) in fields_map.iter() {
-                        if initialized_fields.get(field_name).is_none() {
+                        if !initialized_fields.contains(field_name) {
                             missing_fields_from_constructor.push(field_name);
                         }
                     }
@@ -2263,10 +2258,8 @@ impl<'ctx> JarvilResolver<'ctx> {
 
         self.walk_identifier_in_use(&core_enum_variant_expr_or_class_method_call.property_name);
 
-        if let Some((_, params, _)) = &core_enum_variant_expr_or_class_method_call.params {
-            if let Some(params) = params {
-                self.walk_comma_separated_expr(params);
-            }
+        if let Some((_, Some(params), _)) = &core_enum_variant_expr_or_class_method_call.params {
+            self.walk_comma_separated_expr(params);
         }
     }
 

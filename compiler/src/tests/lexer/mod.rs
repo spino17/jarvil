@@ -198,7 +198,7 @@ fn test_bool() {
 }
 
 #[test]
-fn test_None() {
+fn test_none() {
     let alt_vec = vec!["N", "Non", "Nones", "None", "Nont"];
     assert_token_for_identifier(alt_vec, "None", CoreToken::NONE)
 }

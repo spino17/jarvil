@@ -1,3 +1,4 @@
+use std::fmt;
 use text_size::TextRange;
 
 pub struct JarvilCodeHandler<'a> {
@@ -27,6 +28,10 @@ impl JarvilCode {
         self.0.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub fn get_char(&self, index: usize) -> char {
         self.0[index]
     }
@@ -46,7 +51,7 @@ impl JarvilCode {
         &self,
         start_index: usize,
         end_index: Option<usize>,
-    ) -> std::slice::Iter<char> {
+    ) -> std::slice::Iter<'_, char> {
         match end_index {
             Some(end_index) => self.0[start_index..end_index].iter(),
             None => self.0[start_index..].iter(),
@@ -54,8 +59,14 @@ impl JarvilCode {
     }
 }
 
-impl ToString for JarvilCode {
-    fn to_string(&self) -> String {
-        self.0.iter().collect()
+// Implementing `Display` rather than `ToString` directly; the blanket impl
+// gives us `to_string` for free, and this way the source is also printable.
+impl fmt::Display for JarvilCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for ch in &self.0 {
+            write!(f, "{}", ch)?;
+        }
+
+        Ok(())
     }
 }

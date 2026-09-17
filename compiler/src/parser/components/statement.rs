@@ -40,13 +40,13 @@ pub const STATEMENT_WITHIN_CONTROL_FLOW_STARTING_SYMBOLS: [&str; 12] = [
 ];
 
 pub fn is_statement_at_global_scope_starting_with(token: &Token) -> bool {
-    match token.core_token() {
-        CoreToken::DEF => true,
-        CoreToken::TYPE_KEYWORD => true,
-        CoreToken::INTERFACE_KEYWORD => true,
-        CoreToken::DECLARE_KEYWORD => true,
-        _ => false,
-    }
+    matches!(
+        token.core_token(),
+        CoreToken::DEF
+            | CoreToken::TYPE_KEYWORD
+            | CoreToken::INTERFACE_KEYWORD
+            | CoreToken::DECLARE_KEYWORD
+    )
 }
 
 pub fn is_statement_within_func_starting_with(token: &Token) -> bool {

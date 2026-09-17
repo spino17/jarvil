@@ -27,10 +27,7 @@ pub fn execute_build_or_run(mode: BuildMode) -> Result<(), AnyonError> {
 
     fs::write(ast_file_path, ast_str)?;
 
-    let py_code = match build_result {
-        Ok(py_code) => py_code,
-        Err(err) => return Err(err.into()),
-    };
+    let py_code = build_result?;
 
     fs::write(&transpiled_py_code_file_path, py_code)?;
 

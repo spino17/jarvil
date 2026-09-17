@@ -77,7 +77,7 @@ impl StructTypeData {
         &'a self,
         method_name: &IdentName,
         context: TypeGenericsInstantiationContext<'a>,
-    ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
+    ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
         self.methods.try_method(method_name, context)
     }
 
@@ -85,7 +85,7 @@ impl StructTypeData {
         &'a self,
         class_method_name: &IdentName,
         context: TypeGenericsInstantiationContext<'a>,
-    ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
+    ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
         self.class_methods.try_method(class_method_name, context)
     }
 

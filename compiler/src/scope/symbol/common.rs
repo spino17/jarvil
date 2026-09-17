@@ -31,9 +31,7 @@ impl FieldsMap {
         namespace: &Namespace,
         context: TypeGenericsInstantiationContext,
     ) -> Option<(Type, TextRange)> {
-        let Some((ty, range)) = self.fields.get(field_name) else {
-            return None;
-        };
+        let (ty, range) = self.fields.get(field_name)?;
 
         Some((ty.concretize(context, namespace), *range))
     }
@@ -58,9 +56,7 @@ impl MethodsMap {
         method_name: &IdentName,
         context: TypeGenericsInstantiationContext<'a>,
     ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
-        let Some((callable_data, range)) = self.methods.get(method_name) else {
-            return None;
-        };
+        let (callable_data, range) = self.methods.get(method_name)?;
 
         Some((
             PartialConcreteCallableDataRef::new(callable_data, context),
@@ -69,7 +65,7 @@ impl MethodsMap {
     }
 
     pub fn has_method(&self, method_name: &IdentName) -> bool {
-        self.methods.get(method_name).is_some()
+        self.methods.contains_key(method_name)
     }
 }
 

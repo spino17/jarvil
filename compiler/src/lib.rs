@@ -1,3 +1,18 @@
+// `foo/foo.rs` holding the substance of module `foo`, with `foo/mod.rs` as the
+// re-export surface, is the layout this crate is built around: `ast::ast`,
+// `lexer::lexer`, `parser::parser`, `scope::scope`, `error::error`. Renaming
+// them would touch essentially every import in the crate for no benefit.
+#![allow(clippy::module_inception)]
+// The AST and scope constructors genuinely carry that many independent pieces
+// of syntax. Grouping them into parameter structs purely to satisfy a count
+// would add indirection without making any call site clearer.
+#![allow(clippy::too_many_arguments)]
+// A handful of internal predicates signal failure with `Result<_, ()>`. Giving
+// them real error types is worth doing, but it belongs with the diagnostics
+// rework rather than a lint sweep, since the useful error payloads are exactly
+// what that work decides.
+#![allow(clippy::result_unit_err)]
+
 use crate::lexer::lexer::JarvilLexer;
 use ast::ast::BlockNode;
 use ast::print::serialize_ast;

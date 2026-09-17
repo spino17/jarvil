@@ -71,19 +71,19 @@ pub fn unary_expr(parser: &mut JarvilParser) -> UnaryExpressionNode {
 }
 
 pub fn is_atomic_expr_starting_with(token: &Token) -> bool {
-    match token.core_token() {
-        CoreToken::INTEGER => true,
-        CoreToken::FLOATING_POINT_NUMBER => true,
-        CoreToken::LITERAL => true,
-        CoreToken::TRUE => true,
-        CoreToken::FALSE => true,
-        CoreToken::IDENTIFIER => true,
-        CoreToken::SELF => true,
-        CoreToken::LPAREN => true,
-        CoreToken::LSQUARE => true,
-        CoreToken::LBRACE => true,
-        _ => false,
-    }
+    matches!(
+        token.core_token(),
+        CoreToken::INTEGER
+            | CoreToken::FLOATING_POINT_NUMBER
+            | CoreToken::LITERAL
+            | CoreToken::TRUE
+            | CoreToken::FALSE
+            | CoreToken::IDENTIFIER
+            | CoreToken::SELF
+            | CoreToken::LPAREN
+            | CoreToken::LSQUARE
+            | CoreToken::LBRACE
+    )
 }
 
 pub const ATOMIC_EXPR_STARTING_SYMBOLS: [&str; 10] = [

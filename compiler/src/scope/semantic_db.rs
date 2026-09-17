@@ -72,7 +72,7 @@ impl SemanticStateDatabase {
         }
     }
 
-    pub fn err_logging_context(&self) -> TypeStringifyContext {
+    pub fn err_logging_context(&self) -> TypeStringifyContext<'_> {
         TypeStringifyContext::new(&self.interner, &self.namespace)
     }
 
@@ -342,9 +342,7 @@ impl SemanticStateDatabase {
         &self,
         node: &OkSelfKeywordNode,
     ) -> Option<SymbolIndex<VariableData>> {
-        let Some(val) = self.self_keyword_binding_table.get(node) else {
-            return None;
-        };
+        let val = self.self_keyword_binding_table.get(node)?;
 
         Some(*val)
     }

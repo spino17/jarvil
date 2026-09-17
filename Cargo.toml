@@ -1,4 +1,7 @@
 [workspace]
+# `jarvil-macros` is on edition 2021, which implies resolver 2; stating it here
+# keeps the whole workspace on one resolver instead of silently defaulting to 1
+resolver = "2"
 members = [
     "compiler",
     "tools/anyon",

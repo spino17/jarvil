@@ -624,8 +624,8 @@ impl FieldsNotInitializedInConstructorError {
         let mut message = format!("`{}`", interner.lookup(*missing_fields_vec[0]));
 
         if len > 1 {
-            for i in 1..(len - 1) {
-                message.push_str(&format!(", `{}`", interner.lookup(*missing_fields_vec[i])));
+            for field in &missing_fields_vec[1..len - 1] {
+                message.push_str(&format!(", `{}`", interner.lookup(**field)));
             }
 
             message.push_str(&format!(
@@ -674,8 +674,8 @@ impl EnumVariantsMissingFromMatchCaseStatementError {
         let mut message = format!("`{}`", interner.lookup(missing_variants[0]));
 
         if len > 1 {
-            for i in 1..(len - 1) {
-                message.push_str(&format!(", `{}`", interner.lookup(missing_variants[i])));
+            for variant in &missing_variants[1..len - 1] {
+                message.push_str(&format!(", `{}`", interner.lookup(*variant)));
             }
 
             message.push_str(&format!(
@@ -1066,9 +1066,9 @@ pub struct GenericTypeArgsIncorrectlyBoundedError {
     incorrectly_bounded_types: Vec<(TextRange, String)>, // (ty_span, interface_bounds_str)
 }
 impl GenericTypeArgsIncorrectlyBoundedError {
-    pub fn new(incorrectly_bounded_types: &Vec<(TextRange, String)>) -> Self {
+    pub fn new(incorrectly_bounded_types: &[(TextRange, String)]) -> Self {
         GenericTypeArgsIncorrectlyBoundedError {
-            incorrectly_bounded_types: incorrectly_bounded_types.clone(),
+            incorrectly_bounded_types: incorrectly_bounded_types.to_vec(),
         }
     }
 }
@@ -1330,11 +1330,10 @@ impl InferredTypesNotBoundedByInterfacesError {
         context: TypeStringifyContext,
     ) -> Self {
         let mut concrete_types_str = "<".to_string();
-        let concrete_types_len = concrete_types.len();
         concrete_types_str.push_str(&concrete_types[0].to_string(context));
 
-        for i in 1..concrete_types_len {
-            concrete_types_str.push_str(&format!(", {}", concrete_types[i].to_string(context)));
+        for ty in concrete_types.iter().skip(1) {
+            concrete_types_str.push_str(&format!(", {}", ty.to_string(context)));
         }
 
         concrete_types_str.push('>');
@@ -1383,8 +1382,8 @@ impl PropertyResolvedToMultipleInterfaceObjectsError {
     pub fn new(range: TextRange, interface_objs: Vec<String>, property_kind: PropertyKind) -> Self {
         let mut err_msg = interface_objs[0].to_string();
 
-        for i in 1..interface_objs.len() {
-            err_msg.push_str(&format!(", {}", interface_objs[i]));
+        for interface_obj in interface_objs.iter().skip(1) {
+            err_msg.push_str(&format!(", {}", interface_obj));
         }
 
         PropertyResolvedToMultipleInterfaceObjectsError {

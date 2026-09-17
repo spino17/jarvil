@@ -11,10 +11,7 @@ pub fn match_case(parser: &mut JarvilParser) -> MatchCaseStatementNode {
     let colon_node = parser.expect(":");
 
     let block_node = parser.block(
-        |token| match token.core_token() {
-            CoreToken::CASE => true,
-            _ => false,
-        },
+        |token| matches!(token.core_token(), CoreToken::CASE),
         |parser| parser.case_branch_stmt(),
         &[CASE],
         BlockKind::Match,

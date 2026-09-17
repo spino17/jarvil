@@ -11,11 +11,7 @@ pub fn interface_decl(parser: &mut JarvilParser) -> InterfaceDeclarationNode {
     let colon_node = parser.expect(":");
 
     let block_node = parser.block(
-        |token| match token.core_token() {
-            CoreToken::IDENTIFIER => true,
-            CoreToken::DEF => true,
-            _ => false,
-        },
+        |token| matches!(token.core_token(), CoreToken::IDENTIFIER | CoreToken::DEF),
         |parser| parser.interface_stmt(),
         &[IDENTIFIER, DEF],
         BlockKind::Interface,

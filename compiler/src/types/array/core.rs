@@ -82,7 +82,7 @@ impl TypeLike for Array {
         _namespace: &Namespace,
     ) -> bool {
         // TODO - add checks for interfaces which `Array` would implement like `Iterator`, `Index`
-        interface_bounds.len() == 0
+        interface_bounds.is_empty()
     }
 
     fn try_infer_ty_or_check_equivalence(

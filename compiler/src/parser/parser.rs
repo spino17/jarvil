@@ -354,11 +354,11 @@ impl<'ctx> JarvilParser<'ctx> {
 
             token_node
         } else if token.is_eq(ENDMARKER) {
-            return TokenNode::new_with_ok(token.clone());
+            TokenNode::new_with_ok(token.clone())
         } else {
             self.log_missing_token_error(symbols, token);
 
-            return TokenNode::new_with_missing_tokens(symbols.to_vec(), token.clone());
+            TokenNode::new_with_missing_tokens(symbols.to_vec(), token.clone())
         }
     }
 

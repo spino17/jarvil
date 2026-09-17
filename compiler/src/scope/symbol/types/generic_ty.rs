@@ -151,10 +151,14 @@ impl GenericTypeParams {
         self.0.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub fn check_concrete_types_bounded_by(
         &self,
         concrete_types: &TurbofishTypes,
-        ty_ranges: &Vec<TextRange>,
+        ty_ranges: &[TextRange],
         context: TypeStringifyContext,
     ) -> Result<(), GenericTypeArgsCheckError> {
         let expected_len = self.len();

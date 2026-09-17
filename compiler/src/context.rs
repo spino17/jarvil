@@ -25,11 +25,8 @@ impl Context {
 }
 
 pub fn set_indent(indent_spaces: usize) {
-    match CONTEXT.try_with(|ctx| ctx.borrow_mut().set_indent(indent_spaces)) {
-        Err(err) => {
-            panic!("{}", err)
-        }
-        _ => {}
+    if let Err(err) = CONTEXT.try_with(|ctx| ctx.borrow_mut().set_indent(indent_spaces)) {
+        panic!("{}", err)
     }
 }
 

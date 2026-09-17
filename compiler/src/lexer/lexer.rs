@@ -84,7 +84,7 @@ impl<'ctx> JarvilLexer<'ctx> {
             TextRange::new(
                 // ideally span of `ENDMARKER` should be (code.len() - code.len()), however to display error messages
                 // we need to have non-zero range span.
-                TextSize::try_from(if code.len() > 0 {
+                TextSize::try_from(if !code.is_empty() {
                     code.len() - 1
                 } else {
                     code.len()
@@ -302,13 +302,12 @@ impl<'ctx> JarvilLexer<'ctx> {
                         return CoreToken::SLASH;
                     }
                 },
-                1 => match next_char {
-                    '\n' => {
+                1 => {
+                    if next_char == '\n' {
                         self.index = forward_lexeme;
                         return CoreToken::SINGLE_LINE_COMMENT;
                     }
-                    _ => {}
-                },
+                }
                 2 => match next_char {
                     '*' => {
                         state = 3;
@@ -365,12 +364,9 @@ impl<'ctx> JarvilLexer<'ctx> {
         while forward_lexeme < code.len() {
             let next_char = code.get_char(forward_lexeme);
 
-            match next_char {
-                '\n' => {
-                    self.index = forward_lexeme;
-                    return CoreToken::SINGLE_LINE_COMMENT;
-                }
-                _ => {}
+            if next_char == '\n' {
+                self.index = forward_lexeme;
+                return CoreToken::SINGLE_LINE_COMMENT;
             }
 
             forward_lexeme += 1;

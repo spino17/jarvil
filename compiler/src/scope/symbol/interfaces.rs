@@ -63,7 +63,7 @@ impl InterfaceData {
         &'a self,
         method_name: &IdentName,
         context: TypeGenericsInstantiationContext<'a>,
-    ) -> Option<(PartialConcreteCallableDataRef, TextRange)> {
+    ) -> Option<(PartialConcreteCallableDataRef<'a>, TextRange)> {
         self.methods.try_method(method_name, context)
     }
 
@@ -74,7 +74,7 @@ impl InterfaceData {
     pub fn partially_concrete_interface_bounded_objects<'a>(
         &'a self,
         context: TypeGenericsInstantiationContext<'a>,
-    ) -> PartialConcreteInterfaceBoundedObjects {
+    ) -> PartialConcreteInterfaceBoundedObjects<'a> {
         PartialConcreteInterfaceBoundedObjects::new(&self.fields, &self.methods, context)
     }
 }
@@ -173,6 +173,10 @@ impl InterfaceBounds {
 
     pub fn len(&self) -> usize {
         self.interfaces.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.interfaces.is_empty()
     }
 
     pub fn iter(&self) -> Iter<'_, (InterfaceObject, TextRange)> {

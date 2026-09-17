@@ -27,8 +27,8 @@ pub fn unbounded_generic_ty_in_func_with_decl_index(index: usize, interner: &Int
 }
 
 pub fn try_infer_types_from_tuple(
-    base_types_tuple: &Vec<Type>,
-    generics_containing_types_tuple: &Vec<Type>,
+    base_types_tuple: &[Type],
+    generics_containing_types_tuple: &[Type],
     inferred_concrete_types: &mut Vec<InferredConcreteTypesEntry>,
     global_concrete_types: Option<&TurbofishTypes>,
     num_inferred_types: &mut usize,

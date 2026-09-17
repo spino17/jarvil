@@ -1,4 +1,14 @@
-#[allow(non_camel_case_types)]
+// `CoreToken`'s variants are named after the tokens they stand for, in the
+// SCREAMING_CASE that is conventional for token enums, and the `tokenify` derive
+// generates one predicate method per variant with a matching name. Both
+// deliberately depart from Rust's casing rules, so the lints are off for the
+// whole module.
+//
+// Note these must be inner attributes: as outer ones they would apply only to
+// the item that follows, which is why the warnings kept firing.
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+
 use crate::code::JarvilCodeHandler;
 use crate::constants::common::{
     AND, AS, ASSERT_KEYWORD, ASYNC_KEYWORD, ATOMIC_TYPE, AWAIT_KEYWORD, BLANK, BLOCK_COMMENT,
@@ -72,14 +82,20 @@ impl Token {
     }
 
     pub fn is_trivia(&self) -> bool {
-        match self.core_token {
-            CoreToken::BLANK | CoreToken::SINGLE_LINE_COMMENT | CoreToken::BLOCK_COMMENT => true,
-            _ => false,
-        }
+        matches!(
+            self.core_token,
+            CoreToken::BLANK | CoreToken::SINGLE_LINE_COMMENT | CoreToken::BLOCK_COMMENT
+        )
     }
 
     pub fn len(&self) -> usize {
         self.end_index() - self.start_index()
+    }
+
+    // A zero-width token: the parser synthesizes these when recovering, so this
+    // is not the impossible case it looks like.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn name(&self) -> String {
@@ -265,6 +281,13 @@ fn check_keyword(
 
 impl CoreToken {
     // Trie based implementation for efficient reserved words matching
+    //
+    // The `match opt { Some(c) => match c { .. }, None => IDENTIFIER }` pairs
+    // below could each be collapsed into one `match`, but the nesting *is* the
+    // trie: every level is one character of lookahead, and flattening them
+    // buys no clarity while making a delicate hand-written structure easier to
+    // get subtly wrong.
+    #[allow(clippy::collapsible_match)]
     pub fn token_for_identifier(mut value_iter: std::slice::Iter<char>) -> CoreToken {
         match value_iter.next() {
             Some(c) => {
@@ -621,15 +644,15 @@ pub enum BinaryOperatorKind {
 
 impl BinaryOperatorKind {
     pub fn is_comparison(&self) -> bool {
-        match self {
+        matches!(
+            self,
             BinaryOperatorKind::Less
-            | BinaryOperatorKind::LessEqual
-            | BinaryOperatorKind::Greater
-            | BinaryOperatorKind::GreaterEqual
-            | BinaryOperatorKind::DoubleEqual
-            | BinaryOperatorKind::NotEqual => true,
-            _ => false,
-        }
+                | BinaryOperatorKind::LessEqual
+                | BinaryOperatorKind::Greater
+                | BinaryOperatorKind::GreaterEqual
+                | BinaryOperatorKind::DoubleEqual
+                | BinaryOperatorKind::NotEqual
+        )
     }
 }
 

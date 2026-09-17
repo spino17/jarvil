@@ -52,7 +52,7 @@ impl ScopeIndex {
 
 #[derive(Debug)]
 pub struct ScopeArena<T> {
-    arena: Vec<Box<Scope<T>>>,
+    arena: Vec<Scope<T>>,
 }
 
 impl<T> Index<ScopeIndex> for ScopeArena<T> {
@@ -78,18 +78,18 @@ impl<T> ScopeArena<T> {
     pub fn new() -> Self {
         ScopeArena {
             arena: vec![
-                Box::new(Scope {
+                Scope {
                     table: FxHashMap::default(),
                     parent_scope: None,
                     scope_kind: BlockKind::Function,
-                }),
-                Box::new(Scope {
+                },
+                Scope {
                     // This scope is a side scope for storing things like `T` unbounded generic type used for builtin functions
                     // This scope will never be explored during name-resolution phase.
                     table: FxHashMap::default(),
                     parent_scope: None,
                     scope_kind: BlockKind::Function,
-                }),
+                },
             ],
         }
     }
@@ -140,11 +140,11 @@ impl<T> ScopeArena<T> {
     ) -> ScopeIndex {
         let new_scope_index = self.arena.len();
 
-        self.arena.push(Box::new(Scope {
+        self.arena.push(Scope {
             table: FxHashMap::default(),
             parent_scope: Some(parent_scope_index),
             scope_kind,
-        }));
+        });
 
         ScopeIndex(new_scope_index)
     }

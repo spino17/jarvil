@@ -84,10 +84,17 @@ impl Node for BlockNode {
             return impl_range!(self.0.as_ref().newline, self.0.as_ref().newline);
         }
 
-        let mut index = stmts_len - 1;
+        // Scan backwards for the last statement that isn't just blank lines.
+        //
+        // `index` is decremented before the check rather than after, so that it
+        // cannot underflow once it reaches 0: `index >= 0` is vacuously true for
+        // a `usize`, which left the original loop relying entirely on `break`.
+        let mut index = stmts_len;
         let mut is_empty = true;
 
-        while index >= 0 {
+        while index > 0 {
+            index -= 1;
+
             match core_block.stmts[index].core_ref() {
                 CoreStatementIndentWrapperNode::ExtraNewlines(_) => {}
                 _ => {
@@ -95,7 +102,6 @@ impl Node for BlockNode {
                     break;
                 }
             }
-            index -= 1;
         }
 
         if is_empty {
@@ -1243,7 +1249,7 @@ impl TypeExpressionNode {
         &self,
         resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
-    ) -> TypeResolveKind {
+    ) -> TypeResolveKind<'_> {
         match self.core_ref() {
             CoreTypeExpressionNode::Atomic(atomic) => {
                 atomic.ty_before_resolved(resolver.code_handler(), resolver.interner())
@@ -1289,7 +1295,7 @@ impl AtomicTypeNode {
         &self,
         code: &JarvilCodeHandler,
         interner: &Interner,
-    ) -> TypeResolveKind {
+    ) -> TypeResolveKind<'_> {
         self.ty_after_resolved(code, interner)
     }
 
@@ -1297,7 +1303,7 @@ impl AtomicTypeNode {
         &self,
         code: &JarvilCodeHandler,
         interner: &Interner,
-    ) -> TypeResolveKind {
+    ) -> TypeResolveKind<'_> {
         let CoreTokenNode::Ok(ok_token) = self.core_ref().kind.core_ref() else {
             return TypeResolveKind::Invalid;
         };
@@ -1332,17 +1338,17 @@ impl ArrayTypeNode {
         &self,
         resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
-    ) -> TypeResolveKind {
+    ) -> TypeResolveKind<'_> {
         match self
             .core_ref()
             .sub_ty
             .ty_before_resolved(resolver, scope_index)
         {
             TypeResolveKind::Resolved(element_ty) => {
-                return TypeResolveKind::Resolved(Type::new_with_array(element_ty))
+                TypeResolveKind::Resolved(Type::new_with_array(element_ty))
             }
             TypeResolveKind::Unresolved(identifier_node) => {
-                return TypeResolveKind::Unresolved(identifier_node)
+                TypeResolveKind::Unresolved(identifier_node)
             }
             TypeResolveKind::Invalid => TypeResolveKind::Invalid,
         }
@@ -1379,7 +1385,7 @@ impl TupleTypeNode {
         &self,
         resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
-    ) -> TypeResolveKind {
+    ) -> TypeResolveKind<'_> {
         let mut unresolved_identifiers: Vec<UnresolvedIdentifier> = vec![];
         let mut resolved_types: Vec<Type> = vec![];
 
@@ -1394,11 +1400,11 @@ impl TupleTypeNode {
         }
 
         if !unresolved_identifiers.is_empty() {
-            return TypeResolveKind::Unresolved(unresolved_identifiers);
+            TypeResolveKind::Unresolved(unresolved_identifiers)
         } else if !resolved_types.is_empty() {
-            return TypeResolveKind::Resolved(Type::new_with_tuple(resolved_types));
+            TypeResolveKind::Resolved(Type::new_with_tuple(resolved_types))
         } else {
-            return TypeResolveKind::Invalid;
+            TypeResolveKind::Invalid
         }
     }
 
@@ -1441,37 +1447,30 @@ impl HashMapTypeNode {
         match key_result {
             TypeResolveKind::Resolved(key_ty) => match value_result {
                 TypeResolveKind::Resolved(value_ty) => {
-                    return TypeResolveKind::Resolved(Type::new_with_hashmap(key_ty, value_ty))
+                    TypeResolveKind::Resolved(Type::new_with_hashmap(key_ty, value_ty))
                 }
                 TypeResolveKind::Unresolved(unresolved_vec) => {
-                    return TypeResolveKind::Unresolved(unresolved_vec)
+                    TypeResolveKind::Unresolved(unresolved_vec)
                 }
-                TypeResolveKind::Invalid => {
-                    return TypeResolveKind::Resolved(Type::new_with_hashmap(
-                        key_ty,
-                        Type::new_with_unknown(),
-                    ))
-                }
+                TypeResolveKind::Invalid => TypeResolveKind::Resolved(Type::new_with_hashmap(
+                    key_ty,
+                    Type::new_with_unknown(),
+                )),
             },
             TypeResolveKind::Unresolved(mut key_unresolved_vec) => match value_result {
-                TypeResolveKind::Resolved(_) => {
-                    return TypeResolveKind::Unresolved(key_unresolved_vec)
-                }
+                TypeResolveKind::Resolved(_) => TypeResolveKind::Unresolved(key_unresolved_vec),
                 TypeResolveKind::Unresolved(mut value_unresolved_vec) => {
                     key_unresolved_vec.append(&mut value_unresolved_vec);
-                    return TypeResolveKind::Unresolved(key_unresolved_vec);
+                    TypeResolveKind::Unresolved(key_unresolved_vec)
                 }
-                TypeResolveKind::Invalid => return TypeResolveKind::Unresolved(key_unresolved_vec),
+                TypeResolveKind::Invalid => TypeResolveKind::Unresolved(key_unresolved_vec),
             },
             TypeResolveKind::Invalid => match value_result {
-                TypeResolveKind::Resolved(value_ty) => {
-                    return TypeResolveKind::Resolved(Type::new_with_hashmap(
-                        Type::new_with_unknown(),
-                        value_ty,
-                    ))
-                }
+                TypeResolveKind::Resolved(value_ty) => TypeResolveKind::Resolved(
+                    Type::new_with_hashmap(Type::new_with_unknown(), value_ty),
+                ),
                 TypeResolveKind::Unresolved(unresolved_vec) => {
-                    return TypeResolveKind::Unresolved(unresolved_vec)
+                    TypeResolveKind::Unresolved(unresolved_vec)
                 }
                 TypeResolveKind::Invalid => TypeResolveKind::Invalid,
             },
@@ -1482,7 +1481,7 @@ impl HashMapTypeNode {
         &self,
         resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
-    ) -> TypeResolveKind {
+    ) -> TypeResolveKind<'_> {
         let key_result = self
             .core_ref()
             .key_ty
@@ -1491,7 +1490,7 @@ impl HashMapTypeNode {
             .core_ref()
             .value_ty
             .ty_before_resolved(resolver, scope_index);
-        return self.aggregate_key_value_result(key_result, value_result);
+        self.aggregate_key_value_result(key_result, value_result)
     }
 
     impl_core_ref!(CoreHashMapTypeNode);
@@ -1517,7 +1516,7 @@ impl UserDefinedTypeNode {
         &self,
         resolver: &mut JarvilResolver,
         scope_index: ScopeIndex,
-    ) -> TypeResolveKind {
+    ) -> TypeResolveKind<'_> {
         resolver.ty_from_user_defined_ty_expr(self, scope_index)
     }
 
@@ -1847,7 +1846,7 @@ impl<T: Node + Serialize + Clone> SymbolSeparatedSequenceNode<T> {
         SymbolSeparatedSequenceNode(node)
     }
 
-    pub fn iter(&self) -> SymbolSeparatedSequenceIterator<T> {
+    pub fn iter(&self) -> SymbolSeparatedSequenceIterator<'_, T> {
         SymbolSeparatedSequenceIterator::new(self)
     }
 
@@ -2161,11 +2160,10 @@ impl AtomStartNode {
     }
 
     pub fn is_valid_l_value(&self) -> bool {
-        match &self.0.as_ref() {
-            CoreAtomStartNode::Identifier(_) => true,
-            CoreAtomStartNode::SelfKeyword(_) => true,
-            _ => false,
-        }
+        matches!(
+            self.0.as_ref(),
+            CoreAtomStartNode::Identifier(_) | CoreAtomStartNode::SelfKeyword(_)
+        )
     }
 
     impl_core_ref!(CoreAtomStartNode);

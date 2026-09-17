@@ -212,7 +212,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
         &self.semantic_db
     }
 
-    pub fn err_logging_context(&self) -> TypeStringifyContext {
+    pub fn err_logging_context(&self) -> TypeStringifyContext<'_> {
         self.semantic_db.err_logging_context()
     }
 
@@ -272,10 +272,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                         CoreTokenNode::Ok(ok_token) => {
                             let value = ok_token.token_value_str(self.code_handler);
 
-                            match value.parse::<i32>() {
-                                Ok(value) => Some(value),
-                                Err(_) => None,
-                            }
+                            value.parse::<i32>().ok()
                         }
                         _ => None,
                     }
@@ -409,7 +406,7 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
 
     pub fn check_params_ty_and_count(
         &self,
-        expected_param_data: &Vec<Type>,
+        expected_param_data: &[Type],
         received_params: &Option<SymbolSeparatedSequenceNode<ExpressionNode>>,
     ) -> Result<(), PrototypeEquivalenceCheckError> {
         let expected_params_len = expected_param_data.len();
@@ -1552,16 +1549,10 @@ impl<'ctx> JarvilTypeChecker<'ctx> {
                     None
                 }
             }
-            CoreType::Atomic(atomic_data) => match atomic_data {
-                Atomic::String => {
-                    if index_ty.is_int() {
-                        Some(Type::new_with_atomic("str"))
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            },
+            CoreType::Atomic(Atomic::String) if index_ty.is_int() => {
+                Some(Type::new_with_atomic("str"))
+            }
+            CoreType::Atomic(_) => None,
             CoreType::HashMap(hashmap_data) => {
                 // TODO - instead of having `is_hashable` check, replace it with `is_type_bounded_by` `Hash` interface
                 if index_ty.is_eq(hashmap_data.key_ty(), self.semantic_db.namespace_ref())

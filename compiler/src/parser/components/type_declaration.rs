@@ -36,11 +36,7 @@ pub fn ty_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             let colon_node = parser.expect(":");
 
             let block_node = parser.block(
-                |token| match token.core_token() {
-                    CoreToken::IDENTIFIER => true,
-                    CoreToken::DEF => true,
-                    _ => false,
-                },
+                |token| matches!(token.core_token(), CoreToken::IDENTIFIER | CoreToken::DEF),
                 |parser| parser.struct_stmt(),
                 &[IDENTIFIER, DEF],
                 BlockKind::Struct,
@@ -60,10 +56,7 @@ pub fn ty_decl(parser: &mut JarvilParser) -> TypeDeclarationNode {
             let colon_node = parser.expect(":");
 
             let block_node = parser.block(
-                |token| match token.core_token() {
-                    CoreToken::IDENTIFIER => true,
-                    _ => false,
-                },
+                |token| matches!(token.core_token(), CoreToken::IDENTIFIER),
                 |parser| parser.enum_stmt(),
                 &[IDENTIFIER],
                 BlockKind::Enum,

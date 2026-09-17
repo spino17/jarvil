@@ -258,10 +258,7 @@ impl TypeLike for Type {
             CoreType::HashMap(hashmap_ty) => hashmap_ty.is_eq(other_ty, namespace),
             CoreType::Generic(generic_ty) => generic_ty.is_eq(other_ty, namespace),
             CoreType::Enum(enum_ty) => enum_ty.is_eq(other_ty, namespace),
-            CoreType::Void => match other_ty.0.as_ref() {
-                CoreType::Void => true,
-                _ => false,
-            },
+            CoreType::Void => matches!(other_ty.0.as_ref(), CoreType::Void),
             CoreType::Unknown => false,
             CoreType::Unset => false,
         }
@@ -292,10 +289,7 @@ impl TypeLike for Type {
             CoreType::Generic(generic_ty) => {
                 generic_ty.is_structurally_eq(other_ty, context, namespace)
             }
-            CoreType::Void => match other_ty.0.as_ref() {
-                CoreType::Void => true,
-                _ => false,
-            },
+            CoreType::Void => matches!(other_ty.0.as_ref(), CoreType::Void),
             CoreType::Unknown | CoreType::Unset => unreachable!(),
         }
     }
@@ -328,7 +322,7 @@ impl TypeLike for Type {
         interface_bounds: &InterfaceBounds,
         namespace: &Namespace,
     ) -> bool {
-        if interface_bounds.len() == 0 {
+        if interface_bounds.is_empty() {
             return true;
         }
 

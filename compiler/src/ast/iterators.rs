@@ -15,10 +15,7 @@ impl<'a, T: Node + Serialize + Clone> SymbolSeparatedSequenceIterator<'a, T> {
 impl<'a, T: Node + Serialize + Clone> Iterator for SymbolSeparatedSequenceIterator<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
-        let ok_entity = match self.node {
-            Some(node) => node,
-            None => return None,
-        };
+        let ok_entity = self.node?;
 
         self.node = match &ok_entity.core_ref().remaining_entities {
             Some((_, remaining_params)) => Some(remaining_params),

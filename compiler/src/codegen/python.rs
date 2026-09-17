@@ -25,13 +25,11 @@ use crate::{
     scope::symbol::types::core::UserDefinedTypeData,
 };
 use rustc_hash::FxHashSet;
-use std::convert::TryInto;
 
 // Utility functions
 pub fn whitespaces_from_indent_level(indent_level: usize) -> String {
     let expected_indent_spaces = context::indent_spaces() * indent_level;
-    " ".to_string()
-        .repeat(expected_indent_spaces.try_into().unwrap())
+    " ".to_string().repeat(expected_indent_spaces)
 }
 
 pub fn trivia_from_token_node(token: &TokenNode) -> Option<&Vec<Token>> {
@@ -55,7 +53,7 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
     pub fn new(
         code_handler: &'ctx JarvilCodeHandler<'ctx>,
         semantic_db: SemanticStateDatabase,
-    ) -> PythonCodeGenerator {
+    ) -> PythonCodeGenerator<'ctx> {
         PythonCodeGenerator {
             indent_level: 0,
             generated_code: "".to_string(),
@@ -338,12 +336,10 @@ impl<'ctx> PythonCodeGenerator<'ctx> {
                     if let Some(index) = enum_data.try_index_for_variant(variant_name_str) {
                         self.print_identifier_in_use(ty_name, is_trivia);
                         self.add_str_to_python_code(&format!("(index={}", index));
-                        if let Some((_, params, _)) = params {
-                            if let Some(params) = params {
-                                self.add_str_to_python_code(", data=");
-                                let expr = &params.core_ref().entity;
-                                self.walk_expr(expr);
-                            }
+                        if let Some((_, Some(params), _)) = params {
+                            self.add_str_to_python_code(", data=");
+                            let expr = &params.core_ref().entity;
+                            self.walk_expr(expr);
                         }
                         self.add_str_to_python_code(")");
                     }

@@ -17,7 +17,7 @@ impl TurbofishTypes {
         &self.0
     }
 
-    pub fn iter(&self) -> Iter<Type> {
+    pub fn iter(&self) -> Iter<'_, Type> {
         self.0.iter()
     }
 
@@ -25,15 +25,18 @@ impl TurbofishTypes {
         self.0.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub fn to_string(&self, context: TypeStringifyContext) -> String {
         let mut s = "".to_string();
         let concrete_types = &self.0;
-        let len = concrete_types.len();
 
         s.push_str(&concrete_types[0].to_string(context));
 
-        for i in 1..len {
-            s.push_str(&format!(", {}", concrete_types[i].to_string(context)));
+        for ty in concrete_types.iter().skip(1) {
+            s.push_str(&format!(", {}", ty.to_string(context)));
         }
 
         s

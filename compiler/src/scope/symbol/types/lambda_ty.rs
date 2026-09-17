@@ -33,7 +33,7 @@ impl LambdaTypeData {
         &self,
         namespace: &Namespace,
         context: TypeGenericsInstantiationContext,
-    ) -> RefOrOwned<CallablePrototypeData> {
+    ) -> RefOrOwned<'_, CallablePrototypeData> {
         self.meta_data
             .concretized_prototype(namespace, context.into_method_context())
     }
