@@ -1,0 +1,99 @@
+; A comment on its own line is skipped over when the scanner measures
+; indentation. It must still survive as a node, or it would not be highlighted.
+
+================================================================================
+Standalone comment between statements
+================================================================================
+
+let a = 1
+// standalone
+let b = 2
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (variable_declaration
+    (identifier)
+    (integer))
+  (comment)
+  (variable_declaration
+    (identifier)
+    (integer)))
+
+================================================================================
+Trailing comment
+================================================================================
+
+let a = 1 // trailing
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (variable_declaration
+    (identifier)
+    (integer))
+  (comment))
+
+================================================================================
+Comment as the first line of a block
+================================================================================
+
+def f():
+    // leading
+    return 1
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    (identifier)
+    (parameters)
+    (block
+      (comment)
+      (return_statement
+        (integer)))))
+
+================================================================================
+Consecutive comments at a shallower column do not close a block
+================================================================================
+
+def f():
+    let a = 1
+// one
+// two
+    let b = 2
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    (identifier)
+    (parameters)
+    (block
+      (variable_declaration
+        (identifier)
+        (integer))
+      (comment)
+      (comment)
+      (variable_declaration
+        (identifier)
+        (integer)))))
+
+================================================================================
+Block comment
+================================================================================
+
+let a = 1
+/* block */
+let b = 2
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (variable_declaration
+    (identifier)
+    (integer))
+  (comment)
+  (variable_declaration
+    (identifier)
+    (integer)))

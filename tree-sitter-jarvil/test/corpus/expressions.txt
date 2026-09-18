@@ -1,0 +1,116 @@
+================================================================================
+Comparison is not swallowed by generic arguments
+================================================================================
+
+a = b < c
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    (identifier)
+    (binary_expression
+      (identifier)
+      (identifier))))
+
+================================================================================
+Path expression with generic arguments
+================================================================================
+
+x = Result<int, str>::Ok(1)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    (identifier)
+    (call_expression
+      (path_expression
+        (generic_type
+          (type_identifier)
+          (generic_arguments
+            (primitive_type)
+            (primitive_type)))
+        (identifier))
+      (arguments
+        (integer)))))
+
+================================================================================
+Operator precedence
+================================================================================
+
+x = 1 + 2 * 3 ** 4
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    (identifier)
+    (binary_expression
+      (integer)
+      (binary_expression
+        (integer)
+        (binary_expression
+          (integer)
+          (integer))))))
+
+================================================================================
+Method call on a field
+================================================================================
+
+x = self.inner.print()
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    (identifier)
+    (call_expression
+      (field_expression
+        (field_expression
+          (self_expression)
+          (identifier))
+        (identifier))
+      (arguments))))
+
+================================================================================
+Collections
+================================================================================
+
+x = [1, 2]
+y = {"k": 1}
+z = (1, 2)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    (identifier)
+    (array_expression
+      (integer)
+      (integer)))
+  (assignment
+    (identifier)
+    (hashmap_expression
+      (key_value
+        (string)
+        (integer))))
+  (assignment
+    (identifier)
+    (tuple_expression
+      (integer)
+      (integer))))
+
+================================================================================
+Strings with escapes
+================================================================================
+
+x = "a\nb"
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    (identifier)
+    (string
+      (escape_sequence))))

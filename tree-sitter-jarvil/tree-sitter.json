@@ -1,0 +1,28 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "jarvil",
+      "camelcase": "Jarvil",
+      "scope": "source.jarvil",
+      "path": ".",
+      "file-types": ["jv"],
+      "highlights": ["queries/highlights.scm"],
+      "injection-regex": "^jarvil$"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "Jarvil grammar for tree-sitter",
+    "authors": [
+      {
+        "name": "Bhavya Bhatt",
+        "email": "bhavyabhatt17@gmail.com"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/spino17/jarvil"
+    }
+  }
+}

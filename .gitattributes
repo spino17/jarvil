@@ -21,3 +21,13 @@ __ast_*.json               linguist-generated=true
 
 # The VS Code extension's vendored dependencies are not our code.
 extensions/*/node_modules/** linguist-vendored=true
+
+# The tree-sitter parser is generated from `grammar.js` by `tree-sitter
+# generate` and is committed so the grammar can be built without the CLI; the
+# headers under `src/tree_sitter/` are vendored from the runtime. Without this
+# the generated C dwarfs every hand-written file in the language statistics.
+# `src/scanner.c` is hand-written and deliberately absent from this list.
+tree-sitter-jarvil/src/parser.c        linguist-generated=true
+tree-sitter-jarvil/src/grammar.json    linguist-generated=true
+tree-sitter-jarvil/src/node-types.json linguist-generated=true
+tree-sitter-jarvil/src/tree_sitter/**  linguist-vendored=true

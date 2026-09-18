@@ -1,0 +1,21 @@
+{
+  "name": "tree-sitter-jarvil",
+  "version": "0.1.0",
+  "description": "Jarvil grammar for tree-sitter",
+  "license": "MIT",
+  "repository": "https://github.com/spino17/jarvil",
+  "main": "bindings/node",
+  "keywords": ["parser", "lexer", "jarvil"],
+  "files": ["grammar.js", "queries/*", "src/**"],
+  "devDependencies": {
+    "tree-sitter-cli": "^0.27.0"
+  },
+  "tree-sitter": [
+    {
+      "scope": "source.jarvil",
+      "file-types": ["jv"],
+      "injection-regex": "^jarvil$",
+      "highlights": "queries/highlights.scm"
+    }
+  ]
+}
