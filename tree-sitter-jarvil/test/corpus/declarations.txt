@@ -1,0 +1,215 @@
+================================================================================
+Declare prototype with generics
+================================================================================
+
+declare def print<V>(obj: V)
+declare def len<V>(obj: V) -> int
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (declare_statement
+    (identifier)
+    (generic_parameters
+      (generic_parameter
+        (type_identifier)))
+    (parameters
+      (parameter
+        (identifier)
+        (type_identifier))))
+  (declare_statement
+    (identifier)
+    (generic_parameters
+      (generic_parameter
+        (type_identifier)))
+    (parameters
+      (parameter
+        (identifier)
+        (type_identifier)))
+    (primitive_type)))
+
+================================================================================
+Struct implementing an interface
+================================================================================
+
+type Int struct implements Printer:
+    val: int
+    def __init__(x: int):
+        self.val = x
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (struct_definition
+    (type_identifier)
+    (type_identifier)
+    (struct_body
+      (field_declaration
+        (identifier)
+        (primitive_type))
+      (function_definition
+        (identifier)
+        (parameters
+          (parameter
+            (identifier)
+            (primitive_type)))
+        (block
+          (assignment
+            (field_expression
+              (self_expression)
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+Interface with a method prototype
+================================================================================
+
+interface Printer:
+    name: str
+    def print()
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (interface_definition
+    (type_identifier)
+    (interface_body
+      (field_declaration
+        (identifier)
+        (primitive_type))
+      (method_prototype
+        (identifier)
+        (parameters)))))
+
+================================================================================
+Bounded generic parameters
+================================================================================
+
+def print_list<T: Printer>(l: [T]):
+    for element in l:
+        element.print()
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    (identifier)
+    (generic_parameters
+      (generic_parameter
+        (type_identifier)
+        (type_identifier)))
+    (parameters
+      (parameter
+        (identifier)
+        (array_type
+          (type_identifier))))
+    (block
+      (for_statement
+        (identifier)
+        (identifier)
+        (block
+          (expression_statement
+            (call_expression
+              (field_expression
+                (identifier)
+                (identifier))
+              (arguments))))))))
+
+================================================================================
+Match with enum patterns
+================================================================================
+
+match factorial(10):
+    case Result::Ok(val):
+        print(val)
+    case Result::Err(err):
+        print(err)
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (match_statement
+    (call_expression
+      (identifier)
+      (arguments
+        (integer)))
+    (match_body
+      (case_clause
+        (call_expression
+          (path_expression
+            (type_identifier)
+            (identifier))
+          (arguments
+            (identifier)))
+        (block
+          (expression_statement
+            (call_expression
+              (identifier)
+              (arguments
+                (identifier))))))
+      (case_clause
+        (call_expression
+          (path_expression
+            (type_identifier)
+            (identifier))
+          (arguments
+            (identifier)))
+        (block
+          (expression_statement
+            (call_expression
+              (identifier)
+              (arguments
+                (identifier)))))))))
+
+================================================================================
+Lambda and while
+================================================================================
+
+let f = lambda (x: int) -> int:
+    while x:
+        break
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (variable_declaration
+    (identifier)
+    (lambda_expression
+      (parameters
+        (parameter
+          (identifier)
+          (primitive_type)))
+      (primitive_type)
+      (block
+        (while_statement
+          (identifier)
+          (block
+            (break_statement)))))))
+
+================================================================================
+Hashmap and array types in a signature
+================================================================================
+
+def f(m: {str: [int]}, t: (int, str)) -> bool:
+    continue
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (hashmap_type
+          (primitive_type)
+          (array_type
+            (primitive_type))))
+      (parameter
+        (identifier)
+        (tuple_type
+          (primitive_type)
+          (primitive_type))))
+    (primitive_type)
+    (block
+      (continue_statement))))
