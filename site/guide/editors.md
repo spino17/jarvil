@@ -9,8 +9,8 @@ cargo install --path crates/jarvil-lsp
 
 | Editor | Highlighting | Language server |
 |---|---|---|
-| VS Code | yes | yes |
-| Zed | not yet | yes |
+| VS Code | yes (TextMate) | yes |
+| Zed | yes (tree-sitter) | yes |
 
 ## VS Code
 
