@@ -344,31 +344,31 @@ function reset() {
 /* Syntax colours, defined for both themes so the editor follows the site's
    light/dark toggle rather than assuming a light page. */
 :root {
-  --jv-comment: #6a737d;
-  --jv-keyword: #d73a49;
-  --jv-type: #6f42c1;
-  --jv-string: #032f62;
-  --jv-number: #005cc5;
-  --jv-function: #6f42c1;
-  --jv-operator: #d73a49;
-  --jv-punctuation: #24292e;
-  --jv-selection: #b6d7ff;
+  --jv-comment: #7b8794;
+  --jv-keyword: #9a6700;
+  --jv-type: #306998;
+  --jv-string: #1a7f5a;
+  --jv-number: #3776ab;
+  --jv-function: #4b8bbe;
+  --jv-operator: #9a6700;
+  --jv-punctuation: #4a5560;
+  --jv-selection: #bcd9f0;
   /* translucent: this paints over the selection layer */
-  --jv-active-line: rgba(0, 0, 0, 0.04);
+  --jv-active-line: rgba(55, 118, 171, 0.06);
 }
 
 .dark {
-  --jv-comment: #8b949e;
-  --jv-keyword: #ff7b72;
-  --jv-type: #ffa657;
-  --jv-string: #a5d6ff;
-  --jv-number: #79c0ff;
-  --jv-function: #d2a8ff;
-  --jv-operator: #ff7b72;
-  --jv-punctuation: #c9d1d9;
-  --jv-selection: #2d4f76;
+  --jv-comment: #6b7a89;
+  --jv-keyword: #ffd43b;
+  --jv-type: #8fc9ee;
+  --jv-string: #7ddba6;
+  --jv-number: #a5d0ee;
+  --jv-function: #6fb3e0;
+  --jv-operator: #ffd43b;
+  --jv-punctuation: #aebdcb;
+  --jv-selection: #2b4a68;
   /* translucent: this paints over the selection layer */
-  --jv-active-line: rgba(255, 255, 255, 0.045);
+  --jv-active-line: rgba(143, 201, 238, 0.07);
 }
 
 .jv-playground {
@@ -412,9 +412,14 @@ function reset() {
 }
 
 .jv-run {
-  background: var(--vp-c-brand-1);
-  color: white;
-  border-color: var(--vp-c-brand-1) !important;
+  background: var(--py-yellow, #ffd43b);
+  color: #23272e;
+  border-color: var(--py-yellow-deep, #e5b91f) !important;
+  font-weight: 600;
+}
+
+.jv-run:hover:not(:disabled) {
+  background: var(--py-yellow-deep, #e5b91f);
 }
 
 .jv-secondary {

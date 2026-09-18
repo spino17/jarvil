@@ -1,4 +1,5 @@
 import DefaultTheme from "vitepress/theme";
+import "./custom.css";
 import Playground from "./Playground.vue";
 
 export default {

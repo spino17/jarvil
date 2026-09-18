@@ -1,0 +1,108 @@
+/* Jarvil's palette, taken from Python's own identity.
+ *
+ * The two logo colours -- blue #3776AB and yellow #FFD43B -- do the work here.
+ * That is deliberate rather than decorative: Jarvil compiles *to* Python, so
+ * wearing its colours states the relationship. Blue carries structure
+ * (navigation, links, the brand), yellow is spent sparingly on the things that
+ * should stop you -- the hero, a run button, an active line.
+ *
+ * Both themes are defined. VitePress's own `--vp-c-*` tokens are redefined
+ * rather than overridden per component, so anything built on them follows
+ * automatically -- including the playground's cursor and selection.
+ */
+
+:root {
+  /* Python's canonical pair, plus the two shades its logo actually uses. */
+  --py-blue: #3776ab;
+  --py-blue-deep: #306998;
+  --py-blue-light: #4b8bbe;
+  --py-yellow: #ffd43b;
+  --py-yellow-deep: #e5b91f;
+
+  /* Brand ramp: 1 is text-on-background, 3 is background-behind-text, so they
+     need very different contrast behaviour. */
+  --vp-c-brand-1: var(--py-blue-deep);
+  --vp-c-brand-2: var(--py-blue);
+  --vp-c-brand-3: var(--py-blue-light);
+  --vp-c-brand-soft: rgba(55, 118, 171, 0.14);
+
+  /* Neutrals biased a few degrees toward the blue, so they read as chosen
+     rather than as a default grey sitting next to a coloured accent. */
+  --vp-c-bg: #fcfdfe;
+  --vp-c-bg-alt: #f3f6f9;
+  --vp-c-bg-soft: #eef2f6;
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-divider: #dde5ed;
+  --vp-c-gutter: #dde5ed;
+
+  /* Hero: the logo's two colours, with the handover kept late so the ramp
+     never passes through the muddy green in the middle. */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(
+    100deg,
+    var(--py-blue-deep) 0%,
+    var(--py-blue) 38%,
+    #b5891c 74%,
+    var(--py-yellow-deep) 100%
+  );
+  --vp-home-hero-image-background-image: linear-gradient(
+    -45deg,
+    rgba(55, 118, 171, 0.5),
+    rgba(255, 212, 59, 0.5)
+  );
+  --vp-home-hero-image-filter: blur(56px);
+
+  /* The primary button is the one place yellow leads. Dark ink on it, because
+     white on #FFD43B is unreadable. */
+  --vp-button-brand-bg: var(--py-yellow);
+  --vp-button-brand-border: var(--py-yellow-deep);
+  --vp-button-brand-text: #23272e;
+  --vp-button-brand-hover-bg: var(--py-yellow-deep);
+  --vp-button-brand-hover-border: var(--py-yellow-deep);
+  --vp-button-brand-hover-text: #23272e;
+  --vp-button-brand-active-bg: var(--py-yellow-deep);
+  --vp-button-brand-active-text: #23272e;
+}
+
+/* Dark. VitePress adds `.dark` to <html>; deep blues lose contrast on a dark
+   ground, so the ramp inverts -- light blue for text, deeper blue for fills. */
+.dark {
+  --vp-c-brand-1: #6fb3e0;
+  --vp-c-brand-2: var(--py-blue-light);
+  --vp-c-brand-3: var(--py-blue);
+  --vp-c-brand-soft: rgba(111, 179, 224, 0.16);
+
+  /* Blue-shifted near-blacks rather than neutral greys. */
+  --vp-c-bg: #10151b;
+  --vp-c-bg-alt: #161d25;
+  --vp-c-bg-soft: #1a222b;
+  --vp-c-bg-elv: #1c242e;
+  --vp-c-divider: #27313d;
+  --vp-c-gutter: #0b0f14;
+
+  --vp-home-hero-name-background: linear-gradient(
+    100deg,
+    #7cbce6 0%,
+    var(--py-blue-light) 34%,
+    #c9a63a 72%,
+    var(--py-yellow) 100%
+  );
+  --vp-home-hero-image-background-image: linear-gradient(
+    -45deg,
+    rgba(111, 179, 224, 0.42),
+    rgba(255, 212, 59, 0.42)
+  );
+}
+
+/* Feature cards on the landing page: a yellow top edge, so the three of them
+   read as one group without needing a heavier container. */
+.VPHome .VPFeature {
+  border-top: 2px solid var(--py-yellow);
+}
+
+/* The inline code in prose inherits brand blue by default, which competes with
+   links. Keep it neutral and let links own the colour. */
+.vp-doc :not(pre) > code {
+  color: var(--vp-c-text-1);
+  background-color: var(--vp-c-bg-soft);
+}
