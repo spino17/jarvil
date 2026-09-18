@@ -6,10 +6,11 @@
 //! extension talks to, so both editors get identical diagnostics,
 //! go-to-definition and hover from a single implementation.
 //!
-//! There is no syntax highlighting yet: Zed highlights exclusively through
-//! tree-sitter, and Jarvil has no grammar. The language config is still worth
-//! having -- it gives Zed the file association, comment tokens for the
-//! toggle-comment command, and indentation settings.
+//! Syntax highlighting needs no code here either. Zed highlights exclusively
+//! through tree-sitter, and it builds the grammar named in `extension.toml`
+//! itself, then applies the queries in `languages/jarvil/`. Neither path runs
+//! through this module, so highlighting works whether or not the language
+//! server is installed.
 
 use zed_extension_api::{self as zed, LanguageServerId, Result};
 

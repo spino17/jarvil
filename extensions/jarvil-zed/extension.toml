@@ -3,9 +3,23 @@ name = "Jarvil"
 version = "0.1.0"
 schema_version = 1
 authors = ["Bhavya Bhatt <bhavyabhatt17@gmail.com>"]
-description = "Jarvil language support: diagnostics, go-to-definition and hover"
+description = "Jarvil language support: syntax highlighting, diagnostics, go-to-definition and hover"
 repository = "https://github.com/spino17/jarvil"
 
 [language_servers.jarvil-lsp]
 name = "Jarvil Language Server"
 languages = ["Jarvil"]
+
+# Zed builds the grammar itself from source, so this pins a revision rather than
+# tracking a branch: the parser a user gets is exactly the one these queries were
+# written against. Bump `rev` whenever `tree-sitter-jarvil/` changes, or Zed goes
+# on highlighting against the older grammar.
+#
+# `path` points into this repository because the grammar lives beside the
+# compiler rather than in a repository of its own. It is undocumented but long
+# supported -- `GrammarManifestEntry` in Zed's `extension_manifest.rs` carries
+# `path: Option<String>` next to `repository` and `rev`.
+[grammars.jarvil]
+repository = "https://github.com/spino17/jarvil"
+rev = "31d68622eef3df74756fd6a2036b9cb1fdaec536"
+path = "tree-sitter-jarvil"

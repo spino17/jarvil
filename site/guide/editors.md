@@ -31,9 +31,9 @@ cargo build --target wasm32-wasip1 --release
 
 Then **Extensions** → **Install Dev Extension** → choose that directory.
 
-Zed highlights exclusively through tree-sitter and Jarvil has no grammar yet, so
-`.jv` files render as plain text there — with working diagnostics, hover and
-go-to-definition on top.
+Zed highlights exclusively through tree-sitter. It builds the grammar itself
+from the revision pinned in `extension.toml`, so highlighting works whether or
+not the language server is installed.
 
 ## What you get
 

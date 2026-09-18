@@ -58,13 +58,15 @@ each comment becomes a newline.
 [playground](/playground) report all of them, since they use a different entry
 point.
 
-## No tree-sitter grammar
+## Highlighting is syntactic only
 
-So no syntax highlighting in Zed, Neovim or Helix. VS Code works because it
-takes a TextMate grammar, which does exist.
+Both grammars — the TextMate one VS Code reads and `tree-sitter-jarvil` that Zed
+builds — colour by shape alone, without consulting the resolver. A capitalised
+name is treated as a type and everything else as a variable, whether or not it
+resolves to anything, so a misspelled type still looks like a type.
 
-Jarvil is indentation-sensitive, which in tree-sitter means a hand-written
-external scanner emitting INDENT/DEDENT tokens.
+Two grammars also means two places to change: a construct added to the language
+needs adding to both, or it loses its colour in one editor.
 
 ## Small standard library
 

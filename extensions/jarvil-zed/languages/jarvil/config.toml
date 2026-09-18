@@ -1,4 +1,5 @@
 name = "Jarvil"
+grammar = "jarvil"
 path_suffixes = ["jv"]
 line_comments = ["// "]
 block_comment = ["/* ", " */"]

@@ -199,11 +199,12 @@ cargo install --path crates/jarvil-lsp
 | Editor | Highlighting | Language server | Setup |
 |---|---|---|---|
 | **VS Code** | yes (TextMate) | yes | [`extensions/jarvil-vscode`](extensions/jarvil-vscode/README.md) |
-| **Zed** | not yet | yes | [`extensions/jarvil-zed`](extensions/jarvil-zed/README.md) |
+| **Zed** | yes (tree-sitter) | yes | [`extensions/jarvil-zed`](extensions/jarvil-zed/README.md) |
 
-Zed highlights exclusively through tree-sitter, and Jarvil has no grammar yet —
-so `.jv` files render as plain text there, with working LSP features on top. A
-`tree-sitter-jarvil` grammar would fix that and light up Neovim and Helix too.
+The two grammars are separate: VS Code reads the TextMate grammar in its own
+extension, Zed builds [`tree-sitter-jarvil`](tree-sitter-jarvil/). The
+tree-sitter grammar also covers Neovim and Helix, which have no packaged
+extension here but can point at that directory directly.
 
 ### On GitHub
 
@@ -238,7 +239,7 @@ language server · syntax highlighting
 | **No methods on literals** | `"a,b".split(",")` is a parse error; bind it to a name first. |
 | **Comments are stripped** | The generated Python keeps the source's vertical spacing but loses the prose. |
 | **One error at a time** | The CLI reports only the first diagnostic. The language server reports all of them. |
-| **No tree-sitter grammar** | So no highlighting in Zed, Neovim or Helix. Jarvil is indentation-sensitive, which needs an external scanner. |
+| **Highlighting is syntactic only** | Both grammars colour by shape, so a capitalised name is a type and anything else is a variable, whether or not it resolves. |
 
 Contributions toward any of these are welcome; modules would unblock the most.
 
