@@ -1,6 +1,3 @@
-; A comment on its own line is skipped over when the scanner measures
-; indentation. It must still survive as a node, or it would not be highlighted.
-
 ================================================================================
 Standalone comment between statements
 ================================================================================
